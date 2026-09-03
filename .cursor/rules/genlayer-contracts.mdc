@@ -1,0 +1,15 @@
+---
+description: GenLayer Intelligent Contract conventions for Foyer
+globs: contracts/**/*.py
+alwaysApply: false
+---
+
+# GenLayer contracts
+
+- Write Intelligent Contracts in Python for GenLayer testnet.
+- Validators answer: given constitution, proposed_action, objection, evidence — `allow_a` | `allow_b` | `remedy` | `escalate`. JSON `{ "outcome", "remedy", "reasoning" }`.
+- If the constitution is silent or articles contradict, only `escalate`.
+- Appeal is the same question plus `prior_verdict` and `appeal_note`.
+- Equivalence is `outcome` and the meaning of `remedy`. Reasoning may differ.
+- Do not invent an EVM-only wait path for GenLayer txs. Use `genlayer-js` / official IC patterns.
+- Offline judge is allowed until deploy lands; never tell an agent that `judge: offline` is consensus.

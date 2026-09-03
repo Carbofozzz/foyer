@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+dist/
+.cache/
+
+# Local agent overrides (not shared)
+AGENTS.override.md
+CLAUDE.local.md
+
+# Working notes that are not hackathon deliverables
+.local/*
+!.local/README.md

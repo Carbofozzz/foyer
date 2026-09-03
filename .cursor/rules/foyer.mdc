@@ -1,0 +1,15 @@
+---
+description: Core Foyer product invariants for every session
+alwaysApply: true
+---
+
+# Foyer
+
+Intra-principal court + gateway. Read `AGENTS.md` and `docs/HACKATHON.md` before inventing structure.
+
+- Gateway client is always an agent. No UI path that creates a case around the API.
+- Outcomes: `allow_a` | `allow_b` | `remedy` | `escalate`.
+- Guardian ≠ spawn. Guardian stays; spawn is a guest harness.
+- Lock = tools/keys, not a system prompt.
+- Tracked docs in English. Pitch and private notes stay in `.local/`.
+- User-facing chat: Russian, short. Source comments: English. UI copy: i18n catalogs `en` / `es` / `de` / `tr` / `ru`.

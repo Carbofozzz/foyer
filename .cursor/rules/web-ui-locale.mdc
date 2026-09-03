@@ -1,0 +1,13 @@
+---
+description: Observer UI copy goes through i18n catalogs (en, es, de, tr, ru)
+globs: observer/**,**/ui/**,**/*.{tsx,jsx,vue,html,json}
+alwaysApply: false
+---
+
+# Web UI language
+
+- User-visible strings go through **i18n catalogs**. Locales: `en`, `es`, `de`, `tr`, `ru`.
+- Do not hardcode English (or any language) in components. Add the key to all five catalogs in the same change.
+- Default: browser language, fallback `en`. Language switcher in the cabinet.
+- The constitution text the principal typed is not auto-translated. Protocol field names stay English.
+- Source comments stay English (`source-code-language.mdc`).

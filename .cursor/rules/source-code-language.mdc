@@ -1,0 +1,10 @@
+---
+description: All comments and developer prose in source must be English
+alwaysApply: true
+---
+
+# Source language
+
+- Comments (`//`, `/* */`, `/** */`, Python `#` / docstrings, SQL `--`) are **English** everywhere.
+- Do not use Russian in source comments or docblocks.
+- User-visible UI strings follow `.cursor/rules/web-ui-locale.mdc`.

@@ -1,0 +1,13 @@
+---
+description: Keep replies short — one step, dialog format, no walls of text
+alwaysApply: true
+---
+
+# Short dialog responses
+
+- A few short paragraphs or ~5–10 bullets. No long guides unless the user asks for a doc.
+- One turn = one focus. Answer the immediate question only.
+- Prefer 1–3 concrete steps or facts, then stop.
+- At most one optional follow-up — or none.
+- **Russian** for user-facing chat.
+- Code changes: still do the work; the explanation stays short.
