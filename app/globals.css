@@ -1,0 +1,170 @@
+:root {
+  --paper: #f4efe6;
+  --ink: #16140f;
+  --muted: #6b6458;
+  --line: #d8d0c3;
+  --accent: #8a5a2b;
+  --card: #fffdf8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+}
+
+.brand img {
+  display: block;
+}
+
+.brand-name {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+.kicker {
+  color: var(--accent);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  margin: 0 0 0.6rem;
+}
+
+h1 {
+  font-weight: 500;
+  font-size: 2.2rem;
+  line-height: 1.15;
+  margin: 0 0 0.8rem;
+}
+
+.lead,
+.hint,
+.empty,
+.muted {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 1.15rem 1.2rem;
+  margin: 1.2rem 0;
+}
+
+.stack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.92rem;
+}
+
+input,
+select {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.55rem 0.7rem;
+}
+
+button[type="submit"],
+.primary {
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.error {
+  color: #8a2b2b;
+}
+
+.locale-switch {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.locale-switch a {
+  text-decoration: none;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.15rem 0.25rem;
+}
+
+.locale-switch a[aria-current="true"] {
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+  background: #efe8dc;
+  padding: 0.55rem 0.65rem;
+}
+
+pre {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.section-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+}

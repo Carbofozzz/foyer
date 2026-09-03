@@ -1,4 +1,4 @@
-# Intra-Principal Court
+# Foyer — Intra-Principal Court
 
 Hackathon build guide. Track: **Onchain Justice**.
 
@@ -26,27 +26,38 @@ This is **Onchain Justice**. Not Commerce (no deal with a stranger) and not Gove
 
 ## 2. Hackathon-version scope
 
-The hackathon shows the **outline of the product**, not one happy path. Every function in the idea must exist in code at least as a skeleton: an endpoint, an object, a behavior, a place in the UI. Production depth is optional.
+Duration: **14 days**. Host: **Vercel** (public URL from day 4).
+
+| When | What “done” means |
+|---|---|
+| **Day 4** | First public version: a stranger can open a Vercel URL, walk the wizard, and see a live case (court may still be `judge: offline`). |
+| **Day 7** | Hackathon MVP: every row in the table below works in substance. |
+| **Day 14** | Startup-ready: same product, production-shaped (auth, persistence, landing, prod deploy, connect docs). |
+| **After** | Depth, not new entities: real adapters, money in the bond, bridge to an external court. |
+
+The outline of the **whole** product exists from day 4. Days 5–14 deepen quality. Do not add a new isolated feature on day 13 that was missing from the outline.
 
 ### Must work in substance
 
-| Function | At the hackathon | Grows into |
+| Function | Day 7 MVP | After day 14 |
 |---|---|---|
 | Agent protocol | register, constitution, propose, object, inbox, ack | Signatures, A2A, foreign runtimes |
 | Silence window | No object in N seconds → allow without court | Policy by kind / amount |
+| Timers | Cron sweep + lazy sweep on every read; no daemons | Queue with per-kind policy |
 | Court: 4 outcomes | `allow_a` / `allow_b` / `remedy` / `escalate` in the contract | Richer remedy, partial allow |
 | Evidence | Text, links, stub attachments in the case packet | Live calendar, receipt, email |
 | Verdict execution | Adapter `spend` / `book` / `message` / `cancel`: log + stub “executed” | Real card, calendar, mail APIs |
-| Ack | Gateway does not lift the lock until both agents ack (or timeout) | Penalty for ignore |
+| Ack | Engaged parties ack (or timeout) before the lock lifts | Penalty for ignore |
+| Access | Agent keys + a secret cabinet link per house | Accounts, org members, roles |
 | Principal appeal | `POST /cases/:id/appeal` → re-trial or manual outcome | Bond, window, cost |
-| Bond for object | Symbolic agent balance, burns on a clearly empty veto | Real stables |
+| Bond for object | Symbolic agent balance, burns when the verdict says `objection_grounded: false` | Real stables |
 | Several roles | Personal: Travel, Budget, Calendar, Security. Org: Sales, Legal, Finance | Arbitrary principal roles |
 | Two principal types | Personal and corporate constitution | Multi-org, teams |
 | MCP | Tools = the same protocol methods | Catalog, foreign clients |
 | External agent | Spec + sandbox + one live third-party client (script / GPT tools / any HTTP) | OpenClaw, A2A discovery |
 | Observer | Gateway mirror: agents, inbox, cases, verdicts, execution, appeals | Principal cabinet |
 | Onboarding | Wizard: charter from questions, one-click guardian, connect your agent by runtime | Card/calendar OAuth, guardian store |
-| UI locale | `en`, `es`, `de`, `tr`, `ru` catalogs; no hardcoded copy; language switcher | More locales, RTL |
+| UI locale | `en`, `es`, `de`, `tr`, `ru` catalogs; no hardcoded copy; language switcher. `en` / `ru` written, the rest drafted day 1 and reviewed day 9 | More locales, RTL |
 | On-chain | At least some cases on GenLayer, tx on the verdict | Mainnet, bridge to an external Internet Court |
 
 ### Test mode (not the core)
@@ -60,7 +71,7 @@ Spawn test agents and Replay — so the community with no runtime can open the s
 - A full Internet Court / escrow with a stranger (a different product; leave only an `escalate_external` field for later).
 - Teaching agents to “get along” in chat instead of going to court.
 
-In other words: **the adapter exists; the wire to the bank comes later**. Court, gateway, outcomes, appeal, MCP — already here.
+In other words: **the adapter exists; the wire to the bank comes after day 14**. Court, gateway, outcomes, appeal, MCP — already on the day-7 MVP.
 
 ---
 
@@ -68,16 +79,18 @@ In other words: **the adapter exists; the wire to the bank comes later**. Court,
 
 The gateway client is always an agent. There is no separate path “the website created a case.”
 
+Host: **Vercel**. Observer UI and the HTTP/MCP gateway are one Next.js App Router app (Route Handlers). Intelligent Contracts stay on GenLayer testnet — they do not run on Vercel. State lives in Neon Postgres so public deploys survive cold starts.
+
 ```
-  Agent A          Agent B          Agent C …
-  HTTP / MCP / test spawn / human-adapter
-           │
-           ▼
-     Agent Protocol
-  register · propose · object
-  inbox · ack · appeal (principal)
-           │
-           ▼
+  Agent A          Agent B          Agent C …        cron
+  HTTP / MCP / test spawn / human-adapter          POST /tick
+           │                                           │
+           ▼                                           ▼
+     Agent Protocol                              sweep(principal)
+  register · propose · object                windows · guardian turn
+  inbox · ack · appeal (principal)                    │
+           │                                          │
+           ▼◄─────────────────────────────────────────┘
         Gateway
   constitution · lock · silence
   bond · execute(kind) stub
@@ -95,40 +108,98 @@ The gateway client is always an agent. There is no separate path “the website 
 
 Client implementations (`external`, `test`, `human-adapter`) are runtime metadata. That field does not exist on `Case`.
 
+### There are no daemons — the tick does the waiting
+
+Serverless has nobody to sit and watch a countdown. Two triggers, one code path:
+
+- **Cron sweep.** A scheduled route (`POST /tick`, Vercel Cron, ~every minute) closes silence windows, expires ack timeouts, closes appeal windows, and gives the guardian its turn to read the inbox and object.
+- **Lazy sweep on read.** Any protocol call first advances the clock for the house it touches. So a demo does not wait for the next cron minute, and a cold project still behaves correctly.
+
+Both call the same `sweep(principal, now)`. It must be idempotent: two ticks in the same second change nothing twice.
+
+The **guardian is a normal protocol client**, not gateway code. The tick invokes it the way a cron invokes any client: it reads `GET /inbox` with its own agent key and decides whether to `POST /actions/:id/objections`. The gateway never writes an objection on anyone’s behalf — otherwise “silence = consent” would be a lie and the client-is-always-an-agent invariant would break.
+
+### Who is talking (auth)
+
+Two secrets from day one. No anonymous writes on a public URL.
+
+| Secret | Held by | Grants |
+|---|---|---|
+| **Agent key** | An agent (issued by the wizard, baked into the copyable config) | Protocol calls **for its house only**. The house is derived from the key — that is why routes have no principal in the path. |
+| **Cabinet link** | The principal (unguessable URL / token issued when the house is created) | Observer, wizard, appeal. |
+
+House ids are opaque and unguessable. Day 8 replaces the cabinet link with real accounts; the agent key does not change shape.
+
 ### Protocol
 
 | Call | Who | Meaning |
 |---|---|---|
-| `POST /agents` | agent | Register: id, role, callback or poll |
-| `GET /constitution` | agent | Principal’s constitution |
+| `POST /agents` | agent | Register: id, role, callback or poll. Authorized by the enrollment token from the wizard; the response returns the long-lived agent key |
+| `GET /constitution` | agent | Constitution of the house behind the key |
 | `POST /actions` | agent | Action + justification + evidence |
-| `POST /actions/:id/objections` | agent | Veto + justification + evidence + bond |
+| `POST /actions/:id/objections` | agent | Veto + justification + evidence + bond + optional counter-action |
 | `GET /inbox` | agent | Other agents’ actions, deadlines, verdicts |
 | `POST /actions/:id/ack` | agent | Accepted the outcome, ready for execute |
 | `GET /actions/:id` | agent | Lock / court / execution status |
-| `POST /cases/:id/appeal` | principal | Re-trial or manual override |
+| `POST /cases/:id/appeal` | principal | Re-trial or manual override (cabinet link, not an agent key) |
+| `POST /tick` | scheduler | Cron sweep: silence, ack, appeal windows, guardian turn |
+
+Every agent call carries the agent key (`Authorization: Bearer …`). There is no principal id in the path: the key names the house. A key from another house is a 404, not a 403 — houses do not leak each other’s existence.
 
 MCP: the same tool names. The human-adapter sends the same JSON. Test spawn starts processes that call the same URLs.
 
+**Any registered agent may object to any action.** The gateway does not hold a table of veto rights — the constitution is prose, so legitimacy is decided by the court, and a groundless veto costs bond. That is the whole point of case C: whether Security may block *this* message is a question for the judge, not for a permission flag.
+
 `kind`: `spend`, `book`, `message`, `cancel`. Execute is `adapters[kind].apply(verdict, action)`. At the hackathon each adapter writes a structured log (`would_charge`, `would_book`, …). The interface is already the one that stays for real APIs.
+
+Each kind declares `reversible: true | false`. Stubs are reversible. A real card charge is not. That flag, not the kind name, decides whether execution waits for the appeal window.
+
+### What the four outcomes mean
+
+Four outcomes, no fifth. `allow_b` covers both shapes of a veto, which is why an objection may carry a counter-action.
+
+| Outcome | Executed | When |
+|---|---|---|
+| `allow_a` | The proposed action | The proposal follows the constitution better |
+| `allow_b` | The objector’s `counter_action`, or **nothing at all** if the objection was a pure block | The veto wins |
+| `remedy` | The verdict’s `remedy_action` | Neither side is right, and a third action follows the constitution better |
+| `escalate` | Nothing until the principal decides | The constitution is silent or its articles contradict |
+
+`remedy` is not prose the gateway has to interpret. The verdict carries a **`remedy_action`**: the same shape as an `Action` (`kind` + payload), plus one or two sentences of human explanation. If the validators cannot express the compromise as an action, the outcome is `escalate` — never a remedy the gateway cannot execute.
+
+### Lifecycle of one action
+
+1. `POST /actions` locks the action and opens the **silence window**.
+2. Any agent may `POST /actions/:id/objections` (with an optional `counter_action`) before the window closes.
+3. **No objection** → allow, no court, no ack from anyone. Only the proposer is engaged, and it already spoke by proposing.
+4. **Objection** → deadlock → case → verdict.
+5. **Ack** is required only from **engaged parties** — the proposer and the agents that objected. A silent agent never owed an ack. The ack timeout counts as an ack and is recorded as such.
+6. The **appeal window** opens with the verdict. A `reversible` kind executes right after ack; an irreversible one waits for the appeal window to close. An appeal filed in time stops a pending execution.
+7. `Execution` is written; the outcome lands in the inbox of every party.
+
+Both windows and the ack timeout are per-principal settings with defaults, not magic numbers scattered in the code.
 
 ### Objects
 
 | Object | Why |
 |---|---|
-| `Principal` | Constitution, type `personal` / `org`, appeal window |
-| `Agent` | Party, role, bond balance |
-| `Action` | Proposal, kind, payload, evidence |
-| `Objection` | Veto, evidence, bond |
+| `Principal` | Constitution, type `personal` / `org`, silence window, ack timeout, appeal window, cabinet token |
+| `Agent` | Party, role, key, bond balance |
+| `Action` | Proposal, kind, payload, evidence, lock state, deadlines |
+| `Objection` | Veto, evidence, bond, optional `counter_action` |
 | `Case` | Constitution snapshot, parties, status |
-| `Verdict` | outcome, remedy, reasoning, judge (`onchain`/`offline`), tx, appeal_of |
+| `Verdict` | outcome, `remedy_action`, reasoning, `objection_grounded`, judge (`onchain`/`offline`), tx, appeal_of |
 | `Execution` | kind, stub result, timestamp |
+
+The `Case` freezes the constitution text it was judged against. An appeal re-runs **that snapshot**, not whatever the principal typed since — otherwise editing the charter would silently rewrite history.
 
 ### Question to validators
 
-> Given constitution, proposed_action, objection, and evidence. Which decision best executes the constitution: `allow_a`, `allow_b`, `remedy`, or `escalate`? If `remedy` — a concrete compromise in one or two sentences. If the constitution is silent or articles contradict — only `escalate`. JSON: `{ "outcome", "remedy", "reasoning" }`.
+> Given constitution, proposed_action, objection (with its optional counter_action), and evidence. Which decision best executes the constitution: `allow_a`, `allow_b`, `remedy`, or `escalate`? If `remedy` — return `remedy_action` as an executable action (`kind` plus payload fields of the same shape as the proposal) and explain it in one or two sentences; if no such action can be written, answer `escalate` instead. If the constitution is silent or articles contradict — only `escalate`. Also answer whether the objection had grounds in the constitution. JSON: `{ "outcome", "remedy_action", "reasoning", "objection_grounded" }`.
 
-Equivalence: `outcome` and the meaning of `remedy`. Reasoning may differ.
+**Equivalence** is checked on machine-comparable fields only: `outcome`, `objection_grounded`, and the `kind` plus normalized payload of `remedy_action`. Free-text `reasoning` is never compared — validators would never agree on prose.
+
+`objection_grounded: false` is what burns the bond. Without that field the “bond for an empty veto” rule has no input at all, so it is part of the answer, not an afterthought.
 
 A principal appeal asks the same question plus `prior_verdict` and `appeal_note`. That is already a second Justice loop, not “we’ll add it later.”
 
@@ -168,7 +239,9 @@ Until step 5 happens — the screen shows one next step, not an architecture dia
   4. Hit “I added it” — the gateway waits for the first `register` or first tool-call and shows “Travel connected.”
 - The human gets an **agent key** (token), already written into the copyable config. They do not assemble JSON by hand.
 
-If there is only one agent, there will be no dispute. So on the same step, without jargon: **“Enable a guardian.”** Budget or Security — our reference client that the principal **turns on in their house**. This is not a demo mock and not spawn for the jury. It is the first product “second agent out of the box”: it watches the inbox and vetoes against the constitution. A person with one travel bot immediately gets a collision.
+If there is only one agent, there will be no dispute. So on the same step, without jargon: **“Enable a guardian.”** Budget or Security — our reference client that the principal **turns on in their house**. This is not a demo mock and not spawn for the jury. It is the first product “second agent out of the box”: on every tick it reads its inbox with its own agent key and objects when the constitution says so. A person with one travel bot immediately gets a collision.
+
+The guardian is woken by the tick (§3), not by gateway code inside `POST /actions`. It has a key, it has a role, it can be wrong and pay bond — like any other agent.
 
 **“I write agents”** (technician)
 
@@ -223,33 +296,31 @@ At the hackathon a client may be a script or an LLM that reads the constitution 
 
 ### Guest with no runtime
 
-Observer → Spawn on one of the conflicts → register/propose/object in the log → verdict in both inboxes → execute stub and an appeal button visible. Next to it — “Connect your agent” with the spec.
+Spawn creates a throwaway house with its own cabinet link and issues real agent keys to the spawned clients — the same doors, just short-lived. Observer → Spawn on one of the conflicts → register/propose/object in the log → verdict in both inboxes → execute stub and an appeal button visible. Next to it — “Connect your agent” with the spec.
 
-If testnet is down: Replay of a real run + `judge: offline` on new runs. Do not lie to the agent that offline is consensus.
+If testnet is down: Replay of a real run + `judge: offline` on new runs. Do not lie to the agent that offline is consensus. Replay of an offline case shows no tx and says so.
 
 ---
 
 ## 6. How to go deeper without cutting functions
 
-Not “first two scripts, the rest after the hackathon.” The scaffold of every row in the §2 table, immediately. After that, **quality** grows, not the feature list.
+Not “first two scripts, the rest on day 14.” The scaffold of every row in the §2 table is on the **day-4 public URL**. After that, **quality** grows, not the feature list.
 
-### Pass 1 — the whole system, rough
+### Day 4 — public v0 (whole system, rough)
 
-All main calls live. Four court outcomes. Silence → allow. Ack. Execute stub. Appeal. Bond as a number. MCP wrapper. Observer. Onboarding wizard: constitution questions, copyable config for one chat runtime, “enable guardian” button. Two principals (me / company). Spawn as a harness. Contract on GenLayer, or offline with the same JSON until deploy lands. UI: i18n layer + complete `en` / `es` / `de` / `tr` / `ru` catalogs and a language switcher.
+Shipped on Vercel. All main protocol calls live behind agent keys. Four court outcomes (offline judge is allowed) with `remedy_action`. Silence → allow, closed by the tick. Ack from engaged parties. Execute stub. Appeal. Bond with `objection_grounded`. Observer. MCP transport plus a copyable config for **one** chat runtime. Onboarding wizard: constitution questions, cabinet link, “enable guardian.” Personal principal. Spawn as a harness. i18n catalogs `en` / `es` / `de` / `tr` / `ru` and a language switcher. Case A runs through agents. A stranger can finish the wizard and see a non-empty inbox — and cannot see anyone else’s house.
 
-The jury already sees a product, not a one-button prototype.
+### Day 7 — hackathon MVP
 
-### Pass 2 — court and agents are convincing
+Live GenLayer tx on several cases. Remedy and escalate on different constitutions. Cases B / C / D, so `allow_b` is exercised both as a counter-action and as a pure block. Remaining roles (Calendar, Security, org Sales/Legal/Finance) and the remaining runtime cards. External HTTP client completes the loop. Tech tab (OpenAPI / curl). Appeal changes or confirms the outcome. Community checklist passes. This is the version you demo as the hackathon product.
 
-Live tx on several cases. Remedy and escalate on different constitutions. A case that is not about money (Security). An external HTTP client completes the loop. The execution log reads as “the gateway decided and would have done it.” Appeal changes or confirms the outcome.
+### Day 14 — startup-ready
 
-### Pass 3 — future contours visible in code
+Same entities, production shape: accounts instead of the cabinet link, Neon Postgres, public landing + cabinet, Vercel production + previews, env/secrets, rate limits and honest errors, cron observability, connect-your-runtime doc, one adapter almost-real and honoring `reversible` (others stub), `escalate_external` in the model without a bridge. Org path feels like a product, not a second demo script.
 
-An adapter with an explicit TODO for calendar/card (one kind can be almost-real, the rest stub). `escalate_external` in the model without a bridge implementation. A second org conflict, Sales vs Legal. A document “how to connect OpenClaw / your runtime.”
+### After day 14 (depth, not new entities)
 
-### After the hackathon (depth, not new entities)
-
-Real adapters. Money in the bond. Appeal economics. Bridge to an external court. Multi-org. Pin an agent version (a separate idea).
+Real card/calendar/mail adapters. Money in the bond. Appeal economics. Bridge to an external court. Multi-org. Pin an agent version (a separate idea).
 
 ---
 
@@ -257,9 +328,11 @@ Real adapters. Money in the bond. Appeal economics. Bridge to an external court.
 
 Scenarios for agents. Observer shows them as gateway cases. At the hackathon run all four: two personal, one “not money,” one corporate.
 
+Together they cover both shapes of a veto: A and D carry a `counter_action`, C is a pure block, so `allow_b` is exercised in both readings.
+
 ### A. Travel vs Budget
 
-Travel: `book`, business class, €420. Budget: object, economy €180. Evidence: price, departure, a 9:00 presentation. Constitution: *save money, except being late for work or losing a client*. Remedy possible.
+Travel: `book`, business class, €420. Budget: object with a `counter_action` — economy €180. Evidence: price, departure, a 9:00 presentation. Constitution: *save money, except being late for work or losing a client*. Good `remedy` candidate: a third `remedy_action` (economy plus a paid seat) that neither side proposed.
 
 ### B. Calendar vs Travel
 
@@ -267,7 +340,7 @@ Travel moves a meeting. Calendar: the slot was promised outside. Constitution: *
 
 ### C. Security vs a message
 
-`message` with a spreadsheet. Security: other people’s addresses in the file. Constitution: *security blocks payment and data, not a restaurant booking*. `allow_b` or `escalate`. Holds the Justice track.
+`message` with a spreadsheet. Security: other people’s addresses in the file — a pure block, no `counter_action`. Constitution: *security blocks payment and data, not a restaurant booking*. `allow_b` here means the message is simply not sent; `escalate` if the charter does not reach this case. Holds the Justice track and proves nobody needs a veto-rights table.
 
 ### D. Sales vs Legal (org)
 
@@ -277,21 +350,49 @@ Sales: a letter to a client promising a deadline. Legal: object, the promise is 
 
 ## 8. Work plan
 
-The goal of each day is **the whole system a little deeper**, not a new isolated feature at the end.
+14 days. Goal of each day: **the whole system a little deeper**, not a new isolated feature at the end. Deploy to Vercel continuously; day 4 is the first URL you give to other people.
 
-**Day 1.** Protocol + gateway + four outcomes (at least offline) + clients + silence/ack + execute stub + observer. Wizard: house, constitution from questions, “enable guardian.” Case A already runs through agents. UI catalogs `en` / `es` / `de` / `tr` / `ru` and a language switcher.
+Do not cut days 1–3 down to “two curls without a court.” Do not leave onboarding as “we’ll write docs.” Without the wizard, only people who already read OpenAPI can open the gateway.
 
-**Day 2.** GenLayer and tx. Connection cards for Claude / ChatGPT / Cursor / OpenClaw (copyable MCP + three prompt lines). Remaining roles and cases B/C/D. Appeal, bond. Spawn for guests with no agent.
+### Days 1–4 — public v0
 
-**Day 3.** External client via the tech tab. Onboarding through to a green agent and a non-empty inbox. Replay. Community checklist. Recording of a run with a tx.
+**Day 1.** Next.js App Router on Vercel (preview). Neon Postgres from the first commit — serverless memory is not state. Protocol types, agent keys, route handlers. Four outcomes with `remedy_action`, offline judge. Observer shell. i18n layer with all five catalogs wired.
 
-Do not cut day 1 down to “two curls without a court.” Do not leave onboarding as “we’ll write docs.” Without the wizard, only people who already read OpenAPI can open the gateway.
+**Day 2.** Propose / object / silence / ack / execute stub. `sweep()` behind both the cron route and every read. Guardian as a real protocol client woken by the tick. Wizard: house, cabinet link, constitution from questions, enable guardian. Case A through agents.
+
+**Day 3.** MCP transport (the connection card is only real once it exists) + one runtime card with copyable config and three prompt lines. Spawn harness for guests. Appeal + bond with `objection_grounded`. Empty/error states good enough for a stranger.
+
+**Day 4.** Public access: production (or a stable public preview) on Vercel. Landing that leads into the wizard. Unguessable house ids, agent key on every write, cabinet link for the principal — the URL is public, the houses are not. Smoke the path: open URL → wizard → propose → object → verdict in the feed. Replay if testnet is irrelevant yet. Freeze v0; do not start GenLayer polish until this URL works.
+
+### Days 5–7 — hackathon MVP
+
+**Day 5.** Intelligent Contract on GenLayer testnet. Live tx on case A. Honest `judge: offline` fallback if testnet is down.
+
+**Day 6.** Cases B / C / D — that is, `allow_b` in both readings and a real `remedy_action`. Remaining roles. Remaining connection cards (Claude / ChatGPT / Cursor / OpenClaw) over the day-3 MCP. Org principal type.
+
+**Day 7.** External client via the tech tab. Onboarding through to a green agent and a non-empty inbox. Community checklist. Recording of a run with a tx. **MVP freeze.**
+
+### Days 8–14 — startup-ready
+
+**Day 8.** Real accounts replace the cabinet link. Houses belong to accounts; the agent key does not change shape. Secrets and env on Vercel, not in git.
+
+**Day 9.** Landing, pricing/waitlist stub if needed, cabinet polish. Onboarding copy, and a native-speaker pass over `es` / `de` / `tr` — day 1 shipped drafts, this is where they stop reading like a machine.
+
+**Day 10.** One kind almost-real (adapter still the same interface); others stay stub. This is the day `reversible: false` starts to matter: an irreversible execution must wait for the appeal window. `escalate_external` field in the model.
+
+**Day 11.** Rate limits on public writes, request logs, status page or at least a health route. Cron observability: a missed tick must be visible, not silent. Preview vs production parity.
+
+**Day 12.** “Connect your runtime” doc + tech tab complete. Spawn labeled as harness, not the product.
+
+**Day 13.** Hardening: abuse on public propose, i18n gaps, mobile cabinet, legal/privacy stubs.
+
+**Day 14.** Startup-ready freeze. Prod URL, demo script, checklist from §9 still green.
 
 ---
 
 ## 9. How the community tests
 
-**Main path:** walk the wizard. A person with one chat agent: paste the config, enable the guardian, see a case. A technician: API tab, the same house.
+**Main path:** open the public Vercel URL (from day 4). Walk the wizard. A person with one chat agent: paste the config, enable the guardian, see a case. A technician: API tab, the same house.
 
 **Extra:** Spawn / Replay if there is no agent at all.
 
@@ -300,21 +401,27 @@ Checklist:
 - Can a person without OpenAPI connect an agent in a few copy-pastes?
 - With one own agent, does a dispute still appear (guardian)?
 - Does the dispute go through agent calls, not “I am budget” clicks?
-- Are all four outcomes visible on different constitutions or cases?
+- Are all four outcomes visible on different constitutions or cases, including `allow_b` both as a counter-action and as a pure block?
+- Does a `remedy` verdict execute from `remedy_action`, without a human reading prose?
+- Does an untouched action still resolve when nobody pokes the app — i.e. does the cron tick close the silence window?
 - Is there execution (at least a stub) and appeal?
-- Is there an on-chain tx?
+- Is there an on-chain tx? (required for the day-7 MVP; day-4 public v0 may still be offline)
 - Does spawn refuse to pass itself off as the product?
+- Does the public URL keep state after a reload?
+- Does someone else’s house stay invisible without its agent key or cabinet link?
 
 ---
 
 ## 10. Stack
 
-- Contract: Python Intelligent Contract, GenLayer testnet.
-- Gateway: HTTP + MCP over the same methods.
-- Reference agents: separate API clients.
-- Kind adapters: modules with stubs, one contract for all.
-- Observer: principal cabinet over the gateway. Locales `en`, `es`, `de`, `tr`, `ru`.
-- Spawn: start the same clients with test keys.
+- Host: **Vercel**. Git-connected previews; production URL by day 4. Env and secrets on the platform, not in the repo.
+- App: Next.js App Router — observer UI + HTTP gateway + MCP HTTP transport (same methods).
+- Store: **Neon Postgres** (Vercel Marketplace). Chosen on day 1 so nothing is ever kept in process memory.
+- Timers: **Vercel Cron** → `POST /tick`, plus the same `sweep()` on every read. No daemons, no `setTimeout` that a cold start would forget.
+- Contract: Python Intelligent Contract on GenLayer testnet (not on Vercel). Deploy key lives in Vercel env, never in git.
+- Kind adapters: modules with stubs, one interface for all, each declaring `reversible`; one kind may be almost-real by day 14.
+- Reference agents / guardian / spawn: protocol clients with their own agent keys, invoked by a request or a tick.
+- Locales: `en`, `es`, `de`, `tr`, `ru`.
 
 ---
 
@@ -322,7 +429,9 @@ Checklist:
 
 | Risk | What to do |
 |---|---|
-| Narrow again to one case | §2 checklist — every row in code by the end of day 2 |
+| Narrow again to one case | §2 checklist — every row in code by the end of day 7; outline already on the day-4 URL |
+| No public URL | Day 4 is a hard gate: do not start GenLayer polish until a stranger can open Vercel |
+| In-memory store on Vercel | Hosted Postgres from day 1; serverless memory is not state |
 | Empty skeleton, “buttons exist” | Each function changes an agent inbox or a lock |
 | Website instead of protocol | A case cannot be created from the UI around the API |
 | Onboarding = documentation | Wizard with Copy and “I added it”; success = non-empty inbox |
@@ -331,6 +440,11 @@ Checklist:
 | Testnet is down | Replay + honest `judge: offline` |
 | Confused with escrow | Words verdict / evidence / constitution / execute / appeal |
 | Hardcoded UI copy | Every string in a catalog; switcher covers all five locales |
+| Nothing moves without a click | `sweep()` on cron **and** on every read; missed ticks are visible |
+| Gateway objects on the guardian’s behalf | Guardian holds its own key and calls the public endpoint like any client |
+| Public URL, open houses | Agent key on writes, cabinet link for the principal, unguessable ids from day 4 |
+| Verdict nobody can execute | No `remedy` without `remedy_action`; otherwise `escalate` |
+| Free-text consensus | Equivalence compares `outcome`, `objection_grounded`, `remedy_action` — never `reasoning` |
 
 ---
 

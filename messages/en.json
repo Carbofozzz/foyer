@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "title": "Foyer",
+    "description": "Set rules for your AI assistants so they don’t spend or book without agreement."
+  },
+  "brand": {
+    "name": "Foyer",
+    "markAlt": "Foyer logo"
+  },
+  "nav": {
+    "locale": "Language"
+  },
+  "home": {
+    "kicker": "For several AI assistants",
+    "title": "Keep your AI assistants from fighting over your money.",
+    "lead": "One bot books travel. Another watches the budget. They both act in your name, but they want different things. You write the rules. Foyer checks each request against those rules before anything is paid or booked.",
+    "nameLabel": "Name",
+    "namePlaceholder": "For example, Personal",
+    "typeLabel": "Who is this for",
+    "typePersonal": "Me",
+    "typeOrg": "A company",
+    "submit": "Create",
+    "submitting": "Creating…",
+    "error": "Could not create this. Please try again."
+  },
+  "cabinet": {
+    "kicker": "Your space",
+    "untitled": "Untitled",
+    "constitution": "Your rules",
+    "agents": "Connected assistants",
+    "inbox": "Activity",
+    "emptyAgents": "No assistant is connected yet. Use the key below to connect the first one.",
+    "emptyInbox": "Nothing here yet. Requests and decisions will show up in this list.",
+    "enrollment": "Key to connect an assistant",
+    "enrollmentHint": "One-time use. Send it as Authorization: Bearer when you call POST /api/agents.",
+    "cabinetHint": "Save this page link. For now it is how you get back here.",
+    "court": "Example decision",
+    "courtHint": "This is what a decision looks like. Right now it is a local check, not a blockchain vote."
+  },
+  "protocol": {
+    "title": "For developers",
+    "lead": "An assistant calls the API with its own key. The account is taken from that key, not from the URL."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "title": "Foyer",
+    "description": "Yapay zeka asistanlarınız için kurallar: anlaşmadan ödeme veya rezervasyon yok."
+  },
+  "brand": {
+    "name": "Foyer",
+    "markAlt": "Foyer logosu"
+  },
+  "nav": {
+    "locale": "Dil"
+  },
+  "home": {
+    "kicker": "Birden fazla asistanınız varsa",
+    "title": "Yapay zeka asistanlarınız paranız için tartışmasın.",
+    "lead": "Biri seyahat ayarlar. Diğeri bütçeye bakar. İkisi de sizin adınıza iş yapar ama farklı şeyler ister. Siz kuralları yazarsınız. Foyer her isteği bu kurallara göre kontrol eder; ondan sonra ödeme veya rezervasyon yapılır.",
+    "nameLabel": "Ad",
+    "namePlaceholder": "Örneğin: Kişisel",
+    "typeLabel": "Kim için",
+    "typePersonal": "Kendim için",
+    "typeOrg": "Şirket için",
+    "submit": "Oluştur",
+    "submitting": "Oluşturuluyor…",
+    "error": "Oluşturulamadı. Lütfen tekrar deneyin."
+  },
+  "cabinet": {
+    "kicker": "Alanınız",
+    "untitled": "Adsız",
+    "constitution": "Kurallarınız",
+    "agents": "Bağlı asistanlar",
+    "inbox": "Hareketler",
+    "emptyAgents": "Henüz bağlı asistan yok. İlkini bağlamak için aşağıdaki anahtarı kullanın.",
+    "emptyInbox": "Henüz bir şey yok. İstekler ve kararlar bu listede görünecek.",
+    "enrollment": "Asistan bağlama anahtarı",
+    "enrollmentHint": "Tek kullanımlık. POST /api/agents çağrısında Authorization: Bearer olarak gönderin.",
+    "cabinetHint": "Bu sayfanın bağlantısını kaydedin. Şimdilik buraya böyle dönersiniz.",
+    "court": "Örnek karar",
+    "courtHint": "Bir karar böyle görünür. Şu an bu yerel bir kontrol, blockchain oylaması değil."
+  },
+  "protocol": {
+    "title": "Geliştiriciler için",
+    "lead": "Asistan API’ye kendi anahtarıyla gelir. Hesap URL’den değil, o anahtardan anlaşılır."
+  }
+}

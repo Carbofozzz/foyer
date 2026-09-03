@@ -1,6 +1,6 @@
 ---
 description: Observer UI copy goes through i18n catalogs (en, es, de, tr, ru)
-globs: observer/**,**/ui/**,**/*.{tsx,jsx,vue,html,json}
+globs: app/**,**/ui/**,**/*.{tsx,jsx,vue,html}
 alwaysApply: false
 ---
 

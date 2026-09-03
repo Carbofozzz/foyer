@@ -1,6 +1,9 @@
 .DS_Store
 .env
 .env.*
+!.env.example
+.next/
+.vercel/
 node_modules/
 __pycache__/
 *.pyc
@@ -15,3 +18,5 @@ CLAUDE.local.md
 # Working notes that are not hackathon deliverables
 .local/*
 !.local/README.md
+.vercel
+.env*

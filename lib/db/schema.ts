@@ -1,0 +1,103 @@
+import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+export const principals = pgTable("principals", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  constitution: text("constitution").notNull(),
+  silenceWindowSec: integer("silence_window_sec").notNull().default(60),
+  ackTimeoutSec: integer("ack_timeout_sec").notNull().default(300),
+  appealWindowSec: integer("appeal_window_sec").notNull().default(600),
+  cabinetTokenHash: text("cabinet_token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const agents = pgTable("agents", {
+  id: text("id").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  role: text("role").notNull(),
+  name: text("name").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  bondBalance: integer("bond_balance").notNull().default(100),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const enrollments = pgTable("enrollments", {
+  tokenHash: text("token_hash").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  role: text("role").notNull(),
+  name: text("name").notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export const actions = pgTable("actions", {
+  id: text("id").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  proposerId: text("proposer_id")
+    .notNull()
+    .references(() => agents.id),
+  kind: text("kind").notNull(),
+  payload: jsonb("payload").notNull(),
+  justification: text("justification").notNull(),
+  evidence: jsonb("evidence").notNull(),
+  status: text("status").notNull(),
+  silenceUntil: timestamp("silence_until", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const objections = pgTable("objections", {
+  id: text("id").primaryKey(),
+  actionId: text("action_id")
+    .notNull()
+    .references(() => actions.id),
+  objectorId: text("objector_id")
+    .notNull()
+    .references(() => agents.id),
+  justification: text("justification").notNull(),
+  evidence: jsonb("evidence").notNull(),
+  bond: integer("bond").notNull(),
+  counterAction: jsonb("counter_action"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const cases = pgTable("cases", {
+  id: text("id").primaryKey(),
+  actionId: text("action_id")
+    .notNull()
+    .references(() => actions.id),
+  constitutionSnapshot: text("constitution_snapshot").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const verdicts = pgTable("verdicts", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id")
+    .notNull()
+    .references(() => cases.id),
+  outcome: text("outcome").notNull(),
+  remedyAction: jsonb("remedy_action"),
+  reasoning: text("reasoning").notNull(),
+  objectionGrounded: boolean("objection_grounded").notNull(),
+  judge: text("judge").notNull(),
+  tx: text("tx"),
+  appealOf: text("appeal_of"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const executions = pgTable("executions", {
+  id: text("id").primaryKey(),
+  actionId: text("action_id")
+    .notNull()
+    .references(() => actions.id),
+  kind: text("kind").notNull(),
+  result: jsonb("result").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "title": "Foyer",
+    "description": "Reglas para tus asistentes de IA: no pagan ni reservan sin acuerdo."
+  },
+  "brand": {
+    "name": "Foyer",
+    "markAlt": "Logotipo de Foyer"
+  },
+  "nav": {
+    "locale": "Idioma"
+  },
+  "home": {
+    "kicker": "Si tienes varios asistentes",
+    "title": "Para que tus asistentes de IA no discutan por tu dinero.",
+    "lead": "Uno reserva viajes. Otro vigila el presupuesto. Los dos actúan en tu nombre, pero quieren cosas distintas. Tú escribes las reglas. Foyer las aplica a cada petición antes de pagar o reservar.",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Por ejemplo, Personal",
+    "typeLabel": "Para quién",
+    "typePersonal": "Para mí",
+    "typeOrg": "Para una empresa",
+    "submit": "Crear",
+    "submitting": "Creando…",
+    "error": "No se pudo crear. Inténtalo de nuevo."
+  },
+  "cabinet": {
+    "kicker": "Tu espacio",
+    "untitled": "Sin título",
+    "constitution": "Tus reglas",
+    "agents": "Asistentes conectados",
+    "inbox": "Actividad",
+    "emptyAgents": "Aún no hay ningún asistente. Usa la clave de abajo para conectar el primero.",
+    "emptyInbox": "Todavía no hay nada. Aquí verás las peticiones y las decisiones.",
+    "enrollment": "Clave para conectar un asistente",
+    "enrollmentHint": "De un solo uso. Envíala como Authorization: Bearer en POST /api/agents.",
+    "cabinetHint": "Guarda el enlace de esta página. Por ahora es tu forma de volver.",
+    "court": "Ejemplo de decisión",
+    "courtHint": "Así se ve una decisión. Ahora es una comprobación local, no un voto en blockchain."
+  },
+  "protocol": {
+    "title": "Para desarrolladores",
+    "lead": "El asistente llama a la API con su propia clave. La cuenta sale de esa clave, no de la URL."
+  }
+}

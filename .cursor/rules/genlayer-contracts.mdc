@@ -7,9 +7,10 @@ alwaysApply: false
 # GenLayer contracts
 
 - Write Intelligent Contracts in Python for GenLayer testnet.
-- Validators answer: given constitution, proposed_action, objection, evidence — `allow_a` | `allow_b` | `remedy` | `escalate`. JSON `{ "outcome", "remedy", "reasoning" }`.
+- Validators answer: given constitution, proposed_action, objection (with optional `counter_action`), evidence — `allow_a` | `allow_b` | `remedy` | `escalate`. JSON `{ "outcome", "remedy_action", "reasoning", "objection_grounded" }`.
+- `remedy` must return an executable `remedy_action` (`kind` + payload). If none can be written, answer `escalate`.
 - If the constitution is silent or articles contradict, only `escalate`.
-- Appeal is the same question plus `prior_verdict` and `appeal_note`.
-- Equivalence is `outcome` and the meaning of `remedy`. Reasoning may differ.
+- Appeal is the same question plus `prior_verdict` and `appeal_note`, judged against the constitution **snapshot** stored on the case.
+- Equivalence compares `outcome`, `objection_grounded`, and `remedy_action` (kind + normalized payload). Never compare `reasoning`.
 - Do not invent an EVM-only wait path for GenLayer txs. Use `genlayer-js` / official IC patterns.
 - Offline judge is allowed until deploy lands; never tell an agent that `judge: offline` is consensus.

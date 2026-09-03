@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "title": "Foyer",
+    "description": "Regeln für Ihre KI-Assistenten: nichts zahlen oder buchen, bevor es geklärt ist."
+  },
+  "brand": {
+    "name": "Foyer",
+    "markAlt": "Foyer-Logo"
+  },
+  "nav": {
+    "locale": "Sprache"
+  },
+  "home": {
+    "kicker": "Wenn Sie mehrere Assistenten haben",
+    "title": "Damit Ihre KI-Assistenten nicht um Ihr Geld streiten.",
+    "lead": "Einer bucht Reisen. Ein anderer passt aufs Budget auf. Beide handeln in Ihrem Namen, wollen aber Unterschiedliches. Sie schreiben die Regeln. Foyer prüft jede Anfrage daran, bevor etwas bezahlt oder gebucht wird.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Zum Beispiel: Privat",
+    "typeLabel": "Für wen",
+    "typePersonal": "Für mich",
+    "typeOrg": "Für ein Unternehmen",
+    "submit": "Erstellen",
+    "submitting": "Wird erstellt…",
+    "error": "Das hat nicht geklappt. Bitte erneut versuchen."
+  },
+  "cabinet": {
+    "kicker": "Ihr Bereich",
+    "untitled": "Ohne Namen",
+    "constitution": "Ihre Regeln",
+    "agents": "Verbundene Assistenten",
+    "inbox": "Aktivität",
+    "emptyAgents": "Noch kein Assistent verbunden. Den Schlüssel dafür finden Sie unten.",
+    "emptyInbox": "Noch nichts vorhanden. Anfragen und Entscheidungen erscheinen in dieser Liste.",
+    "enrollment": "Schlüssel zum Verbinden eines Assistenten",
+    "enrollmentHint": "Nur einmal gültig. Als Authorization: Bearer bei POST /api/agents senden.",
+    "cabinetHint": "Speichern Sie den Link zu dieser Seite. Darüber kommen Sie vorerst wieder hierher.",
+    "court": "Beispielentscheidung",
+    "courtHint": "So sieht eine Entscheidung aus. Das ist gerade eine lokale Prüfung, keine Blockchain-Abstimmung."
+  },
+  "protocol": {
+    "title": "Für Entwickler",
+    "lead": "Der Assistent ruft die API mit seinem eigenen Schlüssel auf. Das Konto kommt aus dem Schlüssel, nicht aus der URL."
+  }
+}
