@@ -4,13 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { assembleCharter, type PricePreference } from "@/lib/i18n/charter";
 import type { Messages } from "@/lib/i18n/load";
+import { ConnectCard } from "@/app/components/connect-card";
 
-type Step = "rules" | "lock" | "guardian" | "first";
+type Step = "rules" | "lock" | "connect" | "guardian" | "first";
 
 export function CabinetWizard({
   token,
   step,
   wizard,
+  connect,
   charter,
   cabinetError,
   constitution,
@@ -18,6 +20,7 @@ export function CabinetWizard({
   token: string;
   step: Step;
   wizard: Messages["wizard"];
+  connect: Messages["connect"];
   charter: Messages["charter"];
   cabinetError: string;
   constitution: string;
@@ -27,6 +30,9 @@ export function CabinetWizard({
   }
   if (step === "lock") {
     return <LockStep token={token} wizard={wizard} cabinetError={cabinetError} />;
+  }
+  if (step === "connect") {
+    return <ConnectCard token={token} t={connect} errorLabel={cabinetError} asWizard />;
   }
   if (step === "guardian") {
     return (
@@ -241,7 +247,6 @@ function ActionStep({
   label: string;
   pendingLabel: string;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
 
@@ -249,13 +254,18 @@ function ActionStep({
     event.preventDefault();
     setPending(true);
     setError(false);
-    const response = await fetch(`/api/cabinet/${token}/${path}`, { method: "POST" });
-    if (!response.ok) {
-      setPending(false);
+    try {
+      const response = await fetch(`/api/cabinet/${token}/${path}`, { method: "POST" });
+      if (!response.ok) {
+        setError(true);
+        setPending(false);
+        return;
+      }
+      window.location.reload();
+    } catch {
       setError(true);
-      return;
+      setPending(false);
     }
-    router.refresh();
   }
 
   return (

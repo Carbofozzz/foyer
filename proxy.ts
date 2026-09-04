@@ -8,7 +8,11 @@ export function proxy(request: NextRequest) {
   }
 
   const first = pathname.split("/")[1];
-  if (isLocale(first)) return NextResponse.next();
+  if (isLocale(first)) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-foyer-locale", first);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   const cookie = request.cookies.get("foyer_locale")?.value;
   const locale = isLocale(cookie) ? cookie : negotiateLocale(request.headers.get("accept-language"));

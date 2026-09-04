@@ -16,6 +16,8 @@ export const principals = pgTable("principals", {
     .default(sql`'["spend","book","message"]'::jsonb`),
   wizardRulesDone: boolean("wizard_rules_done").notNull().default(false),
   wizardLockDone: boolean("wizard_lock_done").notNull().default(false),
+  wizardConnectDone: boolean("wizard_connect_done").notNull().default(false),
+  isSpawn: boolean("is_spawn").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

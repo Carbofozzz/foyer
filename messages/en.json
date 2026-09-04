@@ -39,7 +39,23 @@
     "statusOpen": "Waiting",
     "statusAck": "Waiting for confirmation",
     "statusExecuted": "Done",
-    "statusEscalated": "Needs you"
+    "statusEscalated": "Needs you",
+    "request": "Request",
+    "objection": "Objection",
+    "decision": "Decision",
+    "kindBook": "booking",
+    "kindSpend": "payment",
+    "kindMessage": "message",
+    "kindCancel": "cancel",
+    "allowA": "Approved as requested.",
+    "allowBCounter": "Instead: {summary}",
+    "allowBBlock": "Do nothing.",
+    "remedy": "A middle option: {summary}",
+    "escalate": "The rules don’t settle this — you decide.",
+    "silence": "Nobody objected. The request stands.",
+    "waiting": "Waiting for other assistants.",
+    "done": "Carried out: {summary}",
+    "bond": "bond {n}"
   },
   "wizard": {
     "next": "Continue",
@@ -86,6 +102,45 @@
     "securityYes": "Security may block mail that looks like payment or other people's data.",
     "securityNo": "Security does not veto ordinary mail.",
     "human": "Call the human when: {note}"
+  },
+  "connect": {
+    "kicker": "Step 4 of 5",
+    "title": "If the assistant already lives in Cursor",
+    "lead": "Paste this into Cursor MCP settings. The key is already in the file — you don’t assemble JSON by hand.",
+    "offTools": "Turn off its payment and calendar tools. Otherwise it skips Foyer.",
+    "configLabel": "Cursor config",
+    "promptLabel": "Three lines for the system prompt",
+    "copy": "Copy",
+    "copied": "Copied",
+    "added": "I added it",
+    "skip": "I don’t have my own assistant yet",
+    "loading": "Loading…"
+  },
+  "spawn": {
+    "title": "No assistant yet?",
+    "lead": "Test agents speak the same protocol. They are not the product.",
+    "run": "Try a demo",
+    "running": "Starting…",
+    "error": "Could not start the demo. Please try again.",
+    "banner": "This is a test run. Test agents are not the product."
+  },
+  "appeal": {
+    "label": "Appeal",
+    "note": "Why should this change?",
+    "submit": "Appeal",
+    "submitting": "Sending…",
+    "outcome": "Or set the outcome yourself",
+    "keep": "Re-judge from the rules",
+    "allowA": "Keep the original request",
+    "allowB": "Take the objection",
+    "remedy": "Keep the compromise",
+    "escalate": "I’ll decide later"
+  },
+  "notFound": {
+    "kicker": "Missing",
+    "title": "This page isn’t here.",
+    "lead": "The link may be wrong, or this house doesn’t exist.",
+    "home": "Back to the start"
   },
   "protocol": {
     "title": "For developers",

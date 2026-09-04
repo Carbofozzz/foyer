@@ -1,18 +1,19 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import { agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
+import { decideBudgetTurn } from "@/agents/budget";
 import { CASE_A } from "@/agents/travel";
-import { ackAction, proposeAction } from "./actions";
-import type { HouseAuth, HousePrincipal } from "./bundle";
+import { ackAction, fileObjection, proposeAction } from "./actions";
+import type { HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
-import { sealKey } from "./seal";
+import { sealKey, unsealKey } from "./seal";
 import { sweep } from "./sweep";
 
 export async function enableGuardian(principal: HousePrincipal) {
   const existing = await findGuardian(principal.id);
   if (existing) return { id: existing.id, role: existing.role, name: existing.name, created: false };
-  const agent = await insertSealedAgent(principal.id, {
+  const { agent } = await insertSealedAgent(principal.id, {
     role: "budget",
     name: "Budget",
     isGuardian: true,
@@ -29,16 +30,15 @@ export async function runFirstPass(principal: HousePrincipal) {
 
   const travel =
     (await findSealedTravel(principal.id)) ??
-    (await insertSealedAgent(principal.id, { role: "travel", name: "Travel", isGuardian: false }));
+    (await insertSealedAgent(principal.id, { role: "travel", name: "Travel", isGuardian: false })).agent;
 
   const db = getDb();
-  const [travelRow] = await db.select().from(agents).where(eq(agents.id, travel.id)).limit(1);
   const [freshPrincipal] = await db.select().from(principals).where(eq(principals.id, principal.id)).limit(1);
-  if (!travelRow || !freshPrincipal) throw new ProtocolError("not_found", "Unknown house", 404);
+  if (!freshPrincipal) throw new ProtocolError("not_found", "Unknown house", 404);
 
   const now = new Date();
   const proposed = await proposeAction(
-    { agent: travelRow, principal: freshPrincipal },
+    { agent: travel, principal: freshPrincipal },
     {
       kind: CASE_A.kind,
       payload: CASE_A.payload,
@@ -48,18 +48,45 @@ export async function runFirstPass(principal: HousePrincipal) {
     now,
   );
 
-  await sweep(principal.id, now);
-  const silenceUntil = new Date(proposed.silence_until);
-  await sweep(principal.id, new Date(silenceUntil.getTime() + 1000));
+  const drafts = decideBudgetTurn({
+    constitution: freshPrincipal.constitution,
+    selfId: guardian.id,
+    items: [
+      {
+        id: proposed.id,
+        proposerId: travel.id,
+        kind: proposed.kind,
+        payload: CASE_A.payload,
+        evidence: CASE_A.evidence,
+        status: "open",
+        alreadyObjected: false,
+      },
+    ],
+  });
 
+  for (const draft of drafts) {
+    await fileObjection(
+      { agent: guardian, principal: freshPrincipal },
+      draft.actionId,
+      {
+        justification: draft.justification,
+        evidence: draft.evidence,
+        bond: draft.bond,
+        counter_action: draft.counter_action,
+      },
+      now,
+    );
+  }
+
+  await sweep(freshPrincipal.id, new Date(new Date(proposed.silence_until).getTime() + 1000));
+
+  const [house] = await db.select().from(principals).where(eq(principals.id, principal.id)).limit(1);
   const [travelNow] = await db.select().from(agents).where(eq(agents.id, travel.id)).limit(1);
   const [budgetNow] = await db.select().from(agents).where(eq(agents.id, guardian.id)).limit(1);
-  const [house] = await db.select().from(principals).where(eq(principals.id, principal.id)).limit(1);
-  if (!travelNow || !budgetNow || !house) throw new ProtocolError("not_found", "Unknown house", 404);
+  if (!house || !travelNow || !budgetNow) throw new ProtocolError("not_found", "Unknown house", 404);
 
-  const travelAuth: HouseAuth = { agent: travelNow, principal: house };
   try {
-    await ackAction(travelAuth, proposed.id);
+    await ackAction({ agent: travelNow, principal: house }, proposed.id);
   } catch {
     // Silence-allow has no ack.
   }
@@ -69,7 +96,6 @@ export async function runFirstPass(principal: HousePrincipal) {
     // Not engaged if the guardian did not object.
   }
 
-  await sweep(principal.id, new Date());
   return { action_id: proposed.id };
 }
 
@@ -91,7 +117,20 @@ async function insertSealedAgent(
   });
   const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
   if (!row) throw new ProtocolError("internal", "Failed to create agent", 500);
-  return row;
+  return { agent: row, agentKey };
+}
+
+export async function issueConnectAgent(principal: HousePrincipal) {
+  const existing = await findSealedTravel(principal.id);
+  if (existing?.sealedKey) {
+    return { agent_key: unsealKey(existing.sealedKey), created: false };
+  }
+  const { agentKey } = await insertSealedAgent(principal.id, {
+    role: "travel",
+    name: "Travel",
+    isGuardian: false,
+  });
+  return { agent_key: agentKey, created: true };
 }
 
 async function findGuardian(principalId: string) {

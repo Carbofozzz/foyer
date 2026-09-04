@@ -1,0 +1,167 @@
+import { requireAgent } from "@/lib/protocol/auth";
+import { ackAction, fileObjection, getAction, inboxFor, proposeAction } from "@/lib/protocol/actions";
+import type { HouseAuth } from "@/lib/protocol/bundle";
+import { ProtocolError } from "@/lib/protocol/errors";
+import { sweep } from "@/lib/protocol/sweep";
+import { isRecord } from "@/lib/protocol/parse";
+
+type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: unknown };
+
+const TOOLS = [
+  {
+    name: "get_constitution",
+    description: "Read the house constitution the agent must cite.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "propose",
+    description: "Propose an action (spend, book, message, cancel) with justification and evidence.",
+    inputSchema: {
+      type: "object",
+      required: ["kind", "justification"],
+      properties: {
+        kind: { type: "string", enum: ["spend", "book", "message", "cancel"] },
+        summary: { type: "string" },
+        amount: { type: "number" },
+        currency: { type: "string" },
+        justification: { type: "string" },
+        evidence: { type: "array" },
+        payload: { type: "object" },
+      },
+    },
+  },
+  {
+    name: "object",
+    description: "Object to an open action. Optional counter_action. Bond is spent if the objection is not grounded.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id", "justification"],
+      properties: {
+        action_id: { type: "string" },
+        justification: { type: "string" },
+        bond: { type: "number" },
+        evidence: { type: "array" },
+        counter_action: { type: "object" },
+      },
+    },
+  },
+  {
+    name: "inbox",
+    description: "List actions, deadlines, and verdicts for this house.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "ack",
+    description: "Acknowledge a verdict. Required only if this agent proposed or objected.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id"],
+      properties: { action_id: { type: "string" } },
+    },
+  },
+  {
+    name: "get_action",
+    description: "Get one action’s lock, court, and execution status.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id"],
+      properties: { action_id: { type: "string" } },
+    },
+  },
+];
+
+export async function handleMcpPost(request: Request): Promise<Response> {
+  const auth = await requireAgent(request);
+  if ("error" in auth && auth.error) {
+    return withCors(auth.error);
+  }
+
+  let rpc: Rpc;
+  try {
+    rpc = (await request.json()) as Rpc;
+  } catch {
+    return rpcError(null, -32700, "Parse error");
+  }
+
+  const id = rpc.id ?? null;
+  try {
+    const result = await dispatch(auth, rpc.method ?? "", rpc.params);
+    return rpcOk(id, result);
+  } catch (error) {
+    const message =
+      error instanceof ProtocolError ? error.message : error instanceof Error ? error.message : "Internal error";
+    return rpcError(id, -32000, message);
+  }
+}
+
+async function dispatch(auth: HouseAuth, method: string, params: unknown) {
+  await sweep(auth.principal.id, new Date());
+  if (method === "initialize") {
+    return {
+      protocolVersion: "2024-11-05",
+      capabilities: { tools: {} },
+      serverInfo: { name: "foyer", version: "0.3.0" },
+    };
+  }
+  if (method === "notifications/initialized" || method === "initialized") {
+    return {};
+  }
+  if (method === "ping") return {};
+  if (method === "tools/list") return { tools: TOOLS };
+  if (method === "tools/call") {
+    const p = isRecord(params) ? params : {};
+    const name = typeof p.name === "string" ? p.name : "";
+    const args = isRecord(p.arguments) ? p.arguments : {};
+    const data = await callTool(auth, name, args);
+    return { content: [{ type: "text", text: JSON.stringify(data) }] };
+  }
+  throw new Error(`Unknown method: ${method}`);
+}
+
+async function callTool(auth: HouseAuth, name: string, args: Record<string, unknown>) {
+  const now = new Date();
+  if (name === "get_constitution") {
+    return {
+      principal_id: auth.principal.id,
+      type: auth.principal.type,
+      constitution: auth.principal.constitution,
+    };
+  }
+  if (name === "propose") {
+    return proposeAction(auth, args, now);
+  }
+  if (name === "object") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return fileObjection(auth, actionId, args, now);
+  }
+  if (name === "inbox") return inboxFor(auth);
+  if (name === "ack") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return ackAction(auth, actionId);
+  }
+  if (name === "get_action") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return getAction(auth, actionId);
+  }
+  throw new Error(`Unknown tool: ${name}`);
+}
+
+function rpcOk(id: string | number | null, result: unknown) {
+  return withCors(Response.json({ jsonrpc: "2.0", id, result }));
+}
+
+function rpcError(id: string | number | null, code: number, message: string) {
+  return withCors(Response.json({ jsonrpc: "2.0", id, error: { code, message } }, { status: 200 }));
+}
+
+export function mcpOptions() {
+  return withCors(new Response(null, { status: 204 }));
+}
+
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  return new Response(response.body, { status: response.status, headers });
+}

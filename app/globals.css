@@ -17,17 +17,18 @@ body {
   min-height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-}
-
-a {
-  color: inherit;
+  font-family: inherit;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+a {
+  color: inherit;
 }
 
 .app-shell {
@@ -70,7 +71,7 @@ select {
 }
 
 h1 {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 2.2rem;
   line-height: 1.15;
   margin: 0 0 0.8rem;
@@ -140,6 +141,22 @@ textarea {
   padding-top: 0;
 }
 
+.feed-label {
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  margin: 0 0 0.25rem;
+}
+
+.feed-block + .feed-block {
+  margin-top: 0.85rem;
+}
+
+.feed-item p {
+  margin: 0.15rem 0;
+}
+
 button[type="submit"],
 .primary {
   border: 0;
@@ -149,9 +166,26 @@ button[type="submit"],
   cursor: pointer;
 }
 
-button[type="submit"]:disabled {
+button.ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+button[type="submit"]:disabled,
+button.ghost:disabled,
+button:disabled {
   opacity: 0.55;
   cursor: wait;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 .error {
@@ -177,6 +211,16 @@ button[type="submit"]:disabled {
   border-bottom: 1px solid var(--ink);
 }
 
+strong {
+  font-weight: 600;
+}
+
+.charter {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem;
@@ -187,14 +231,13 @@ button[type="submit"]:disabled {
 
 pre {
   white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font: inherit;
+  line-height: 1.5;
   margin: 0;
 }
 
 .section-title {
   margin: 0 0 0.45rem;
   font-size: 1.05rem;
-  font-weight: 500;
+  font-weight: 600;
 }

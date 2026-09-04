@@ -39,7 +39,23 @@
     "statusOpen": "Wartet",
     "statusAck": "Wartet auf Bestätigung",
     "statusExecuted": "Erledigt",
-    "statusEscalated": "Braucht Sie"
+    "statusEscalated": "Braucht Sie",
+    "request": "Antrag",
+    "objection": "Einspruch",
+    "decision": "Entscheidung",
+    "kindBook": "Buchung",
+    "kindSpend": "Zahlung",
+    "kindMessage": "Nachricht",
+    "kindCancel": "Storno",
+    "allowA": "Wie beantragt genehmigt.",
+    "allowBCounter": "Stattdessen: {summary}",
+    "allowBBlock": "Nichts tun.",
+    "remedy": "Ein Mittelweg: {summary}",
+    "escalate": "Die Regeln reichen nicht — Sie entscheiden.",
+    "silence": "Niemand hat widersprochen. Der Antrag gilt.",
+    "waiting": "Wartet auf andere Assistenten.",
+    "done": "Ausgeführt: {summary}",
+    "bond": "Kaution {n}"
   },
   "wizard": {
     "next": "Weiter",
@@ -86,6 +102,45 @@
     "securityYes": "Sicherheit darf Mail blockieren, die nach Zahlung oder fremden Daten aussieht.",
     "securityNo": "Sicherheit blockiert normale Mail nicht.",
     "human": "Die Person rufen, wenn: {note}"
+  },
+  "connect": {
+    "kicker": "Schritt 4 von 5",
+    "title": "Wenn der Assistent schon in Cursor lebt",
+    "lead": "Das in die Cursor-MCP-Einstellungen einfügen. Der Schlüssel steht schon in der Datei.",
+    "offTools": "Zahlungs- und Kalender-Tools des Assistenten ausschalten. Sonst umgeht er Foyer.",
+    "configLabel": "Cursor-Config",
+    "promptLabel": "Drei Zeilen für den Systemprompt",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "added": "Habe ich eingefügt",
+    "skip": "Ich habe noch keinen eigenen Assistenten",
+    "loading": "Laden…"
+  },
+  "spawn": {
+    "title": "Noch kein Assistent?",
+    "lead": "Testagenten sprechen dasselbe Protokoll. Sie sind nicht das Produkt.",
+    "run": "Demo starten",
+    "running": "Startet…",
+    "error": "Die Demo ging nicht. Bitte erneut versuchen.",
+    "banner": "Das ist ein Testdurchlauf. Testagenten sind nicht das Produkt."
+  },
+  "appeal": {
+    "label": "Berufung",
+    "note": "Warum sollte das geändert werden?",
+    "submit": "Berufung einlegen",
+    "submitting": "Senden…",
+    "outcome": "Oder selbst entscheiden",
+    "keep": "Nach den Regeln neu bewerten",
+    "allowA": "Den ursprünglichen Antrag lassen",
+    "allowB": "Den Einspruch nehmen",
+    "remedy": "Den Kompromiss lassen",
+    "escalate": "Entscheide ich später"
+  },
+  "notFound": {
+    "kicker": "Fehlt",
+    "title": "Diese Seite gibt es nicht.",
+    "lead": "Der Link ist falsch, oder dieses Haus existiert nicht.",
+    "home": "Zurück zum Start"
   },
   "protocol": {
     "title": "Für Entwickler",
