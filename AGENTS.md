@@ -19,10 +19,10 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - The gateway client is always an agent. The UI must not create a case around the API, and the gateway must never write an objection on an agent's behalf.
 - Court outcomes: `allow_a` | `allow_b` | `remedy` | `escalate`. No fifth outcome. `allow_b` executes the objector's `counter_action`, or nothing when the objection was a pure block.
 - `remedy` always carries an executable `remedy_action`. If the compromise cannot be written as an action, the outcome is `escalate`.
-- A verdict also answers `objection_grounded`. That flag, and nothing else, burns the bond.
+- A verdict also answers `objection_grounded`. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
-- Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal uses a cabinet link (accounts from day 8).
+- Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
 - **Guardian** stays in the house after onboarding and is woken by the tick with its own key. **Spawn** is a temporary harness for guests with no runtime. Do not mix them.
 - Hackathon adapters are stubs with a stable `adapters[kind].apply` interface (`spend` | `book` | `message` | `cancel`). Each kind declares `reversible`; irreversible executions wait for the appeal window.
 - Outline of the whole product on the **day-4 public Vercel URL**. Day 7 is MVP. Day 14 is startup-ready. After that: depth, not new entities.
@@ -68,3 +68,10 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-04: Connect payload field is `mcp_config` (not `cursor_config`). The snippet is the standard MCP HTTP block; copy does not name a runtime.
 - 2026-09-04: `GET /api/mcp` with an agent key is a ping (tool names + agent). JSON-RPC remains `POST`. Empty POST body is treated as `initialize`.
 - 2026-09-04: Day 4 — public v0 outline on the landing (constitution, gateway, court); Replay archive of case A at `/:locale/replay` with honest `judge: offline` and no tx; cabinet feed says the same; wizard steps numbered 6.
+- 2026-09-04: Day 5 — Python IC `contracts/court.py` (leader/validator; equivalence on `outcome` / `objection_grounded` / remedy kind+amount+currency, never `reasoning`); one IC per house; one signing wallet per house (sealed key, cabinet export). Constructor `admin` is that wallet; `judge` / `get_verdict` require `_only_admin`. Cabinet login is that same personal wallet (`personal_sign` → `foyer_session`); house treasury is a different address, topped up from the signed-in wallet. `genlayer-js` v2 on `studioDevnet` (alias `studionetdev`); fees via `estimateTransactionFeesForWrite` + `waitForFinalization`. `judge: onchain` with tx when consensus lands; otherwise `escalate`. The IC does not lock or burn GEN.
+- 2026-09-04: Wallet-as-login is the account. `GET /api/auth/nonce`, `POST /api/auth/verify`, `POST /api/auth/logout`, `GET /api/me`. Product cabinet is `/:locale/cabinet` (`token=me`). `principals.owner_address` is unique. Spawn and leftover `cab_` links still work. Day 8 does not invent a second login.
+- 2026-09-04: Cabinet auth is RainbowKit + wagmi (SIWE), not raw `window.ethereum`. Verify accepts `{ message, signature }`; nonce lives in `foyer_nonce`. Same `foyer_session` cookie. Optional `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`.
+- 2026-09-04: Wallet modal uses EIP-6963 (`getDefaultConfig`, no generic `injected`). `reconnectOnMount: false` so Rabby does not auto-open.
+- 2026-09-04: Login sign is a short `personal_sign` text, not SIWE boilerplate. Connect button sits on the landing card, not the top bar.
+- 2026-09-04: First wallet sign-in opens the house. No name/type form — one wallet is one house.
+- 2026-09-04: After login the landing keeps the same wallet row plus a quiet cabinet link. Cabinet header is account + sign out; treasury does not repeat the address or Connect.

@@ -18,6 +18,10 @@ export const principals = pgTable("principals", {
   wizardLockDone: boolean("wizard_lock_done").notNull().default(false),
   wizardConnectDone: boolean("wizard_connect_done").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
+  courtContract: text("court_contract"),
+  walletAddress: text("wallet_address"),
+  sealedWalletKey: text("sealed_wallet_key"),
+  ownerAddress: text("owner_address").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -31,7 +35,7 @@ export const agents = pgTable("agents", {
   keyHash: text("key_hash").notNull().unique(),
   sealedKey: text("sealed_key"),
   isGuardian: boolean("is_guardian").notNull().default(false),
-  bondBalance: integer("bond_balance").notNull().default(100),
+  bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -78,7 +82,7 @@ export const objections = pgTable(
       .references(() => agents.id),
     justification: text("justification").notNull(),
     evidence: jsonb("evidence").notNull(),
-    bond: integer("bond").notNull(),
+    bond: text("bond").notNull(),
     counterAction: jsonb("counter_action"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -134,3 +138,20 @@ export const executions = pgTable("executions", {
   result: jsonb("result").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const walletTransfers = pgTable(
+  "wallet_transfers",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    kind: text("kind").notNull(),
+    tx: text("tx").notNull(),
+    fromAddress: text("from_address").notNull(),
+    toAddress: text("to_address").notNull(),
+    amountWei: text("amount_wei").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("wallet_transfers_tx").on(table.tx)],
+);

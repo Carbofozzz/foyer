@@ -9,9 +9,11 @@ Intra-principal court + gateway. Read `AGENTS.md` and `docs/HACKATHON.md` before
 
 - Gateway client is always an agent. No UI path that creates a case around the API, and no objection written by gateway code.
 - Outcomes: `allow_a` | `allow_b` | `remedy` | `escalate`. `allow_b` = objector's `counter_action` or nothing. `remedy` needs an executable `remedy_action`, else `escalate`.
-- `objection_grounded` in the verdict is what burns the bond.
+- Court is GenLayer, one IC per house. No local verdict: if consensus does not land, `escalate`.
+- `objection_grounded` is a verdict flag. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - No daemons: `sweep(principal, now)` runs on cron `POST /tick` and on every read; keep it idempotent.
-- Agent key names the house; routes carry no principal id. Principal uses the cabinet link.
+- Agent key names the house; routes carry no principal id. Principal signs in with RainbowKit (SIWE); spawn still uses a `cab_` link.
+- The cabinet is the product surface now: house wallet, deposit/withdraw with the principal's own wallet, transfer history. Accounts (day 8) replace the link later; they do not invent a second money path.
 - Guardian ≠ spawn. Guardian stays and is woken by the tick with its own key; spawn is a guest harness.
 - Lock = tools/keys, not a system prompt.
 - Tracked docs in English. Pitch and private notes stay in `.local/`.

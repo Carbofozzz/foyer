@@ -21,10 +21,17 @@
     "typeOrg": "Şirket için",
     "submit": "Oluştur",
     "submitting": "Oluşturuluyor…",
-    "error": "Oluşturulamadı. Lütfen tekrar deneyin."
+    "error": "Oluşturulamadı. Lütfen tekrar deneyin.",
+    "signIn": "Cüzdanla giriş",
+    "signingIn": "İmzalanıyor…",
+    "checking": "Kontrol…",
+    "signInHint": "Evin kasasını sonra bu cüzdanla doldurursunuz.",
+    "signInError": "Giriş olmadı. Cüzdanı kontrol edip tekrar deneyin.",
+    "openCabinet": "Kabinet",
+    "signOut": "Çıkış"
   },
   "cabinet": {
-    "kicker": "Alanınız",
+    "kicker": "Kabinet",
     "untitled": "Adsız",
     "constitution": "Kurallarınız",
     "agents": "Bağlı asistanlar",
@@ -33,7 +40,7 @@
     "emptyInbox": "Henüz bir şey yok. İstekler ve kararlar bu listede görünecek.",
     "enrollment": "Asistan bağlama anahtarı",
     "enrollmentHint": "Tek kullanımlık. POST /api/agents çağrısında Authorization: Bearer olarak gönderin.",
-    "cabinetHint": "Bu sayfanın bağlantısını kaydedin. Şimdilik buraya böyle dönersiniz.",
+    "cabinetHint": "Aşağıdaki adres mahkeme ücreti için kasa. Giriş yaptığınız cüzdandan doldurun.",
     "guardian": "Koruyucu",
     "error": "Bir şey ters gitti. Lütfen tekrar deneyin.",
     "statusOpen": "Bekliyor",
@@ -56,7 +63,41 @@
     "waiting": "Diğer asistanlar bekleniyor.",
     "done": "Yapıldı: {summary}",
     "bond": "teminat {n}",
-    "judgeOffline": "Çevrimdışı karar — zincir konsensüsü değil. İşlem yok."
+    "treasury": "Kasa",
+    "treasuryHint": "Mahkeme ücreti için GEN. Giriş yaptığınız cüzdandan yatırın.",
+    "signedInAs": "Giriş: {addr}",
+    "signOut": "Çıkış",
+    "wrongWallet": "Giriş yaptığınız cüzdana geçin.",
+    "treasuryLoading": "Cüzdan yükleniyor…",
+    "balance": "Bakiye",
+    "copyAddress": "Adresi kopyala",
+    "copied": "Kopyalandı",
+    "connectWallet": "Yükleme cüzdanı",
+    "connecting": "Bağlanıyor…",
+    "walletConnected": "Cüzdanınız",
+    "noWallet": "Tarayıcı cüzdanı yok. Özel ağ ekleyebilen bir cüzdan gerekir.",
+    "depositHint": "GEN, bağlı cüzdanınızdan bu adrese gider.",
+    "depositAmount": "Yatırılacak GEN",
+    "deposit": "Yatır",
+    "depositing": "Gönderiliyor…",
+    "withdrawHint": "Ücreti kasa öder. Hepsini çekemezsiniz — fee için pay kalır.",
+    "refreshing": "Bakiye güncelleniyor…",
+    "withdrawAmount": "Çekilecek GEN",
+    "withdrawTo": "Çekim adresi",
+    "withdraw": "Çek",
+    "withdrawing": "Çekiliyor…",
+    "history": "İşlemler",
+    "emptyHistory": "Henüz transfer yok.",
+    "txDeposit": "Yatırma",
+    "txWithdraw": "Çekme",
+    "txCourt": "Mahkeme",
+    "exportKey": "Özel anahtarı dışa aktar",
+    "exporting": "Aktarılıyor…",
+    "copyKey": "Anahtarı kopyala",
+    "privateKeyHint": "Anahtarı olan bu GEN’i harcayabilir.",
+    "judgeOffline": "Çevrimdışı karar — zincir konsensüsü değil. İşlem yok.",
+    "cancel": "Vazgeç",
+    "judgeOnchain": "Zincir üstü karar."
   },
   "wizard": {
     "next": "Devam",
@@ -119,12 +160,12 @@
     "loading": "Yükleniyor…"
   },
   "spawn": {
-    "title": "Henüz asistan yok mu?",
-    "lead": "Test ajanları aynı protokolü konuşur. Ürün bunlar değil.",
+    "title": "Önce görmek ister misiniz?",
+    "lead": "Kısa bir demo: iki asistan anlaşamaz, mahkeme karar verir.",
     "run": "Demoyu dene",
     "running": "Başlatılıyor…",
     "error": "Demo başlamadı. Lütfen tekrar deneyin.",
-    "banner": "Bu bir deneme. Test ajanları ürün değil.",
+    "banner": "Bu bir demo, sizin kabinetiniz değil.",
     "watch": "Bitmiş bir davayı izle"
   },
   "appeal": {
@@ -142,17 +183,17 @@
   "notFound": {
     "kicker": "Yok",
     "title": "Bu sayfa yok.",
-    "lead": "Bağlantı yanlış olabilir veya bu ev yok.",
+    "lead": "Bağlantı yanlış olabilir veya bu kabinet yok.",
     "home": "Başa dön"
   },
   "outline": {
     "kicker": "Nasıl çalışır",
     "constitutionTitle": "Kurallar",
-    "constitutionLead": "Kısa bir tüzük yazarsınız. Asistanlar onu anmak zorunda. Mahkeme aynı metni okur.",
-    "gatewayTitle": "Geçit",
-    "gatewayLead": "Asistanların doğrudan ödeme veya takvim aracı yok. Foyer üzerinden teklif ve itiraz ederler. Sessizlik rızadır.",
+    "constitutionLead": "Neye izin olduğunu siz yazarsınız. Tüm asistanlar aynı metne uyar. Mahkeme de onu okur.",
+    "gatewayTitle": "Erişim",
+    "gatewayLead": "Asistan kendi başına ödeme yapmaz, rezervasyon yapmaz, dışarı yazmaz. Foyer’den ister. Kimse itiraz etmezse geçer.",
     "courtTitle": "Mahkeme",
-    "courtLead": "Kilit: izin, itiraz, uzlaşma veya size yükseltme. İtiraz edebilirsiniz. Bugün yargıç çevrimdışı — zincir konsensüsü değil."
+    "courtLead": "Anlaşamazlarsa mahkeme karar verir: evet, hayır, orta yol veya size sormak. Karar yoksa siz karar verirsiniz. İtiraz edebilirsiniz."
   },
   "replay": {
     "kicker": "Arşiv",
@@ -163,6 +204,6 @@
   },
   "protocol": {
     "title": "Geliştiriciler için",
-    "lead": "Asistan API’ye kendi anahtarıyla gelir. Hesap URL’den değil, o anahtardan anlaşılır."
+    "lead": "Her asistan kendi anahtarını alır ve Foyer’e yalnızca onunla gelir."
   }
 }

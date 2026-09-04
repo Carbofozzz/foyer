@@ -22,14 +22,22 @@ export function ProductOutline({
 }) {
   return (
     <>
-      <section className="card stack">
+      <section className="home-outline-wrap">
         <p className="kicker">{outline.kicker}</p>
-        <h2 className="section-title">{outline.constitutionTitle}</h2>
-        <p>{outline.constitutionLead}</p>
-        <h2 className="section-title">{outline.gatewayTitle}</h2>
-        <p>{outline.gatewayLead}</p>
-        <h2 className="section-title">{outline.courtTitle}</h2>
-        <p>{outline.courtLead}</p>
+        <div className="home-outline">
+          <article className="card stack">
+            <h2 className="section-title">{outline.constitutionTitle}</h2>
+            <p>{outline.constitutionLead}</p>
+          </article>
+          <article className="card stack">
+            <h2 className="section-title">{outline.gatewayTitle}</h2>
+            <p>{outline.gatewayLead}</p>
+          </article>
+          <article className="card stack">
+            <h2 className="section-title">{outline.courtTitle}</h2>
+            <p>{outline.courtLead}</p>
+          </article>
+        </div>
       </section>
       <section className="card stack">
         <h2 className="section-title">{protocol.title}</h2>

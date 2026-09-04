@@ -21,10 +21,17 @@
     "typeOrg": "Para una empresa",
     "submit": "Crear",
     "submitting": "Creando…",
-    "error": "No se pudo crear. Inténtalo de nuevo."
+    "error": "No se pudo crear. Inténtalo de nuevo.",
+    "signIn": "Entrar con tu cartera",
+    "signingIn": "Firmando…",
+    "checking": "Comprobando…",
+    "signInHint": "Con esta cartera recargas luego la caja.",
+    "signInError": "No se pudo entrar. Revisa la cartera e inténtalo de nuevo.",
+    "openCabinet": "Gabinete",
+    "signOut": "Salir"
   },
   "cabinet": {
-    "kicker": "Tu espacio",
+    "kicker": "Gabinete",
     "untitled": "Sin título",
     "constitution": "Tus reglas",
     "agents": "Asistentes conectados",
@@ -33,7 +40,7 @@
     "emptyInbox": "Todavía no hay nada. Aquí verás las peticiones y las decisiones.",
     "enrollment": "Clave para conectar un asistente",
     "enrollmentHint": "De un solo uso. Envíala como Authorization: Bearer en POST /api/agents.",
-    "cabinetHint": "Guarda el enlace de esta página. Por ahora es tu forma de volver.",
+    "cabinetHint": "La dirección de abajo es la caja para las tarifas del tribunal. Recarga desde la cartera con la que entraste.",
     "guardian": "Guardián",
     "error": "Algo falló. Inténtalo de nuevo.",
     "statusOpen": "En espera",
@@ -56,7 +63,41 @@
     "waiting": "A la espera de otros asistentes.",
     "done": "Hecho: {summary}",
     "bond": "fianza {n}",
-    "judgeOffline": "Decidido sin cadena: no es consenso. No hay transacción."
+    "treasury": "Caja",
+    "treasuryHint": "GEN para las tarifas del tribunal. Recarga desde la cartera con la que entraste.",
+    "signedInAs": "Sesión: {addr}",
+    "signOut": "Salir",
+    "wrongWallet": "Vuelve a la cartera con la que entraste.",
+    "treasuryLoading": "Cargando la cartera…",
+    "balance": "Saldo",
+    "copyAddress": "Copiar dirección",
+    "copied": "Copiado",
+    "connectWallet": "Cartera para recargar",
+    "connecting": "Conectando…",
+    "walletConnected": "Tu cartera",
+    "noWallet": "No hay cartera en el navegador. Debe poder añadir una red.",
+    "depositHint": "El GEN sale de tu cartera conectada hacia esta dirección.",
+    "depositAmount": "GEN a ingresar",
+    "deposit": "Ingresar",
+    "depositing": "Enviando…",
+    "withdrawHint": "La comisión la paga la caja. No se puede sacar todo: queda un margen para el fee.",
+    "refreshing": "Actualizando el saldo…",
+    "withdrawAmount": "GEN a retirar",
+    "withdrawTo": "Retirar a",
+    "withdraw": "Retirar",
+    "withdrawing": "Retirando…",
+    "history": "Transacciones",
+    "emptyHistory": "Aún no hay transferencias.",
+    "txDeposit": "Ingreso",
+    "txWithdraw": "Retiro",
+    "txCourt": "Tribunal",
+    "exportKey": "Exportar clave privada",
+    "exporting": "Exportando…",
+    "copyKey": "Copiar clave",
+    "privateKeyHint": "Quien tenga la clave puede gastar este GEN.",
+    "judgeOffline": "Decidido sin cadena: no es consenso. No hay transacción.",
+    "cancel": "Cancelar",
+    "judgeOnchain": "Veredicto en cadena."
   },
   "wizard": {
     "next": "Seguir",
@@ -119,12 +160,12 @@
     "loading": "Cargando…"
   },
   "spawn": {
-    "title": "¿Aún no hay asistente?",
-    "lead": "Los agentes de prueba hablan el mismo protocolo. No son el producto.",
+    "title": "¿Quieres verlo primero?",
+    "lead": "Una demo corta: dos asistentes discrepan, el tribunal decide.",
     "run": "Probar una demo",
     "running": "Arrancando…",
     "error": "No se pudo arrancar. Inténtalo de nuevo.",
-    "banner": "Esto es una prueba. Los agentes de prueba no son el producto.",
+    "banner": "Esto es una demo, no tu gabinete.",
     "watch": "Ver un caso cerrado"
   },
   "appeal": {
@@ -142,17 +183,17 @@
   "notFound": {
     "kicker": "No está",
     "title": "Esta página no está.",
-    "lead": "El enlace puede ser incorrecto, o esta casa no existe.",
+    "lead": "El enlace puede ser incorrecto, o este gabinete no existe.",
     "home": "Volver al inicio"
   },
   "outline": {
     "kicker": "Cómo funciona",
     "constitutionTitle": "Reglas",
-    "constitutionLead": "Escribes una carta corta. Los asistentes deben citarla. El tribunal lee el mismo texto.",
-    "gatewayTitle": "Pasarela",
-    "gatewayLead": "Los asistentes no tienen pago ni calendario directo. Proponen y objetan por Foyer. El silencio es consentimiento.",
+    "constitutionLead": "Escribes qué se puede. Todos los asistentes siguen el mismo texto. El tribunal también lo lee.",
+    "gatewayTitle": "Acceso",
+    "gatewayLead": "Un asistente no paga, no reserva ni escribe afuera por su cuenta. Pide por Foyer. Si nadie objeta, sigue.",
     "courtTitle": "Tribunal",
-    "courtLead": "Un bloqueo es permitir, aceptar la objeción, un término medio o escalarte a ti. Puedes apelar. Hoy el juez es offline: no es consenso en cadena."
+    "courtLead": "Si no se ponen de acuerdo, el tribunal decide: seguir, no, un término medio o preguntarte. Si no decide, decides tú. Puedes apelar."
   },
   "replay": {
     "kicker": "Archivo",
@@ -163,6 +204,6 @@
   },
   "protocol": {
     "title": "Para desarrolladores",
-    "lead": "El asistente llama a la API con su propia clave. La cuenta sale de esa clave, no de la URL."
+    "lead": "Cada asistente recibe su clave y habla con Foyer solo con esa clave."
   }
 }

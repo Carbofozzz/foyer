@@ -48,9 +48,9 @@ The outline of the **whole** product exists from day 4. Days 5–14 deepen quali
 | Evidence | Text, links, stub attachments in the case packet | Live calendar, receipt, email |
 | Verdict execution | Adapter `spend` / `book` / `message` / `cancel`: log + stub “executed” | Real card, calendar, mail APIs |
 | Ack | Engaged parties ack (or timeout) before the lock lifts | Penalty for ignore |
-| Access | Agent keys + a secret cabinet link per house | Accounts, org members, roles |
+| Access | Agent keys + wallet login for the principal (`cab_` only for spawn) | Org members, roles |
 | Principal appeal | `POST /cases/:id/appeal` → re-trial or manual outcome | Bond, window, cost |
-| Bond for object | Symbolic agent balance, burns when the verdict says `objection_grounded: false` | Real stables |
+| Bond for object | House wallet pays GenLayer tx fees; the court IC does not lock or burn GEN | Per-agent wallets, appeal economics |
 | Several roles | Personal: Travel, Budget, Calendar, Security. Org: Sales, Legal, Finance | Arbitrary principal roles |
 | Two principal types | Personal and corporate constitution | Multi-org, teams |
 | MCP | Tools = the same protocol methods | Catalog, foreign clients |
@@ -126,9 +126,9 @@ Two secrets from day one. No anonymous writes on a public URL.
 | Secret | Held by | Grants |
 |---|---|---|
 | **Agent key** | An agent (issued by the wizard, baked into the copyable config) | Protocol calls **for its house only**. The house is derived from the key — that is why routes have no principal in the path. |
-| **Cabinet link** | The principal (unguessable URL / token issued when the house is created) | Observer, wizard, appeal. |
+| **Wallet session** | The principal (same address that tops up the house treasury) | Observer, wizard, appeal. Spawn still uses a `cab_` link. |
 
-House ids are opaque and unguessable. Day 8 replaces the cabinet link with real accounts; the agent key does not change shape.
+House ids are opaque and unguessable. Login is the personal wallet — day 8 does not invent a second account path. The agent key does not change shape.
 
 ### Protocol
 
@@ -141,7 +141,7 @@ House ids are opaque and unguessable. Day 8 replaces the cabinet link with real 
 | `GET /inbox` | agent | Other agents’ actions, deadlines, verdicts |
 | `POST /actions/:id/ack` | agent | Accepted the outcome, ready for execute |
 | `GET /actions/:id` | agent | Lock / court / execution status |
-| `POST /cases/:id/appeal` | principal | Re-trial or manual override (cabinet link, not an agent key) |
+| `POST /cases/:id/appeal` | principal | Re-trial or manual override (wallet session or spawn `cab_`, not an agent key) |
 | `POST /tick` | scheduler | Cron sweep: silence, ack, appeal windows, guardian turn |
 
 Every agent call carries the agent key (`Authorization: Bearer …`). There is no principal id in the path: the key names the house. A key from another house is a 404, not a 403 — houses do not leak each other’s existence.
@@ -199,7 +199,7 @@ The `Case` freezes the constitution text it was judged against. An appeal re-run
 
 **Equivalence** is checked on machine-comparable fields only: `outcome`, `objection_grounded`, and the `kind` plus normalized payload of `remedy_action`. Free-text `reasoning` is never compared — validators would never agree on prose.
 
-`objection_grounded: false` is what burns the bond. Without that field the “bond for an empty veto” rule has no input at all, so it is part of the answer, not an afterthought.
+`objection_grounded` stays in the verdict. Court fees are paid by the house wallet when the write is submitted; the Intelligent Contract does not lock or burn GEN.
 
 A principal appeal asks the same question plus `prior_verdict` and `appeal_note`. That is already a second Justice loop, not “we’ll add it later.”
 
@@ -219,7 +219,7 @@ All user-visible copy (labels, buttons, wizard questions, empty states, toasts, 
 
 ### Wizard steps (for everyone)
 
-1. **House.** Create a principal. No wallet. Name, personal / org.
+1. **House.** Sign in with your wallet. That opens the house (one wallet, one house). The house gets its own GenLayer treasury; that key pays court fees. The signed-in wallet tops it up.
 2. **Constitution, not a blank page.** 5 questions (spend limit, price vs comfort, external promises, whether security can veto mail, when to call the human). Answers assemble into constitution text. It can be edited. Agents later read that text, not the questionnaire.
 3. **What we lock.** Kind checkboxes: spend, book, messages. At the hackathon — a sandbox (stub). The principal understands: “the agents’ world is only this.”
 4. **Who stands at the door.** See below: your own agent and/or a built-in guardian.
@@ -298,7 +298,7 @@ At the hackathon a client may be a script or an LLM that reads the constitution 
 
 Spawn creates a throwaway house with its own cabinet link and issues real agent keys to the spawned clients — the same doors, just short-lived. Observer → Spawn on one of the conflicts → register/propose/object in the log → verdict in both inboxes → execute stub and an appeal button visible. Next to it — “Connect your agent” with the spec.
 
-If testnet is down: Replay of a real run + `judge: offline` on new runs. Do not lie to the agent that offline is consensus. Replay of an offline case shows no tx and says so.
+If testnet is down: Replay of a finished run. New deadlocks escalate until the court returns a verdict. Do not invent a local allow, counter, or remedy.
 
 ---
 
@@ -316,7 +316,7 @@ Live GenLayer tx on several cases. Remedy and escalate on different constitution
 
 ### Day 14 — startup-ready
 
-Same entities, production shape: accounts instead of the cabinet link, Neon Postgres, public landing + cabinet, Vercel production + previews, env/secrets, rate limits and honest errors, cron observability, connect-your-runtime doc, one adapter almost-real and honoring `reversible` (others stub), `escalate_external` in the model without a bridge. Org path feels like a product, not a second demo script.
+Same entities, production shape: wallet login already holds the house, Neon Postgres, public landing + cabinet, Vercel production + previews, env/secrets, rate limits and honest errors, cron observability, connect-your-runtime doc, one adapter almost-real and honoring `reversible` (others stub), `escalate_external` in the model without a bridge. Org path feels like a product, not a second demo script.
 
 ### After day 14 (depth, not new entities)
 
@@ -366,7 +366,7 @@ Do not cut days 1–3 down to “two curls without a court.” Do not leave onbo
 
 ### Days 5–7 — hackathon MVP
 
-**Day 5.** Intelligent Contract on GenLayer testnet. Live tx on case A. Honest `judge: offline` fallback if testnet is down.
+**Day 5.** Cabinet first: RainbowKit / SIWE login (same wallet tops up the house), then the house treasury (deposit / withdraw / history). Intelligent Contract on GenLayer Studio-dev (`studioDevnet`). One IC per house, signed by that house's wallet. Live tx on case A. Fees estimated and paid from the house wallet (fee kit). If the court does not return a verdict, `escalate` — no offline judge.
 
 **Day 6.** Cases B / C / D — that is, `allow_b` in both readings and a real `remedy_action`. Remaining roles. Remaining connection cards (Claude / ChatGPT / Cursor / OpenClaw) over the day-3 MCP. Org principal type.
 
@@ -374,7 +374,7 @@ Do not cut days 1–3 down to “two curls without a court.” Do not leave onbo
 
 ### Days 8–14 — startup-ready
 
-**Day 8.** Real accounts replace the cabinet link. Houses belong to accounts; the agent key does not change shape. Secrets and env on Vercel, not in git.
+**Day 8.** Wallet-as-login already shipped. Polish org members and roles — do not invent a second login. Secrets and env on Vercel, not in git.
 
 **Day 9.** Landing, pricing/waitlist stub if needed, cabinet polish. Onboarding copy, and a native-speaker pass over `es` / `de` / `tr` — day 1 shipped drafts, this is where they stop reading like a machine.
 
@@ -408,7 +408,7 @@ Checklist:
 - Is there an on-chain tx? (required for the day-7 MVP; day-4 public v0 may still be offline)
 - Does spawn refuse to pass itself off as the product?
 - Does the public URL keep state after a reload?
-- Does someone else’s house stay invisible without its agent key or cabinet link?
+- Does someone else’s house stay invisible without its agent key or the owner’s wallet session?
 
 ---
 
@@ -437,12 +437,12 @@ Checklist:
 | Onboarding = documentation | Wizard with Copy and “I added it”; success = non-empty inbox |
 | One agent and silence forever | Guardian enabled in the wizard by default |
 | Community with no runtime | Spawn/Replay, not instead of onboarding |
-| Testnet is down | Replay + honest `judge: offline` |
+| Testnet is down | Replay of a finished run; new deadlocks `escalate` until the court returns |
 | Confused with escrow | Words verdict / evidence / constitution / execute / appeal |
 | Hardcoded UI copy | Every string in a catalog; switcher covers all five locales |
 | Nothing moves without a click | `sweep()` on cron **and** on every read; missed ticks are visible |
 | Gateway objects on the guardian’s behalf | Guardian holds its own key and calls the public endpoint like any client |
-| Public URL, open houses | Agent key on writes, cabinet link for the principal, unguessable ids from day 4 |
+| Public URL, open houses | Agent key on writes, wallet session for the principal, unguessable ids from day 4 |
 | Verdict nobody can execute | No `remedy` without `remedy_action`; otherwise `escalate` |
 | Free-text consensus | Equivalence compares `outcome`, `objection_grounded`, `remedy_action` — never `reasoning` |
 

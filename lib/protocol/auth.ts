@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 import { agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { bearerToken, jsonError } from "./http";
+import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
+import { readSession } from "./session";
 
 export async function requireAgent(request: Request) {
   const token = bearerToken(request);
@@ -25,7 +27,22 @@ export async function requireAgent(request: Request) {
   return { agent, principal };
 }
 
-export async function requireCabinet(token: string) {
+export async function cabinetFromToken(token: string, request: Request) {
+  const principal = await requireCabinet(token, request);
+  if (principal) return { principal };
+  if (token === "me" && !readSession(request)) {
+    return { error: jsonError("unauthorized", "Sign in required", 401) };
+  }
+  return { error: jsonError("not_found", "Unknown house", 404) };
+}
+
+export async function requireCabinet(token: string, request?: Request) {
+  if (token === "me") {
+    if (!request) return null;
+    const session = readSession(request);
+    if (!session) return null;
+    return findHouseByOwner(session.address);
+  }
   if (!token.startsWith("cab_")) return null;
   const db = getDb();
   const [principal] = await db
@@ -38,10 +55,15 @@ export async function requireCabinet(token: string) {
 
 export async function requireCabinetRequest(request: Request) {
   const token = bearerToken(request);
-  if (!token || !token.startsWith("cab_")) {
+  if (token === "me" || !token) {
+    const principal = await requireCabinet("me", request);
+    if (!principal) return { error: jsonError("unauthorized", "Sign in required", 401) };
+    return { principal, token: "me" };
+  }
+  if (!token.startsWith("cab_")) {
     return { error: jsonError("unauthorized", "Cabinet link required", 401) };
   }
-  const principal = await requireCabinet(token);
+  const principal = await requireCabinet(token, request);
   if (!principal) {
     return { error: jsonError("not_found", "Unknown house", 404) };
   }

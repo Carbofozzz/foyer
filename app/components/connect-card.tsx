@@ -17,11 +17,13 @@ export function ConnectCard({
   t,
   errorLabel,
   asWizard,
+  compact,
 }: {
   token: string;
   t: Messages["connect"];
   errorLabel: string;
   asWizard?: boolean;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [data, setData] = useState<ConnectPayload | null>(null);
@@ -54,22 +56,31 @@ export function ConnectCard({
   }
 
   return (
-    <section className="card stack">
-      {asWizard ? <p className="kicker">{t.kicker}</p> : null}
-      <h2 className="section-title">{t.title}</h2>
-      <p className="hint">{t.lead}</p>
-      <p>{t.offTools}</p>
-      <p className="hint">{t.postHint}</p>
+    <section className={compact ? "stack" : "card stack"}>
+      {asWizard ? (
+        <div className="cabinet-panel-head">
+          <h2 className="section-title">{t.title}</h2>
+          <p className="kicker">{t.kicker}</p>
+        </div>
+      ) : compact ? null : (
+        <h2 className="section-title">{t.title}</h2>
+      )}
+      {compact ? null : (
+        <>
+          <p className="hint">{t.lead}</p>
+          <p>{t.offTools}</p>
+        </>
+      )}
       {data ? (
         <>
           <label>
             {t.configLabel}
-            <textarea readOnly rows={12} value={data.mcp_config} />
+            <textarea readOnly rows={compact ? 5 : 8} value={data.mcp_config} />
           </label>
           <CopyButton text={data.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
           <label>
             {t.promptLabel}
-            <textarea readOnly rows={4} value={data.prompt_lines.join("\n")} />
+            <textarea readOnly rows={3} value={data.prompt_lines.join("\n")} />
           </label>
           <CopyButton text={data.prompt_lines.join("\n")} copyLabel={t.copy} copiedLabel={t.copied} />
         </>

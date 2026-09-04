@@ -13,4 +13,7 @@ alwaysApply: false
 - Appeal is the same question plus `prior_verdict` and `appeal_note`, judged against the constitution **snapshot** stored on the case.
 - Equivalence compares `outcome`, `objection_grounded`, and `remedy_action` (kind + normalized payload). Never compare `reasoning`.
 - Do not invent an EVM-only wait path for GenLayer txs. Use `genlayer-js` / official IC patterns.
-- Offline judge is allowed until deploy lands; never tell an agent that `judge: offline` is consensus.
+- One deployed Intelligent Contract per house (`principals.court_contract`). Do not share one court address across houses.
+- The house pays fees from its own wallet (`principals.wallet_address` + sealed key). The IC is judge-only: no deposit, lock, burn, or debit.
+- Constructor takes that wallet as `admin`. Writes and verdict reads call `_only_admin` (same pattern as the quest reputation IC).
+- No local verdict. If consensus does not land, the outcome is `escalate`.

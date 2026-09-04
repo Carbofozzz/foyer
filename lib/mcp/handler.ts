@@ -32,14 +32,13 @@ const TOOLS = [
   },
   {
     name: "object",
-    description: "Object to an open action. Optional counter_action. Bond is spent if the objection is not grounded.",
+    description: "Object to an open action. Optional counter_action.",
     inputSchema: {
       type: "object",
       required: ["action_id", "justification"],
       properties: {
         action_id: { type: "string" },
         justification: { type: "string" },
-        bond: { type: "number" },
         evidence: { type: "array" },
         counter_action: { type: "object" },
       },

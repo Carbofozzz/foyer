@@ -21,10 +21,17 @@
     "typeOrg": "Für ein Unternehmen",
     "submit": "Erstellen",
     "submitting": "Wird erstellt…",
-    "error": "Das hat nicht geklappt. Bitte erneut versuchen."
+    "error": "Das hat nicht geklappt. Bitte erneut versuchen.",
+    "signIn": "Mit Wallet anmelden",
+    "signingIn": "Wird unterschrieben…",
+    "checking": "Prüfe…",
+    "signInHint": "Mit diesem Wallet zahlen Sie später in die Kasse ein.",
+    "signInError": "Anmeldung fehlgeschlagen. Wallet prüfen und erneut versuchen.",
+    "openCabinet": "Kabinett",
+    "signOut": "Abmelden"
   },
   "cabinet": {
-    "kicker": "Ihr Bereich",
+    "kicker": "Kabinett",
     "untitled": "Ohne Namen",
     "constitution": "Ihre Regeln",
     "agents": "Verbundene Assistenten",
@@ -33,7 +40,7 @@
     "emptyInbox": "Noch nichts vorhanden. Anfragen und Entscheidungen erscheinen in dieser Liste.",
     "enrollment": "Schlüssel zum Verbinden eines Assistenten",
     "enrollmentHint": "Nur einmal gültig. Als Authorization: Bearer bei POST /api/agents senden.",
-    "cabinetHint": "Speichern Sie den Link zu dieser Seite. Darüber kommen Sie vorerst wieder hierher.",
+    "cabinetHint": "Die Adresse darunter ist die Kasse für Gerichtsgebühren. Einzahlen vom Wallet, mit dem Sie sich angemeldet haben.",
     "guardian": "Wächter",
     "error": "Das hat nicht geklappt. Bitte erneut versuchen.",
     "statusOpen": "Wartet",
@@ -56,7 +63,41 @@
     "waiting": "Wartet auf andere Assistenten.",
     "done": "Ausgeführt: {summary}",
     "bond": "Kaution {n}",
-    "judgeOffline": "Offline entschieden — kein On-Chain-Konsens. Keine Transaktion."
+    "treasury": "Kasse",
+    "treasuryHint": "GEN für Gerichtsgebühren. Einzahlen vom Wallet, mit dem Sie sich angemeldet haben.",
+    "signedInAs": "Angemeldet als {addr}",
+    "signOut": "Abmelden",
+    "wrongWallet": "Wechseln Sie zurück zum Wallet der Anmeldung.",
+    "treasuryLoading": "Wallet wird geladen…",
+    "balance": "Saldo",
+    "copyAddress": "Adresse kopieren",
+    "copied": "Kopiert",
+    "connectWallet": "Wallet zum Einzahlen",
+    "connecting": "Verbinde…",
+    "walletConnected": "Ihr Wallet",
+    "noWallet": "Kein Browser-Wallet gefunden. Es muss ein eigenes Netzwerk hinzufügen können.",
+    "depositHint": "GEN geht von Ihrem verbundenen Wallet an diese Adresse.",
+    "depositAmount": "GEN einzahlen",
+    "deposit": "Einzahlen",
+    "depositing": "Sende…",
+    "withdrawHint": "Die Gebühr zahlt die Kasse. Nicht alles abheben — ein Rest bleibt für das Fee.",
+    "refreshing": "Saldo wird aktualisiert…",
+    "withdrawAmount": "GEN abheben",
+    "withdrawTo": "Auszahlen an",
+    "withdraw": "Abheben",
+    "withdrawing": "Hebe ab…",
+    "history": "Transaktionen",
+    "emptyHistory": "Noch keine Überweisungen.",
+    "txDeposit": "Einzahlung",
+    "txWithdraw": "Abhebung",
+    "txCourt": "Gericht",
+    "exportKey": "Privaten Schlüssel exportieren",
+    "exporting": "Exportiere…",
+    "copyKey": "Schlüssel kopieren",
+    "privateKeyHint": "Wer den Schlüssel hat, kann dieses GEN ausgeben.",
+    "judgeOffline": "Offline entschieden — kein On-Chain-Konsens. Keine Transaktion.",
+    "cancel": "Abbrechen",
+    "judgeOnchain": "On-Chain-Urteil."
   },
   "wizard": {
     "next": "Weiter",
@@ -119,12 +160,12 @@
     "loading": "Laden…"
   },
   "spawn": {
-    "title": "Noch kein Assistent?",
-    "lead": "Testagenten sprechen dasselbe Protokoll. Sie sind nicht das Produkt.",
+    "title": "Erst mal ansehen?",
+    "lead": "Kurze Demo: zwei Assistenten streiten, das Gericht entscheidet.",
     "run": "Demo starten",
     "running": "Startet…",
     "error": "Die Demo ging nicht. Bitte erneut versuchen.",
-    "banner": "Das ist ein Testdurchlauf. Testagenten sind nicht das Produkt.",
+    "banner": "Das ist eine Demo, nicht dein Kabinett.",
     "watch": "Einen abgeschlossenen Fall ansehen"
   },
   "appeal": {
@@ -142,17 +183,17 @@
   "notFound": {
     "kicker": "Fehlt",
     "title": "Diese Seite gibt es nicht.",
-    "lead": "Der Link ist falsch, oder dieses Haus existiert nicht.",
+    "lead": "Der Link ist falsch, oder dieses Kabinett existiert nicht.",
     "home": "Zurück zum Start"
   },
   "outline": {
     "kicker": "So funktioniert es",
     "constitutionTitle": "Regeln",
-    "constitutionLead": "Du schreibst eine kurze Charta. Assistenten müssen sie zitieren. Das Gericht liest denselben Text.",
-    "gatewayTitle": "Gateway",
-    "gatewayLead": "Assistenten haben keine direkten Zahlungs- oder Kalender-Tools. Sie beantragen und widersprechen über Foyer. Schweigen gilt als Zustimmung.",
+    "constitutionLead": "Du schreibst, was erlaubt ist. Alle Assistenten folgen demselben Text. Das Gericht liest ihn auch.",
+    "gatewayTitle": "Zugang",
+    "gatewayLead": "Ein Assistent zahlt, bucht oder schreibt nicht selbst nach draußen. Er fragt über Foyer. Kein Einspruch — dann geht es.",
     "courtTitle": "Gericht",
-    "courtLead": "Eine Pattsituation ist Erlauben, den Einspruch, einen Kompromiss oder Eskalation an dich. Du kannst Berufung einlegen. Heute ist der Richter offline — kein On-Chain-Konsens."
+    "courtLead": "Uneinig — das Gericht entscheidet: ja, nein, Kompromiss oder dich fragen. Keine Entscheidung — dann du. Berufung ist möglich."
   },
   "replay": {
     "kicker": "Archiv",
@@ -163,6 +204,6 @@
   },
   "protocol": {
     "title": "Für Entwickler",
-    "lead": "Der Assistent ruft die API mit seinem eigenen Schlüssel auf. Das Konto kommt aus dem Schlüssel, nicht aus der URL."
+    "lead": "Jeder Assistent bekommt einen eigenen Schlüssel und spricht mit Foyer nur darüber."
   }
 }

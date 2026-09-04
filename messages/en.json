@@ -21,10 +21,17 @@
     "typeOrg": "A company",
     "submit": "Create",
     "submitting": "Creating…",
-    "error": "Could not create this. Please try again."
+    "error": "Could not create this. Please try again.",
+    "signIn": "Sign in with your wallet",
+    "signingIn": "Signing…",
+    "checking": "Checking…",
+    "signInHint": "This wallet later tops up the treasury.",
+    "signInError": "Could not sign in. Check the wallet and try again.",
+    "openCabinet": "Cabinet",
+    "signOut": "Sign out"
   },
   "cabinet": {
-    "kicker": "Your space",
+    "kicker": "Cabinet",
     "untitled": "Untitled",
     "constitution": "Your rules",
     "agents": "Connected assistants",
@@ -33,7 +40,7 @@
     "emptyInbox": "Nothing here yet. Requests and decisions will show up in this list.",
     "enrollment": "Key to connect an assistant",
     "enrollmentHint": "One-time use. Send it as Authorization: Bearer when you call POST /api/agents.",
-    "cabinetHint": "Save this page link. For now it is how you get back here.",
+    "cabinetHint": "The address below is the treasury for court fees. Top it up from the wallet you signed in with.",
     "guardian": "Guardian",
     "error": "Something went wrong. Please try again.",
     "statusOpen": "Waiting",
@@ -56,7 +63,41 @@
     "waiting": "Waiting for other assistants.",
     "done": "Carried out: {summary}",
     "bond": "bond {n}",
-    "judgeOffline": "Decided offline — not on-chain consensus. No transaction."
+    "treasury": "Treasury",
+    "treasuryHint": "GEN for court fees. Top up from the wallet you signed in with.",
+    "signedInAs": "Signed in as {addr}",
+    "signOut": "Sign out",
+    "wrongWallet": "Switch back to the wallet you signed in with.",
+    "treasuryLoading": "Loading the wallet…",
+    "balance": "Balance",
+    "copyAddress": "Copy address",
+    "copied": "Copied",
+    "connectWallet": "Wallet for top-up",
+    "connecting": "Connecting…",
+    "walletConnected": "Your wallet",
+    "noWallet": "No browser wallet found. Install one that can add a custom network.",
+    "depositHint": "Sends GEN from your connected wallet to this address.",
+    "depositAmount": "GEN to deposit",
+    "deposit": "Deposit",
+    "depositing": "Sending…",
+    "withdrawHint": "The treasury pays the fee. You cannot withdraw everything — a reserve stays for gas.",
+    "refreshing": "Updating the balance…",
+    "withdrawAmount": "GEN to withdraw",
+    "withdrawTo": "Withdraw to",
+    "withdraw": "Withdraw",
+    "withdrawing": "Withdrawing…",
+    "history": "Transactions",
+    "emptyHistory": "No transfers yet.",
+    "txDeposit": "Deposit",
+    "txWithdraw": "Withdraw",
+    "txCourt": "Court",
+    "exportKey": "Export private key",
+    "exporting": "Exporting…",
+    "copyKey": "Copy private key",
+    "privateKeyHint": "Anyone with this key can spend this GEN.",
+    "judgeOffline": "Decided offline — not on-chain consensus. No transaction.",
+    "cancel": "Cancel",
+    "judgeOnchain": "On-chain verdict."
   },
   "wizard": {
     "next": "Continue",
@@ -119,12 +160,12 @@
     "loading": "Loading…"
   },
   "spawn": {
-    "title": "No assistant yet?",
-    "lead": "Test agents speak the same protocol. They are not the product.",
+    "title": "Want to see it first?",
+    "lead": "A short demo: two assistants disagree, the court decides.",
     "run": "Try a demo",
     "running": "Starting…",
     "error": "Could not start the demo. Please try again.",
-    "banner": "This is a test run. Test agents are not the product.",
+    "banner": "This is a demo, not your cabinet.",
     "watch": "Watch a finished case"
   },
   "appeal": {
@@ -142,17 +183,17 @@
   "notFound": {
     "kicker": "Missing",
     "title": "This page isn’t here.",
-    "lead": "The link may be wrong, or this house doesn’t exist.",
+    "lead": "The link may be wrong, or this cabinet doesn’t exist.",
     "home": "Back to the start"
   },
   "outline": {
     "kicker": "How it works",
     "constitutionTitle": "Rules",
-    "constitutionLead": "You write a short charter. Assistants must cite it. The court reads the same text.",
-    "gatewayTitle": "Gateway",
-    "gatewayLead": "Assistants have no direct payment or calendar tools. They propose and object through Foyer. Silence is consent.",
+    "constitutionLead": "You write what is allowed. Every assistant follows the same text. The court reads it too.",
+    "gatewayTitle": "Access",
+    "gatewayLead": "An assistant cannot pay, book, or message the outside world on its own. It asks through Foyer. If nobody objects, it goes through.",
     "courtTitle": "Court",
-    "courtLead": "A deadlock is allow, a counter, a compromise, or escalate to you. You may appeal. Today the judge is offline — not on-chain consensus."
+    "courtLead": "If they disagree, the court decides: go ahead, block it, find a middle, or ask you. If it cannot decide, you decide. You can appeal."
   },
   "replay": {
     "kicker": "Archive",
@@ -163,6 +204,6 @@
   },
   "protocol": {
     "title": "For developers",
-    "lead": "An assistant calls the API with its own key. The account is taken from that key, not from the URL."
+    "lead": "Each assistant gets its own key and talks to Foyer only with that key."
   }
 }
