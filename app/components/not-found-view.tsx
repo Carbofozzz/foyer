@@ -5,7 +5,7 @@ import { loadMessages } from "@/lib/i18n/load";
 
 export async function NotFoundView() {
   const headerList = await headers();
-  const fromPath = headerList.get("x-foyer-locale");
+  const fromPath = headerList.get("x-foyer-locale") ?? undefined;
   const cookie = (await cookies()).get("foyer_locale")?.value;
   const locale = isLocale(fromPath)
     ? fromPath
