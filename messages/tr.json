@@ -55,12 +55,13 @@
     "silence": "Kimse itiraz etmedi. İstek kabul.",
     "waiting": "Diğer asistanlar bekleniyor.",
     "done": "Yapıldı: {summary}",
-    "bond": "teminat {n}"
+    "bond": "teminat {n}",
+    "judgeOffline": "Çevrimdışı karar — zincir konsensüsü değil. İşlem yok."
   },
   "wizard": {
     "next": "Devam",
     "saving": "Kaydediliyor…",
-    "rulesKicker": "Adım 2 / 5",
+    "rulesKicker": "Adım 2 / 6",
     "rulesTitle": "Birkaç soru; sonra metni düzeltebilirsiniz.",
     "rulesLead": "Asistanlar anketi değil, bu metni okur.",
     "qSpend": "Aylık harcama limiti",
@@ -75,18 +76,18 @@
     "qHuman": "Sizi ne zaman çağırsınlar?",
     "qHumanPlaceholder": "Örneğin: tutar büyükse veya kural belirsizse",
     "preview": "Kural metni",
-    "lockKicker": "Adım 3 / 5",
+    "lockKicker": "Adım 3 / 6",
     "lockTitle": "Bu kurallardan ne geçmeli?",
     "lockLead": "İşaretlenmeyenler asistanlar için burada yok.",
     "lockSpend": "Ödemeler",
     "lockBook": "Rezervasyonlar",
     "lockMessage": "Mesajlar",
-    "guardianKicker": "Adım 4 / 5",
+    "guardianKicker": "Adım 5 / 6",
     "guardianTitle": "Bütçe koruyucusunu açın.",
     "guardianLead": "Tek bir seyahat asistanınız varsa itiraz edecek kimse yoktur. Koruyucu alanınızda kalır ve kurallar tasarruf diyorsa itiraz eder.",
     "guardianEnable": "Koruyucuyu aç",
     "guardianEnabling": "Açılıyor…",
-    "firstKicker": "Adım 5 / 5",
+    "firstKicker": "Adım 6 / 6",
     "firstTitle": "İlk isteği çalıştırın.",
     "firstLead": "Travel 420 €’luk business bilet isteyecek. Koruyucu itiraz edebilir. Listede istek ve kararı görmelisiniz.",
     "firstRun": "Koruyucuyu dene",
@@ -104,11 +105,12 @@
     "human": "Kişiyi çağır, ne zaman: {note}"
   },
   "connect": {
-    "kicker": "Adım 4 / 5",
-    "title": "Asistan zaten Cursor’daysa",
-    "lead": "Bunu Cursor MCP ayarlarına yapıştırın. Anahtar dosyanın içinde.",
+    "kicker": "Adım 4 / 6",
+    "title": "Asistan zaten varsa",
+    "lead": "Bunu MCP ayarlarına yapıştırın. Anahtar dosyanın içinde.",
     "offTools": "Ödeme ve takvim araçlarını kapatın. Yoksa Foyer’i atlar.",
-    "configLabel": "Cursor ayarı",
+    "postHint": "Çağrılar POST ile JSON-RPC. Aynı anahtarla GET yalnızca bağlantıyı yoklar.",
+    "configLabel": "MCP ayarı",
     "promptLabel": "Sistem istemine üç satır",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
@@ -122,7 +124,8 @@
     "run": "Demoyu dene",
     "running": "Başlatılıyor…",
     "error": "Demo başlamadı. Lütfen tekrar deneyin.",
-    "banner": "Bu bir deneme. Test ajanları ürün değil."
+    "banner": "Bu bir deneme. Test ajanları ürün değil.",
+    "watch": "Bitmiş bir davayı izle"
   },
   "appeal": {
     "label": "İtiraz",
@@ -140,6 +143,22 @@
     "kicker": "Yok",
     "title": "Bu sayfa yok.",
     "lead": "Bağlantı yanlış olabilir veya bu ev yok.",
+    "home": "Başa dön"
+  },
+  "outline": {
+    "kicker": "Nasıl çalışır",
+    "constitutionTitle": "Kurallar",
+    "constitutionLead": "Kısa bir tüzük yazarsınız. Asistanlar onu anmak zorunda. Mahkeme aynı metni okur.",
+    "gatewayTitle": "Geçit",
+    "gatewayLead": "Asistanların doğrudan ödeme veya takvim aracı yok. Foyer üzerinden teklif ve itiraz ederler. Sessizlik rızadır.",
+    "courtTitle": "Mahkeme",
+    "courtLead": "Kilit: izin, itiraz, uzlaşma veya size yükseltme. İtiraz edebilirsiniz. Bugün yargıç çevrimdışı — zincir konsensüsü değil."
+  },
+  "replay": {
+    "kicker": "Arşiv",
+    "title": "Bitmiş bir dava",
+    "lead": "Canlı koşuyla aynı protokol. Mahkeme çevrimdışıydı. İşlem yok.",
+    "banner": "Bu bir arşiv. Ürün bu değil.",
     "home": "Başa dön"
   },
   "protocol": {

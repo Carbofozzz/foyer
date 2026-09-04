@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { OpenHouseForm } from "@/app/components/open-house-form";
 import { SpawnButton } from "@/app/components/spawn-button";
+import { ProductOutline } from "@/app/components/product-outline";
 import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
 
@@ -15,11 +16,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <h1>{t.home.title}</h1>
       <p className="lead">{t.home.lead}</p>
       <OpenHouseForm locale={locale} t={t.home} />
+      <ProductOutline outline={t.outline} protocol={t.protocol} />
       <SpawnButton locale={locale} t={t.spawn} />
-      <section className="card">
-        <h2 className="section-title">{t.protocol.title}</h2>
-        <p className="hint">{t.protocol.lead}</p>
-      </section>
     </main>
   );
 }

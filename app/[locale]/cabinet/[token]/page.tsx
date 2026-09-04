@@ -178,6 +178,7 @@ function FeedRow({
               {item.verdict?.outcome !== "escalate" && carried && carried !== decided ? (
                 <p className="hint">{t.done.replace("{summary}", carried)}</p>
               ) : null}
+              {item.verdict?.judge === "offline" ? <p className="hint">{t.judgeOffline}</p> : null}
             </div>
           ) : null}
       {item.case && item.appeal_until && new Date(item.appeal_until).getTime() > now ? (

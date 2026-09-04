@@ -70,27 +70,65 @@ const TOOLS = [
   },
 ];
 
+export async function handleMcpGet(request: Request): Promise<Response> {
+  const auth = await requireAgent(request);
+  if ("error" in auth && auth.error) {
+    return withCors(auth.error);
+  }
+  await sweep(auth.principal.id, new Date());
+  return withCors(
+    Response.json({
+      data: {
+        protocol: "mcp",
+        jsonrpc: "2.0",
+        method: "POST",
+        tools: TOOLS.map((tool) => tool.name),
+        agent: { id: auth.agent.id, name: auth.agent.name, role: auth.agent.role },
+      },
+    }),
+  );
+}
+
 export async function handleMcpPost(request: Request): Promise<Response> {
   const auth = await requireAgent(request);
   if ("error" in auth && auth.error) {
     return withCors(auth.error);
   }
 
-  let rpc: Rpc;
-  try {
-    rpc = (await request.json()) as Rpc;
-  } catch {
-    return rpcError(null, -32700, "Parse error");
-  }
+  const parsed = await readRpc(request);
+  if ("error" in parsed) return parsed.error;
 
+  const { rpc } = parsed;
   const id = rpc.id ?? null;
   try {
-    const result = await dispatch(auth, rpc.method ?? "", rpc.params);
+    const result = await dispatch(auth, rpc.method ?? "initialize", rpc.params);
     return rpcOk(id, result);
   } catch (error) {
     const message =
       error instanceof ProtocolError ? error.message : error instanceof Error ? error.message : "Internal error";
     return rpcError(id, -32000, message);
+  }
+}
+
+async function readRpc(request: Request): Promise<{ rpc: Rpc } | { error: Response }> {
+  const raw = await request.text();
+  if (!raw.trim()) {
+    return { rpc: { jsonrpc: "2.0", id: 1, method: "initialize", params: {} } };
+  }
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!isRecord(value)) {
+      return { error: rpcError(null, -32600, "JSON-RPC body must be an object") };
+    }
+    return { rpc: value as Rpc };
+  } catch {
+    return {
+      error: rpcError(
+        null,
+        -32700,
+        'Invalid JSON. Body example: {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}',
+      ),
+    };
   }
 }
 
@@ -162,6 +200,6 @@ function withCors(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
   headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   return new Response(response.body, { status: response.status, headers });
 }
