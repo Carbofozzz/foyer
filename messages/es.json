@@ -55,12 +55,13 @@
     "silence": "Nadie objetó. Se acepta la petición.",
     "waiting": "A la espera de otros asistentes.",
     "done": "Hecho: {summary}",
-    "bond": "fianza {n}"
+    "bond": "fianza {n}",
+    "judgeOffline": "Decidido sin cadena: no es consenso. No hay transacción."
   },
   "wizard": {
     "next": "Seguir",
     "saving": "Guardando…",
-    "rulesKicker": "Paso 2 de 5",
+    "rulesKicker": "Paso 2 de 6",
     "rulesTitle": "Unas preguntas; luego puedes editar el texto.",
     "rulesLead": "Los asistentes leerán este texto, no el cuestionario.",
     "qSpend": "Límite de gasto al mes",
@@ -75,18 +76,18 @@
     "qHuman": "¿Cuándo deben llamarte?",
     "qHumanPlaceholder": "Por ejemplo: si el importe es alto o la regla no está clara",
     "preview": "Texto de las reglas",
-    "lockKicker": "Paso 3 de 5",
+    "lockKicker": "Paso 3 de 6",
     "lockTitle": "¿Qué tiene que pasar por estas reglas?",
     "lockLead": "Lo que no marques no estará disponible para los asistentes aquí.",
     "lockSpend": "Pagos",
     "lockBook": "Reservas",
     "lockMessage": "Mensajes",
-    "guardianKicker": "Paso 4 de 5",
+    "guardianKicker": "Paso 5 de 6",
     "guardianTitle": "Activa un guardián de presupuesto.",
     "guardianLead": "Si solo tienes un asistente de viajes, no hay con quién discrepar. El guardián se queda en tu espacio y objeta cuando las reglas dicen ahorrar.",
     "guardianEnable": "Activar guardián",
     "guardianEnabling": "Activando…",
-    "firstKicker": "Paso 5 de 5",
+    "firstKicker": "Paso 6 de 6",
     "firstTitle": "Lanza una primera petición.",
     "firstLead": "Travel pedirá un billete business de 420 €. El guardián puede objetar. En la lista deberías ver la petición y la decisión.",
     "firstRun": "Probar el guardián",
@@ -104,11 +105,12 @@
     "human": "Llama a la persona cuando: {note}"
   },
   "connect": {
-    "kicker": "Paso 4 de 5",
-    "title": "Si el asistente ya vive en Cursor",
-    "lead": "Pega esto en los ajustes MCP de Cursor. La clave ya va en el archivo.",
+    "kicker": "Paso 4 de 6",
+    "title": "Si ya tienes un asistente",
+    "lead": "Pega esto en los ajustes MCP. La clave ya va en el archivo.",
     "offTools": "Apaga sus herramientas de pago y calendario. Si no, se salta Foyer.",
-    "configLabel": "Config de Cursor",
+    "postHint": "Las llamadas son JSON-RPC por POST. GET con la misma clave solo comprueba el enlace.",
+    "configLabel": "Config MCP",
     "promptLabel": "Tres líneas para el prompt del sistema",
     "copy": "Copiar",
     "copied": "Copiado",
@@ -122,7 +124,8 @@
     "run": "Probar una demo",
     "running": "Arrancando…",
     "error": "No se pudo arrancar. Inténtalo de nuevo.",
-    "banner": "Esto es una prueba. Los agentes de prueba no son el producto."
+    "banner": "Esto es una prueba. Los agentes de prueba no son el producto.",
+    "watch": "Ver un caso cerrado"
   },
   "appeal": {
     "label": "Apelación",
@@ -140,6 +143,22 @@
     "kicker": "No está",
     "title": "Esta página no está.",
     "lead": "El enlace puede ser incorrecto, o esta casa no existe.",
+    "home": "Volver al inicio"
+  },
+  "outline": {
+    "kicker": "Cómo funciona",
+    "constitutionTitle": "Reglas",
+    "constitutionLead": "Escribes una carta corta. Los asistentes deben citarla. El tribunal lee el mismo texto.",
+    "gatewayTitle": "Pasarela",
+    "gatewayLead": "Los asistentes no tienen pago ni calendario directo. Proponen y objetan por Foyer. El silencio es consentimiento.",
+    "courtTitle": "Tribunal",
+    "courtLead": "Un bloqueo es permitir, aceptar la objeción, un término medio o escalarte a ti. Puedes apelar. Hoy el juez es offline: no es consenso en cadena."
+  },
+  "replay": {
+    "kicker": "Archivo",
+    "title": "Un caso cerrado",
+    "lead": "El mismo protocolo que una corrida en vivo. El tribunal fue offline. No hay transacción.",
+    "banner": "Esto es un archivo. No es el producto.",
     "home": "Volver al inicio"
   },
   "protocol": {

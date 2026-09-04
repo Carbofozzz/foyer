@@ -166,12 +166,14 @@ button[type="submit"],
   cursor: pointer;
 }
 
-button.ghost {
+button.ghost,
+a.ghost {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
   padding: 0.55rem 0.9rem;
   cursor: pointer;
+  text-decoration: none;
 }
 
 button[type="submit"]:disabled,
@@ -240,4 +242,11 @@ pre {
   margin: 0 0 0.45rem;
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.method-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }

@@ -25,9 +25,14 @@ export function SpawnButton({ locale, t }: { locale: Locale; t: Messages["spawn"
     <section className="card stack">
       <h2 className="section-title">{t.title}</h2>
       <p className="hint">{t.lead}</p>
-      <button type="button" className="ghost" disabled={pending} onClick={onClick}>
-        {pending ? t.running : t.run}
-      </button>
+      <div className="row">
+        <button type="button" className="ghost" disabled={pending} onClick={onClick}>
+          {pending ? t.running : t.run}
+        </button>
+        <a className="ghost" href={`/${locale}/replay`}>
+          {t.watch}
+        </a>
+      </div>
       {error ? <p className="error">{t.error}</p> : null}
     </section>
   );

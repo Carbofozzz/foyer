@@ -4,7 +4,8 @@ export function publicOrigin(request: Request): string {
   return `${proto}://${host}`;
 }
 
-export function cursorMcpConfig(origin: string, agentKey: string) {
+/** Standard MCP HTTP snippet: URL + bearer key. Not tied to one runtime. */
+export function mcpConfig(origin: string, agentKey: string) {
   return JSON.stringify(
     {
       mcpServers: {
@@ -21,7 +22,7 @@ export function cursorMcpConfig(origin: string, agentKey: string) {
   );
 }
 
-export const CURSOR_PROMPT_LINES = [
+export const MCP_PROMPT_LINES = [
   "Actions into the world only through Foyer tools (propose, object, inbox, ack).",
   "Cite the house constitution in every justification.",
   "Turn off any direct payment, calendar, or mail tools — otherwise you walk around the gateway.",

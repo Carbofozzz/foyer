@@ -55,12 +55,13 @@
     "silence": "Nobody objected. The request stands.",
     "waiting": "Waiting for other assistants.",
     "done": "Carried out: {summary}",
-    "bond": "bond {n}"
+    "bond": "bond {n}",
+    "judgeOffline": "Decided offline — not on-chain consensus. No transaction."
   },
   "wizard": {
     "next": "Continue",
     "saving": "Saving…",
-    "rulesKicker": "Step 2 of 5",
+    "rulesKicker": "Step 2 of 6",
     "rulesTitle": "A few questions, then you can edit the text.",
     "rulesLead": "Assistants will read this text — not the questionnaire.",
     "qSpend": "Monthly spend limit",
@@ -75,18 +76,18 @@
     "qHuman": "When should they call you?",
     "qHumanPlaceholder": "For example: if the amount is large or the rule is unclear",
     "preview": "Text of the rules",
-    "lockKicker": "Step 3 of 5",
+    "lockKicker": "Step 3 of 6",
     "lockTitle": "What has to go through these rules?",
     "lockLead": "Unchecked items are not available to assistants here.",
     "lockSpend": "Payments",
     "lockBook": "Bookings",
     "lockMessage": "Messages",
-    "guardianKicker": "Step 4 of 5",
+    "guardianKicker": "Step 5 of 6",
     "guardianTitle": "Turn on a budget guardian.",
     "guardianLead": "If you only have one travel assistant, there is nobody to disagree. The guardian stays in your space and objects when the rules say to save money.",
     "guardianEnable": "Enable guardian",
     "guardianEnabling": "Enabling…",
-    "firstKicker": "Step 5 of 5",
+    "firstKicker": "Step 6 of 6",
     "firstTitle": "Run a first request.",
     "firstLead": "Travel will ask to book a €420 business ticket. The guardian can object. You should see the request and the decision in the list.",
     "firstRun": "Test the guardian",
@@ -104,11 +105,12 @@
     "human": "Call the human when: {note}"
   },
   "connect": {
-    "kicker": "Step 4 of 5",
-    "title": "If the assistant already lives in Cursor",
-    "lead": "Paste this into Cursor MCP settings. The key is already in the file — you don’t assemble JSON by hand.",
+    "kicker": "Step 4 of 6",
+    "title": "If you already have an assistant",
+    "lead": "Paste this into MCP settings. The key is already in the file — you don’t assemble JSON by hand.",
     "offTools": "Turn off its payment and calendar tools. Otherwise it skips Foyer.",
-    "configLabel": "Cursor config",
+    "postHint": "Calls are JSON-RPC over POST. GET with the same key is just a ping.",
+    "configLabel": "MCP config",
     "promptLabel": "Three lines for the system prompt",
     "copy": "Copy",
     "copied": "Copied",
@@ -122,7 +124,8 @@
     "run": "Try a demo",
     "running": "Starting…",
     "error": "Could not start the demo. Please try again.",
-    "banner": "This is a test run. Test agents are not the product."
+    "banner": "This is a test run. Test agents are not the product.",
+    "watch": "Watch a finished case"
   },
   "appeal": {
     "label": "Appeal",
@@ -140,6 +143,22 @@
     "kicker": "Missing",
     "title": "This page isn’t here.",
     "lead": "The link may be wrong, or this house doesn’t exist.",
+    "home": "Back to the start"
+  },
+  "outline": {
+    "kicker": "How it works",
+    "constitutionTitle": "Rules",
+    "constitutionLead": "You write a short charter. Assistants must cite it. The court reads the same text.",
+    "gatewayTitle": "Gateway",
+    "gatewayLead": "Assistants have no direct payment or calendar tools. They propose and object through Foyer. Silence is consent.",
+    "courtTitle": "Court",
+    "courtLead": "A deadlock is allow, a counter, a compromise, or escalate to you. You may appeal. Today the judge is offline — not on-chain consensus."
+  },
+  "replay": {
+    "kicker": "Archive",
+    "title": "A finished case",
+    "lead": "Same protocol as a live run. The court was offline. There is no transaction.",
+    "banner": "This is an archive. It is not the product.",
     "home": "Back to the start"
   },
   "protocol": {

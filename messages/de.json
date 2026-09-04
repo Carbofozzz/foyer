@@ -55,12 +55,13 @@
     "silence": "Niemand hat widersprochen. Der Antrag gilt.",
     "waiting": "Wartet auf andere Assistenten.",
     "done": "Ausgeführt: {summary}",
-    "bond": "Kaution {n}"
+    "bond": "Kaution {n}",
+    "judgeOffline": "Offline entschieden — kein On-Chain-Konsens. Keine Transaktion."
   },
   "wizard": {
     "next": "Weiter",
     "saving": "Speichern…",
-    "rulesKicker": "Schritt 2 von 5",
+    "rulesKicker": "Schritt 2 von 6",
     "rulesTitle": "Ein paar Fragen — den Text können Sie danach ändern.",
     "rulesLead": "Assistenten lesen diesen Text, nicht den Fragebogen.",
     "qSpend": "Monatliches Ausgabelimit",
@@ -75,18 +76,18 @@
     "qHuman": "Wann sollen sie Sie rufen?",
     "qHumanPlaceholder": "Zum Beispiel: wenn der Betrag hoch ist oder die Regel unklar",
     "preview": "Text der Regeln",
-    "lockKicker": "Schritt 3 von 5",
+    "lockKicker": "Schritt 3 von 6",
     "lockTitle": "Was muss durch diese Regeln?",
     "lockLead": "Was nicht angehakt ist, können Assistenten hier nicht tun.",
     "lockSpend": "Zahlungen",
     "lockBook": "Buchungen",
     "lockMessage": "Nachrichten",
-    "guardianKicker": "Schritt 4 von 5",
+    "guardianKicker": "Schritt 5 von 6",
     "guardianTitle": "Budget-Wächter einschalten.",
     "guardianLead": "Bei nur einem Reise-Assistenten gibt es niemanden, der widerspricht. Der Wächter bleibt in Ihrem Bereich und legt Einspruch ein, wenn die Regeln sparen verlangen.",
     "guardianEnable": "Wächter einschalten",
     "guardianEnabling": "Wird eingeschaltet…",
-    "firstKicker": "Schritt 5 von 5",
+    "firstKicker": "Schritt 6 von 6",
     "firstTitle": "Eine erste Anfrage laufen lassen.",
     "firstLead": "Travel will ein Business-Ticket für 420 € buchen. Der Wächter kann widersprechen. In der Liste sollten Anfrage und Entscheidung stehen.",
     "firstRun": "Wächter testen",
@@ -104,11 +105,12 @@
     "human": "Die Person rufen, wenn: {note}"
   },
   "connect": {
-    "kicker": "Schritt 4 von 5",
-    "title": "Wenn der Assistent schon in Cursor lebt",
-    "lead": "Das in die Cursor-MCP-Einstellungen einfügen. Der Schlüssel steht schon in der Datei.",
+    "kicker": "Schritt 4 von 6",
+    "title": "Wenn der Assistent schon da ist",
+    "lead": "Das in die MCP-Einstellungen einfügen. Der Schlüssel steht schon in der Datei.",
     "offTools": "Zahlungs- und Kalender-Tools des Assistenten ausschalten. Sonst umgeht er Foyer.",
-    "configLabel": "Cursor-Config",
+    "postHint": "Aufrufe sind JSON-RPC per POST. GET mit demselben Schlüssel ist nur ein Ping.",
+    "configLabel": "MCP-Config",
     "promptLabel": "Drei Zeilen für den Systemprompt",
     "copy": "Kopieren",
     "copied": "Kopiert",
@@ -122,7 +124,8 @@
     "run": "Demo starten",
     "running": "Startet…",
     "error": "Die Demo ging nicht. Bitte erneut versuchen.",
-    "banner": "Das ist ein Testdurchlauf. Testagenten sind nicht das Produkt."
+    "banner": "Das ist ein Testdurchlauf. Testagenten sind nicht das Produkt.",
+    "watch": "Einen abgeschlossenen Fall ansehen"
   },
   "appeal": {
     "label": "Berufung",
@@ -140,6 +143,22 @@
     "kicker": "Fehlt",
     "title": "Diese Seite gibt es nicht.",
     "lead": "Der Link ist falsch, oder dieses Haus existiert nicht.",
+    "home": "Zurück zum Start"
+  },
+  "outline": {
+    "kicker": "So funktioniert es",
+    "constitutionTitle": "Regeln",
+    "constitutionLead": "Du schreibst eine kurze Charta. Assistenten müssen sie zitieren. Das Gericht liest denselben Text.",
+    "gatewayTitle": "Gateway",
+    "gatewayLead": "Assistenten haben keine direkten Zahlungs- oder Kalender-Tools. Sie beantragen und widersprechen über Foyer. Schweigen gilt als Zustimmung.",
+    "courtTitle": "Gericht",
+    "courtLead": "Eine Pattsituation ist Erlauben, den Einspruch, einen Kompromiss oder Eskalation an dich. Du kannst Berufung einlegen. Heute ist der Richter offline — kein On-Chain-Konsens."
+  },
+  "replay": {
+    "kicker": "Archiv",
+    "title": "Ein abgeschlossener Fall",
+    "lead": "Dasselbe Protokoll wie ein Live-Lauf. Das Gericht war offline. Es gibt keine Transaktion.",
+    "banner": "Das ist ein Archiv. Es ist nicht das Produkt.",
     "home": "Zurück zum Start"
   },
   "protocol": {

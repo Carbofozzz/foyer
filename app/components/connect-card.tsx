@@ -8,7 +8,7 @@ import type { Messages } from "@/lib/i18n/load";
 type ConnectPayload = {
   agent_key: string;
   mcp_url: string;
-  cursor_config: string;
+  mcp_config: string;
   prompt_lines: string[];
 };
 
@@ -59,13 +59,14 @@ export function ConnectCard({
       <h2 className="section-title">{t.title}</h2>
       <p className="hint">{t.lead}</p>
       <p>{t.offTools}</p>
+      <p className="hint">{t.postHint}</p>
       {data ? (
         <>
           <label>
             {t.configLabel}
-            <textarea readOnly rows={12} value={data.cursor_config} />
+            <textarea readOnly rows={12} value={data.mcp_config} />
           </label>
-          <CopyButton text={data.cursor_config} copyLabel={t.copy} copiedLabel={t.copied} />
+          <CopyButton text={data.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
           <label>
             {t.promptLabel}
             <textarea readOnly rows={4} value={data.prompt_lines.join("\n")} />
