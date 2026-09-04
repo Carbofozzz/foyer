@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { acks, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import type { ActionKind, ActionPayload, EvidenceItem, Outcome } from "./types";
@@ -26,7 +26,11 @@ export async function loadActionBundle(actionId: string) {
   ]);
   const courtCase = caseRows[0] ?? null;
   const verdictList = courtCase
-    ? await db.select().from(verdicts).where(eq(verdicts.caseId, courtCase.id))
+    ? await db
+        .select()
+        .from(verdicts)
+        .where(eq(verdicts.caseId, courtCase.id))
+        .orderBy(desc(verdicts.createdAt), desc(verdicts.id))
     : [];
   return {
     action,
@@ -93,6 +97,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
           objection_grounded: verdict.objectionGrounded,
           judge: verdict.judge,
           tx: verdict.tx,
+          appeal_of: verdict.appealOf,
         }
       : null,
     acks: bundle.acks.map((row) => ({

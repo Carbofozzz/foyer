@@ -10,6 +10,13 @@ function requireDatabaseUrl(): string {
   return url;
 }
 
-export function getDb() {
-  return drizzle(neon(requireDatabaseUrl()), { schema });
+type Db = ReturnType<typeof drizzle<typeof schema>>;
+
+let cached: Db | undefined;
+
+export function getDb(): Db {
+  if (!cached) {
+    cached = drizzle(neon(requireDatabaseUrl()), { schema });
+  }
+  return cached;
 }

@@ -39,7 +39,23 @@
     "statusOpen": "En espera",
     "statusAck": "Esperando confirmación",
     "statusExecuted": "Hecho",
-    "statusEscalated": "Te necesita"
+    "statusEscalated": "Te necesita",
+    "request": "Petición",
+    "objection": "Objeción",
+    "decision": "Decisión",
+    "kindBook": "reserva",
+    "kindSpend": "pago",
+    "kindMessage": "mensaje",
+    "kindCancel": "cancelación",
+    "allowA": "Aprobado como se pidió.",
+    "allowBCounter": "En su lugar: {summary}",
+    "allowBBlock": "No hacer nada.",
+    "remedy": "Un término medio: {summary}",
+    "escalate": "Las reglas no lo resuelven: decides tú.",
+    "silence": "Nadie objetó. Se acepta la petición.",
+    "waiting": "A la espera de otros asistentes.",
+    "done": "Hecho: {summary}",
+    "bond": "fianza {n}"
   },
   "wizard": {
     "next": "Seguir",
@@ -86,6 +102,45 @@
     "securityYes": "Seguridad puede bloquear correo que parece un pago o datos de otras personas.",
     "securityNo": "Seguridad no veta el correo ordinario.",
     "human": "Llama a la persona cuando: {note}"
+  },
+  "connect": {
+    "kicker": "Paso 4 de 5",
+    "title": "Si el asistente ya vive en Cursor",
+    "lead": "Pega esto en los ajustes MCP de Cursor. La clave ya va en el archivo.",
+    "offTools": "Apaga sus herramientas de pago y calendario. Si no, se salta Foyer.",
+    "configLabel": "Config de Cursor",
+    "promptLabel": "Tres líneas para el prompt del sistema",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "added": "Lo he añadido",
+    "skip": "Aún no tengo un asistente propio",
+    "loading": "Cargando…"
+  },
+  "spawn": {
+    "title": "¿Aún no hay asistente?",
+    "lead": "Los agentes de prueba hablan el mismo protocolo. No son el producto.",
+    "run": "Probar una demo",
+    "running": "Arrancando…",
+    "error": "No se pudo arrancar. Inténtalo de nuevo.",
+    "banner": "Esto es una prueba. Los agentes de prueba no son el producto."
+  },
+  "appeal": {
+    "label": "Apelación",
+    "note": "¿Por qué debería cambiar?",
+    "submit": "Apelar",
+    "submitting": "Enviando…",
+    "outcome": "O fija tú el resultado",
+    "keep": "Volver a juzgar con las reglas",
+    "allowA": "Dejar la petición original",
+    "allowB": "Aceptar la objeción",
+    "remedy": "Dejar el término medio",
+    "escalate": "Lo decido yo más tarde"
+  },
+  "notFound": {
+    "kicker": "No está",
+    "title": "Esta página no está.",
+    "lead": "El enlace puede ser incorrecto, o esta casa no existe.",
+    "home": "Volver al inicio"
   },
   "protocol": {
     "title": "Para desarrolladores",

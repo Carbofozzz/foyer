@@ -35,3 +35,15 @@ export async function requireCabinet(token: string) {
     .limit(1);
   return principal ?? null;
 }
+
+export async function requireCabinetRequest(request: Request) {
+  const token = bearerToken(request);
+  if (!token || !token.startsWith("cab_")) {
+    return { error: jsonError("unauthorized", "Cabinet link required", 401) };
+  }
+  const principal = await requireCabinet(token);
+  if (!principal) {
+    return { error: jsonError("not_found", "Unknown house", 404) };
+  }
+  return { principal, token };
+}

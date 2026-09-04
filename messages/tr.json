@@ -39,7 +39,23 @@
     "statusOpen": "Bekliyor",
     "statusAck": "Onay bekleniyor",
     "statusExecuted": "Bitti",
-    "statusEscalated": "Sizi bekliyor"
+    "statusEscalated": "Sizi bekliyor",
+    "request": "İstek",
+    "objection": "İtiraz",
+    "decision": "Karar",
+    "kindBook": "rezervasyon",
+    "kindSpend": "ödeme",
+    "kindMessage": "mesaj",
+    "kindCancel": "iptal",
+    "allowA": "İstendiği gibi onaylandı.",
+    "allowBCounter": "Bunun yerine: {summary}",
+    "allowBBlock": "Hiçbir şey yapma.",
+    "remedy": "Orta yol: {summary}",
+    "escalate": "Kurallar yetmiyor — siz karar verin.",
+    "silence": "Kimse itiraz etmedi. İstek kabul.",
+    "waiting": "Diğer asistanlar bekleniyor.",
+    "done": "Yapıldı: {summary}",
+    "bond": "teminat {n}"
   },
   "wizard": {
     "next": "Devam",
@@ -86,6 +102,45 @@
     "securityYes": "Güvenlik, ödeme veya başkasının verisi gibi görünen postayı engelleyebilir.",
     "securityNo": "Güvenlik sıradan postayı engellemez.",
     "human": "Kişiyi çağır, ne zaman: {note}"
+  },
+  "connect": {
+    "kicker": "Adım 4 / 5",
+    "title": "Asistan zaten Cursor’daysa",
+    "lead": "Bunu Cursor MCP ayarlarına yapıştırın. Anahtar dosyanın içinde.",
+    "offTools": "Ödeme ve takvim araçlarını kapatın. Yoksa Foyer’i atlar.",
+    "configLabel": "Cursor ayarı",
+    "promptLabel": "Sistem istemine üç satır",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "added": "Ekledim",
+    "skip": "Henüz kendi asistanım yok",
+    "loading": "Yükleniyor…"
+  },
+  "spawn": {
+    "title": "Henüz asistan yok mu?",
+    "lead": "Test ajanları aynı protokolü konuşur. Ürün bunlar değil.",
+    "run": "Demoyu dene",
+    "running": "Başlatılıyor…",
+    "error": "Demo başlamadı. Lütfen tekrar deneyin.",
+    "banner": "Bu bir deneme. Test ajanları ürün değil."
+  },
+  "appeal": {
+    "label": "İtiraz",
+    "note": "Neden değişmeli?",
+    "submit": "İtiraz et",
+    "submitting": "Gönderiliyor…",
+    "outcome": "Ya da sonucu siz seçin",
+    "keep": "Kurallara göre yeniden bak",
+    "allowA": "İlk isteği bırak",
+    "allowB": "İtirazı kabul et",
+    "remedy": "Uzlaşmayı bırak",
+    "escalate": "Sonra ben karar veririm"
+  },
+  "notFound": {
+    "kicker": "Yok",
+    "title": "Bu sayfa yok.",
+    "lead": "Bağlantı yanlış olabilir veya bu ev yok.",
+    "home": "Başa dön"
   },
   "protocol": {
     "title": "Geliştiriciler için",
