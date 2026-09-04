@@ -10,13 +10,18 @@ export type JudgeInput = {
   evidence: EvidenceItem[];
 };
 
+const SAVE = /save|econom|budget|cheap|ahorr|spar|tasarruf|эконом/i;
+const LATE_CHARTER = /late|client|work|present|tarde|cliente|trabajo|spät|kunde|arbeit|geç|müşteri|опозда|клиент|работ|презентац/i;
+const LATE_EVIDENCE = /late|client|present|9:00|tarde|cliente|spät|geç|опозда|клиент|презентац/i;
+const SECURITY = /security|data|payment|block|seguridad|daten|zahlung|güvenlik|безопасн|платеж|данн/i;
+
 /**
- * Deterministic offline judge for day 1. Honest `judge: offline` — not consensus.
+ * Deterministic offline judge. Honest `judge: offline` — not consensus.
  * Day 5 replaces this call site with GenLayer; the answer shape stays the same.
  */
 export function judgeOffline(input: JudgeInput): VerdictAnswer {
   const charter = input.constitution.trim();
-  if (!charter || /contradict|silent|no rule/i.test(charter)) {
+  if (!charter || /contradict|silent|no rule|противореч|молчалив/i.test(charter)) {
     return {
       outcome: "escalate",
       remedy_action: null,
@@ -38,8 +43,8 @@ export function judgeOffline(input: JudgeInput): VerdictAnswer {
   const proposal = input.proposed_action;
   const counter = input.objection.counter_action;
 
-  if (counter && cheaper(counter, proposal) && /save|econom|budget|cheap/i.test(charter)) {
-    if (/late|client|work|present/i.test(charter) && /late|client|present|9:00/i.test(joinedEvidence(input.evidence))) {
+  if (counter && cheaper(counter, proposal) && SAVE.test(charter)) {
+    if (LATE_CHARTER.test(charter) && LATE_EVIDENCE.test(joinedEvidence(input.evidence))) {
       return {
         outcome: "remedy",
         remedy_action: {
@@ -60,7 +65,7 @@ export function judgeOffline(input: JudgeInput): VerdictAnswer {
     };
   }
 
-  if (!counter && /security|data|payment|block/i.test(charter) && citesCharter) {
+  if (!counter && SECURITY.test(charter) && citesCharter) {
     return {
       outcome: "allow_b",
       remedy_action: null,
@@ -89,7 +94,7 @@ export function judgeOffline(input: JudgeInput): VerdictAnswer {
 function mentionsCharter(justification: string, constitution: string): boolean {
   const words = constitution
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter((word) => word.length > 4);
   const text = justification.toLowerCase();
   return words.some((word) => text.includes(word));
