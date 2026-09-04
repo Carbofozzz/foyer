@@ -5,6 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
 import { serif } from "@/lib/i18n/font";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
+import { WalletProviders } from "@/app/components/wallet-providers";
 
 type Props = {
   children: ReactNode;
@@ -29,16 +30,18 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale} className={serif.className}>
       <body>
-        <div className="app-shell">
-          <header className="topbar">
-            <a className="brand" href={`/${locale}`}>
-              <img src="/brand/foyer-mark.png" alt={t.brand.markAlt} width={36} height={36} />
-              <span className="brand-name">{t.brand.name}</span>
-            </a>
-            <LanguageSwitcher locale={locale} label={t.nav.locale} />
-          </header>
-          {children}
-        </div>
+        <WalletProviders locale={locale}>
+          <div className="app-shell">
+            <header className="topbar">
+              <a className="brand" href={`/${locale}`}>
+                <img src="/brand/foyer-mark.png" alt={t.brand.markAlt} width={36} height={36} />
+                <span className="brand-name">{t.brand.name}</span>
+              </a>
+              <LanguageSwitcher locale={locale} label={t.nav.locale} />
+            </header>
+            {children}
+          </div>
+        </WalletProviders>
       </body>
     </html>
   );

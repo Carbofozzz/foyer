@@ -105,7 +105,6 @@ async function runGuardians(
           {
             justification: draft.justification,
             evidence: draft.evidence,
-            bond: draft.bond,
             counter_action: draft.counter_action,
           },
           now,

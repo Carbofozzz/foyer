@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
-import { agents, cases, verdicts } from "@/lib/db/schema";
+import { cases, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { judgeOffline } from "@/lib/judge/offline";
+import { decide } from "@/lib/judge/decide";
+import { ensureHouseCourt } from "@/lib/judge/house-court";
+import { recordCourtTx } from "@/lib/judge/wallet";
 import { actionEvidence, actionPayload, loadActionBundle, serializeAction, type HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
 import { mintToken } from "./keys";
 import { asEvidence, asPayload, isRecord } from "./parse";
-import { OUTCOMES, type Outcome, type VerdictAnswer } from "./types";
+import { OUTCOMES, type Judge, type Outcome, type VerdictAnswer } from "./types";
 
 export async function appealCase(
   principal: HousePrincipal,
@@ -35,6 +37,8 @@ export async function appealCase(
 
   const primary = bundle.objections[0];
   let answer: VerdictAnswer;
+  let judge: Judge = "offline";
+  let tx: string | null = null;
   if (manual) {
     const remedy =
       manual === "remedy"
@@ -55,17 +59,35 @@ export async function appealCase(
     };
   } else {
     const extra = note ? [{ type: "text" as const, value: `Appeal note: ${note}` }] : [];
-    answer = judgeOffline({
-      constitution: courtCase.constitutionSnapshot,
-      proposed_action: actionPayload(bundle.action),
-      objection: primary
-        ? {
-            justification: primary.justification,
-            counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
-          }
-        : null,
-      evidence: [...actionEvidence(bundle.action), ...(primary ? asEvidence(primary.evidence) : []), ...extra],
-    });
+    const contractAddress = await ensureHouseCourt(principal);
+    const retrial = await decide(
+      principal,
+      courtCase.id,
+      {
+        constitution: courtCase.constitutionSnapshot,
+        proposed_action: actionPayload(bundle.action),
+        objection: primary
+          ? {
+              justification: primary.justification,
+              counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
+            }
+          : null,
+        evidence: [...actionEvidence(bundle.action), ...(primary ? asEvidence(primary.evidence) : []), ...extra],
+      },
+      {
+        prior_verdict: {
+          outcome: prior.outcome as Outcome,
+          remedy_action: prior.remedyAction ? asPayload(prior.remedyAction) : null,
+          reasoning: prior.reasoning,
+          objection_grounded: prior.objectionGrounded,
+        },
+        appeal_note: note,
+      },
+      contractAddress,
+    );
+    answer = retrial.answer;
+    judge = retrial.judge;
+    tx = retrial.tx;
   }
 
   await db.insert(verdicts).values({
@@ -75,20 +97,11 @@ export async function appealCase(
     remedyAction: answer.remedy_action,
     reasoning: answer.reasoning,
     objectionGrounded: answer.objection_grounded,
-    judge: "offline",
+    judge,
+    tx,
     appealOf: prior.id,
   });
-
-  if (prior.objectionGrounded !== answer.objection_grounded) {
-    for (const row of bundle.objections) {
-      const [objector] = await db.select().from(agents).where(eq(agents.id, row.objectorId)).limit(1);
-      if (!objector) continue;
-      const next = answer.objection_grounded
-        ? objector.bondBalance + row.bond
-        : objector.bondBalance - row.bond;
-      await db.update(agents).set({ bondBalance: Math.max(0, next) }).where(eq(agents.id, objector.id));
-    }
-  }
+  await recordCourtTx(principal, tx, principal.courtContract);
 
   const next = await loadActionBundle(bundle.action.id);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);

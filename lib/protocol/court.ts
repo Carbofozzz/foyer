@@ -1,11 +1,13 @@
 import { eq } from "drizzle-orm";
-import { actions, agents, cases, objections, verdicts } from "@/lib/db/schema";
+import { actions, cases, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { judgeOffline } from "@/lib/judge/offline";
+import { decide } from "@/lib/judge/decide";
+import { ensureHouseCourt } from "@/lib/judge/house-court";
 import type { EvidenceItem } from "./types";
 import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
 import { asEvidence, asPayload } from "./parse";
+import { recordCourtTx } from "@/lib/judge/wallet";
 
 export async function openCourt(action: ActionRow, principal: HousePrincipal, now: Date): Promise<void> {
   const db = getDb();
@@ -19,19 +21,26 @@ export async function openCourt(action: ActionRow, principal: HousePrincipal, no
     ...(primary ? asEvidence(primary.evidence) : []),
   ];
 
-  const answer = judgeOffline({
-    constitution: principal.constitution,
-    proposed_action: actionPayload(action),
-    objection: primary
-      ? {
-          justification: primary.justification,
-          counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
-        }
-      : null,
-    evidence,
-  });
-
   const caseId = mintToken("cas");
+  const contractAddress = await ensureHouseCourt(principal);
+  const { answer, judge, tx } = await decide(
+    principal,
+    caseId,
+    {
+      constitution: principal.constitution,
+      proposed_action: actionPayload(action),
+      objection: primary
+        ? {
+            justification: primary.justification,
+            counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
+          }
+        : null,
+      evidence,
+    },
+    undefined,
+    contractAddress,
+  );
+
   await db.insert(cases).values({
     id: caseId,
     actionId: action.id,
@@ -45,20 +54,10 @@ export async function openCourt(action: ActionRow, principal: HousePrincipal, no
     remedyAction: answer.remedy_action,
     reasoning: answer.reasoning,
     objectionGrounded: answer.objection_grounded,
-    judge: "offline",
+    judge,
+    tx,
   });
-
-  for (const row of filed) {
-    if (answer.objection_grounded) {
-      const [objector] = await db.select().from(agents).where(eq(agents.id, row.objectorId)).limit(1);
-      if (objector) {
-        await db
-          .update(agents)
-          .set({ bondBalance: objector.bondBalance + row.bond })
-          .where(eq(agents.id, objector.id));
-      }
-    }
-  }
+  await recordCourtTx(principal, tx, contractAddress);
 
   if (answer.outcome === "escalate") {
     await db

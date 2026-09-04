@@ -14,7 +14,6 @@ export type ObjectionDraft = {
   actionId: string;
   justification: string;
   evidence: EvidenceItem[];
-  bond: number;
   counter_action: ActionPayload;
 };
 
@@ -46,7 +45,6 @@ export function decideBudgetTurn(input: {
         ...item.evidence,
         { type: "text", value: `Economy alternative is €${economy}` },
       ],
-      bond: 10,
       counter_action: {
         kind,
         summary: `Economy, €${economy}`,

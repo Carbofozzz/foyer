@@ -31,6 +31,16 @@ export type EvidenceItem = {
   value: string;
 };
 
+export type JudgeInput = {
+  constitution: string;
+  proposed_action: ActionPayload;
+  objection: {
+    justification: string;
+    counter_action: ActionPayload | null;
+  } | null;
+  evidence: EvidenceItem[];
+};
+
 export type VerdictAnswer = {
   outcome: Outcome;
   remedy_action: ActionPayload | null;

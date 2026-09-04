@@ -4,6 +4,8 @@ import { sweep } from "@/lib/protocol/sweep";
 import { fileObjection } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
 
+export const maxDuration = 120;
+
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;

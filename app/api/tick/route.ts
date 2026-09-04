@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { bearerToken, jsonError, jsonOk } from "@/lib/protocol/http";
 import { sweep } from "@/lib/protocol/sweep";
 
+export const maxDuration = 120;
+
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
   const token = bearerToken(request);

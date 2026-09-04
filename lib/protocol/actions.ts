@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { acks, actions, agents, objections } from "@/lib/db/schema";
+import { acks, actions, objections } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "./keys";
 import { ProtocolError } from "./errors";
@@ -55,27 +55,17 @@ export async function fileObjection(
   if (!justification) throw new ProtocolError("bad_request", "justification is required", 400);
   const evidence = parseEvidence(body.evidence);
   const counter = parseCounterAction(body.counter_action);
-  const bond = typeof body.bond === "number" && Number.isFinite(body.bond) ? Math.trunc(body.bond) : 10;
-  if (bond < 1) throw new ProtocolError("bad_request", "bond must be at least 1", 400);
-  if (auth.agent.bondBalance < bond) {
-    throw new ProtocolError("forbidden", "Insufficient bond", 403);
-  }
-
+  const objectionId = mintToken("obj");
   const db = getDb();
-  await db
-    .update(agents)
-    .set({ bondBalance: auth.agent.bondBalance - bond })
-    .where(eq(agents.id, auth.agent.id));
   await db.insert(objections).values({
-    id: mintToken("obj"),
+    id: objectionId,
     actionId,
     objectorId: auth.agent.id,
     justification,
     evidence,
-    bond,
+    bond: "0",
     counterAction: counter,
   });
-  auth.agent.bondBalance -= bond;
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next);

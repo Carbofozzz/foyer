@@ -1,0 +1,280 @@
+import { eq } from "drizzle-orm";
+import { agents } from "@/lib/db/schema";
+import { getDb } from "@/lib/db";
+import { inboxForPrincipal } from "@/lib/protocol/actions";
+import { sweep } from "@/lib/protocol/sweep";
+import type { HousePrincipal } from "@/lib/protocol/bundle";
+import type { Messages } from "@/lib/i18n/load";
+import { CabinetWizard } from "@/app/components/cabinet-wizard";
+import { ConnectCard } from "@/app/components/connect-card";
+import { TreasuryCard } from "@/app/components/treasury-card";
+import { AppealForm } from "@/app/components/appeal-form";
+import { WalletButton } from "@/app/components/wallet-button";
+import { txExplorerUrl } from "@/lib/gen/chain";
+
+type FeedCopy = Messages["cabinet"];
+type InboxItem = Awaited<ReturnType<typeof inboxForPrincipal>>["items"][number];
+
+export async function CabinetScreen({
+  locale,
+  token,
+  principal,
+  enroll,
+  t,
+}: {
+  locale: string;
+  token: string;
+  principal: HousePrincipal;
+  enroll?: string;
+  t: Messages;
+}) {
+  await sweep(principal.id, new Date());
+  const db = getDb();
+  const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
+  const inbox = await inboxForPrincipal(principal.id);
+  const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
+  const hasGuardian = houseAgents.some((agent) => agent.isGuardian);
+  const step = !principal.wizardRulesDone
+    ? "rules"
+    : !principal.wizardLockDone
+      ? "lock"
+      : !principal.wizardConnectDone && inbox.items.length === 0
+        ? "connect"
+        : !hasGuardian
+          ? "guardian"
+          : inbox.items.length === 0
+            ? "first"
+            : null;
+  const now = Date.now();
+  const signedIn = token === "me";
+
+  return (
+    <main className="cabinet">
+      <header className="cabinet-head">
+        <div>
+          <h1>{t.cabinet.kicker}</h1>
+          {principal.isSpawn ? <p className="hint">{t.spawn.banner}</p> : null}
+        </div>
+        {signedIn ? (
+          <WalletButton
+            locale={locale}
+            signOutLabel={t.cabinet.signOut}
+            connectLabel={t.home.signIn}
+            initialAddress={principal.ownerAddress}
+          />
+        ) : null}
+      </header>
+
+      <TreasuryCard token={token} t={t.cabinet} errorLabel={t.cabinet.error} />
+
+      <section className="cabinet-panel">
+        {step ? (
+          <CabinetWizard
+            token={token}
+            step={step}
+            wizard={t.wizard}
+            connect={t.connect}
+            charter={t.charter}
+            cabinetError={t.cabinet.error}
+            constitution={principal.constitution}
+          />
+        ) : (
+          <>
+            <div className="cabinet-panel-head">
+              <h2 className="section-title">{t.cabinet.inbox}</h2>
+              {houseAgents.length > 0 ? (
+                <ul className="agent-chips">
+                  {houseAgents.map((agent) => (
+                    <li key={agent.id}>
+                      {agent.name}
+                      {agent.isGuardian ? ` · ${t.cabinet.guardian}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            <div className="cabinet-scroll">
+              {inbox.items.length === 0 ? (
+                <p className="empty">{t.cabinet.emptyInbox}</p>
+              ) : (
+                <ul className="feed">
+                  {inbox.items.map((item) => (
+                    <FeedRow
+                      key={item.id}
+                      item={item}
+                      names={names}
+                      t={t.cabinet}
+                      appeal={t.appeal}
+                      token={token}
+                      errorLabel={t.cabinet.error}
+                      now={now}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="cabinet-meta">
+              {enroll ? (
+                <details>
+                  <summary>{t.cabinet.enrollment}</summary>
+                  <p className="mono">{enroll}</p>
+                </details>
+              ) : null}
+              <details>
+                <summary>{t.cabinet.constitution}</summary>
+                <p className="charter">{principal.constitution}</p>
+              </details>
+              <details>
+                <summary>{t.connect.title}</summary>
+                <ConnectCard token={token} t={t.connect} errorLabel={t.cabinet.error} compact />
+              </details>
+            </div>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function FeedRow({
+  item,
+  names,
+  t,
+  appeal,
+  token,
+  errorLabel,
+  now,
+}: {
+  item: InboxItem;
+  names: Record<string, string>;
+  t: FeedCopy;
+  appeal: Messages["appeal"];
+  token: string;
+  errorLabel: string;
+  now: number;
+}) {
+  const proposer = names[item.proposer_id] ?? item.proposer_id;
+  const kind = kindLabel(item.kind, t);
+  const asked = formatAction(item.payload);
+  const firstObjection = item.objections[0];
+  const objector = firstObjection ? (names[firstObjection.objector_id] ?? firstObjection.objector_id) : null;
+  const counter = firstObjection ? formatAction(firstObjection.counter_action) : "";
+  const decided = decisionAction(item);
+  const decision = decisionLine(item, t, decided);
+  const carried = formatAction(executedPayload(item.executions[0]?.result));
+
+  return (
+    <li className="feed-item">
+      <p className="muted">{statusLabel(item.status, t)}</p>
+      <div className="feed-block">
+        <p className="feed-label">{t.request}</p>
+        <p>
+          {proposer} · {kind}
+          {asked ? `: ${asked}` : ""}
+        </p>
+      </div>
+      {firstObjection ? (
+        <div className="feed-block">
+          <p className="feed-label">{t.objection}</p>
+          <p>
+            {objector}
+            {counter ? `: ${counter}` : ""}
+          </p>
+        </div>
+      ) : null}
+      {decision ? (
+        <div className="feed-block">
+          <p className="feed-label">{t.decision}</p>
+          <p>{decision}</p>
+          {item.verdict?.outcome !== "escalate" && carried && carried !== decided ? (
+            <p className="hint">{t.done.replace("{summary}", carried)}</p>
+          ) : null}
+          {item.verdict?.judge === "onchain" && item.verdict.tx ? (
+            <p className="hint">
+              {t.judgeOnchain} <TxLink tx={item.verdict.tx} />
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {item.case && item.appeal_until && new Date(item.appeal_until).getTime() > now ? (
+        <div className="feed-block">
+          <AppealForm token={token} caseId={item.case.id} t={appeal} errorLabel={errorLabel} />
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+function kindLabel(kind: string, t: FeedCopy) {
+  if (kind === "book") return t.kindBook;
+  if (kind === "spend") return t.kindSpend;
+  if (kind === "message") return t.kindMessage;
+  if (kind === "cancel") return t.kindCancel;
+  return kind;
+}
+
+function statusLabel(status: string, t: FeedCopy) {
+  if (status === "open") return t.statusOpen;
+  if (status === "awaiting_ack") return t.statusAck;
+  if (status === "executed") return t.statusExecuted;
+  if (status === "escalated") return t.statusEscalated;
+  return status;
+}
+
+function decisionLine(item: InboxItem, t: FeedCopy, decided: string) {
+  const verdict = item.verdict;
+  if (!verdict) {
+    if (item.status === "executed") return t.silence;
+    if (item.status === "open") return t.waiting;
+    return null;
+  }
+  if (verdict.outcome === "allow_a") return t.allowA;
+  if (verdict.outcome === "escalate") return t.escalate;
+  if (verdict.outcome === "remedy") {
+    return t.remedy.replace("{summary}", decided || "—");
+  }
+  if (decided) return t.allowBCounter.replace("{summary}", decided);
+  return t.allowBBlock;
+}
+
+function decisionAction(item: InboxItem) {
+  const verdict = item.verdict;
+  if (!verdict) return "";
+  if (verdict.outcome === "allow_a") return formatAction(item.payload);
+  if (verdict.outcome === "remedy") return formatAction(verdict.remedy_action);
+  if (verdict.outcome === "allow_b") return formatAction(item.objections[0]?.counter_action);
+  return "";
+}
+
+function executedPayload(result: unknown) {
+  if (!result || typeof result !== "object") return null;
+  const row = result as Record<string, unknown>;
+  return row.would_book ?? row.would_charge ?? row.would_message ?? row.would_cancel ?? null;
+}
+
+function formatAction(payload: unknown) {
+  if (!payload || typeof payload !== "object") return "";
+  const row = payload as Record<string, unknown>;
+  let summary = typeof row.summary === "string" ? row.summary.trim() : "";
+  const amount = typeof row.amount === "number" ? row.amount : null;
+  const currency = typeof row.currency === "string" ? row.currency : "";
+  if (amount == null) return summary.replace(/\s*\(compromise\)\s*/i, "").trim();
+  const money = !currency || currency === "EUR" ? `€${amount}` : `${amount} ${currency}`;
+  if (/€\s*[\d.,]+/.test(summary)) {
+    summary = summary.replace(/€\s*[\d.,]+/, money);
+  } else {
+    summary = summary ? `${summary}, ${money}` : money;
+  }
+  return summary.replace(/\s*\(compromise\)\s*/i, "").trim();
+}
+
+function TxLink({ tx }: { tx: string }) {
+  const href = txExplorerUrl(tx);
+  const label = tx.length <= 18 ? tx : `${tx.slice(0, 10)}…${tx.slice(-6)}`;
+  if (!href) return label;
+  return (
+    <a className="tx-link" href={href} target="_blank" rel="noreferrer">
+      {label}
+    </a>
+  );
+}

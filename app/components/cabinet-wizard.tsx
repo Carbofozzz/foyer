@@ -113,35 +113,38 @@ function RulesStep({
 
   return (
     <form className="card stack" onSubmit={onSubmit}>
-      <p className="kicker">{wizard.rulesKicker}</p>
-      <h2 className="section-title">{wizard.rulesTitle}</h2>
-      <p className="hint">{wizard.rulesLead}</p>
-      <label>
-        {wizard.qSpend}
-        <input value={spendLimit} onChange={(event) => setSpendLimit(event.target.value)} inputMode="numeric" />
-      </label>
-      <label>
-        {wizard.qPrice}
-        <select value={price} onChange={(event) => setPrice(event.target.value as PricePreference)}>
-          <option value="save">{wizard.qSave}</option>
-          <option value="balance">{wizard.qBalance}</option>
-          <option value="comfort">{wizard.qComfort}</option>
-        </select>
-      </label>
-      <label>
-        {wizard.qPromises}
-        <select value={promises ? "yes" : "no"} onChange={(event) => setPromises(event.target.value === "yes")}>
-          <option value="yes">{wizard.yes}</option>
-          <option value="no">{wizard.no}</option>
-        </select>
-      </label>
-      <label>
-        {wizard.qSecurity}
-        <select value={security ? "yes" : "no"} onChange={(event) => setSecurity(event.target.value === "yes")}>
-          <option value="yes">{wizard.yes}</option>
-          <option value="no">{wizard.no}</option>
-        </select>
-      </label>
+      <div className="cabinet-panel-head">
+        <h2 className="section-title">{wizard.rulesTitle}</h2>
+        <p className="kicker">{wizard.rulesKicker}</p>
+      </div>
+      <div className="form-grid">
+        <label>
+          {wizard.qSpend}
+          <input value={spendLimit} onChange={(event) => setSpendLimit(event.target.value)} inputMode="numeric" />
+        </label>
+        <label>
+          {wizard.qPrice}
+          <select value={price} onChange={(event) => setPrice(event.target.value as PricePreference)}>
+            <option value="save">{wizard.qSave}</option>
+            <option value="balance">{wizard.qBalance}</option>
+            <option value="comfort">{wizard.qComfort}</option>
+          </select>
+        </label>
+        <label>
+          {wizard.qPromises}
+          <select value={promises ? "yes" : "no"} onChange={(event) => setPromises(event.target.value === "yes")}>
+            <option value="yes">{wizard.yes}</option>
+            <option value="no">{wizard.no}</option>
+          </select>
+        </label>
+        <label>
+          {wizard.qSecurity}
+          <select value={security ? "yes" : "no"} onChange={(event) => setSecurity(event.target.value === "yes")}>
+            <option value="yes">{wizard.yes}</option>
+            <option value="no">{wizard.no}</option>
+          </select>
+        </label>
+      </div>
       <label>
         {wizard.qHuman}
         <input value={human} onChange={(event) => setHuman(event.target.value)} placeholder={wizard.qHumanPlaceholder} />
@@ -154,7 +157,7 @@ function RulesStep({
             setEdited(true);
             setText(event.target.value);
           }}
-          rows={10}
+          rows={5}
         />
       </label>
       <button type="submit" disabled={pending}>
@@ -205,8 +208,10 @@ function LockStep({
 
   return (
     <form className="card stack" onSubmit={onSubmit}>
-      <p className="kicker">{wizard.lockKicker}</p>
-      <h2 className="section-title">{wizard.lockTitle}</h2>
+      <div className="cabinet-panel-head">
+        <h2 className="section-title">{wizard.lockTitle}</h2>
+        <p className="kicker">{wizard.lockKicker}</p>
+      </div>
       <p className="hint">{wizard.lockLead}</p>
       <label className="check-row">
         <input type="checkbox" checked={spend} onChange={(event) => setSpend(event.target.checked)} />
@@ -270,8 +275,10 @@ function ActionStep({
 
   return (
     <form className="card stack" onSubmit={onSubmit}>
-      <p className="kicker">{kicker}</p>
-      <h2 className="section-title">{title}</h2>
+      <div className="cabinet-panel-head">
+        <h2 className="section-title">{title}</h2>
+        <p className="kicker">{kicker}</p>
+      </div>
       <p className="hint">{lead}</p>
       <button type="submit" disabled={pending}>
         {pending ? pendingLabel : label}

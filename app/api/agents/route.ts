@@ -17,7 +17,6 @@ export async function GET(request: Request) {
       id: row.id,
       role: row.role,
       name: row.name,
-      bond_balance: row.bondBalance,
     })),
   );
 }
