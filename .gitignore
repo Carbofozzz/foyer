@@ -18,5 +18,6 @@ CLAUDE.local.md
 # Working notes that are not hackathon deliverables
 .local/*
 !.local/README.md
-.vercel
-.env*
+
+# Stray file from a mistyped curl flag
+-w

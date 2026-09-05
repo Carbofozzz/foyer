@@ -97,7 +97,7 @@
     "exporting": "Aktarılıyor…",
     "copyKey": "Anahtarı kopyala",
     "privateKeyHint": "Anahtarı olan bu GEN’i harcayabilir.",
-    "judgeOffline": "Çevrimdışı karar — zincir konsensüsü değil. İşlem yok.",
+    "judgeOffline": "Mahkeme karar vermedi — zincir üstünde bir şey yok.",
     "cancel": "Vazgeç",
     "judgeOnchain": "Zincir üstü karar."
   },

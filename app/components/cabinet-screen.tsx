@@ -207,6 +207,8 @@ function FeedRow({
             <p className="hint">
               {t.judgeOnchain} <TxLink tx={item.verdict.tx} />
             </p>
+          ) : item.verdict ? (
+            <p className="hint">{t.judgeOffline}</p>
           ) : null}
         </div>
       ) : null}

@@ -97,7 +97,7 @@
     "exporting": "Exporting…",
     "copyKey": "Copy private key",
     "privateKeyHint": "Anyone with this key can spend this GEN.",
-    "judgeOffline": "Decided offline — not on-chain consensus. No transaction.",
+    "judgeOffline": "The court returned no verdict — nothing on-chain.",
     "cancel": "Cancel",
     "judgeOnchain": "On-chain verdict."
   },

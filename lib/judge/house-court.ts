@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
+import { COURT_FLOOR_WEI, ensureCourtFunds } from "./funds";
 import { ensureHouseWallet } from "./house-wallet";
 import { deployHouseCourt } from "./onchain";
 
@@ -11,6 +12,7 @@ export async function ensureHouseCourt(principal: HousePrincipal): Promise<strin
     return principal.courtContract;
   }
   const wallet = await ensureHouseWallet(principal);
+  if ((await ensureCourtFunds(wallet.address)) < COURT_FLOOR_WEI) return null;
   const deployed = await deployHouseCourt(wallet.accountKey);
   if (!deployed) return null;
 

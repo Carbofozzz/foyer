@@ -1,7 +1,8 @@
-# v0.3.0
-# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }from dataclasses import dataclass
+# v0.4.0
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 import json
-from genlayer import *
+
+import genlayer as gl
 
 OUTCOMES = ("allow_a", "allow_b", "remedy", "escalate")
 
@@ -27,21 +28,13 @@ Return ONLY JSON:
 """
 
 
-@allow_storage
-@dataclass
-class StoredVerdict:
-    outcome: str
-    remedy_json: str
-    reasoning: str
-    objection_grounded: bool
-
-
-class Court(gl.Contract):
-    admin: Address
-    verdicts: TreeMap[str, StoredVerdict]
+class Court(gl.contract.Contract):
+    admin: gl.contract.Address
+    # One canonical verdict JSON per case id. Plain strings keep storage simple.
+    verdicts: gl.storage.TreeMap[str, str]
 
     def __init__(self, admin: str):
-        self.admin = Address(admin)
+        self.admin = gl.contract.Address(admin)
 
     def _only_admin(self):
         if gl.message.sender_address != self.admin:
@@ -96,13 +89,16 @@ appeal_note:
             validator_data = leader_fn()
             return _decision_key(leader_data) == _decision_key(validator_data)
 
-        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-        remedy = result.get("remedy_action")
-        self.verdicts[case_id] = StoredVerdict(
-            outcome=str(result["outcome"]),
-            remedy_json=json.dumps(remedy, sort_keys=True) if remedy is not None else "null",
-            reasoning=str(result["reasoning"]),
-            objection_grounded=bool(result["objection_grounded"]),
+        result = gl.vm.run_nondet(leader_fn, validator_fn)
+        self.verdicts[case_id] = json.dumps(
+            {
+                "found": True,
+                "outcome": str(result["outcome"]),
+                "remedy_action": result.get("remedy_action"),
+                "reasoning": str(result["reasoning"]),
+                "objection_grounded": bool(result["objection_grounded"]),
+            },
+            sort_keys=True,
         )
 
     @gl.public.view
@@ -110,17 +106,7 @@ appeal_note:
         self._only_admin()
         if case_id not in self.verdicts:
             return json.dumps({"found": False})
-        stored = self.verdicts[case_id]
-        remedy = json.loads(stored.remedy_json)
-        return json.dumps(
-            {
-                "found": True,
-                "outcome": stored.outcome,
-                "remedy_action": remedy,
-                "reasoning": stored.reasoning,
-                "objection_grounded": stored.objection_grounded,
-            }
-        )
+        return self.verdicts[case_id]
 
 
 def _as_bool(value) -> bool:
