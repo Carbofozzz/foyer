@@ -1,17 +1,25 @@
 import { eq } from "drizzle-orm";
 import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import type { ActionKind } from "./types";
+import type { ActionKind, PrincipalType } from "./types";
 import { ProtocolError } from "./errors";
 import type { HousePrincipal } from "./bundle";
 
-export async function saveConstitution(principal: HousePrincipal, constitution: string) {
+export async function saveConstitution(
+  principal: HousePrincipal,
+  constitution: string,
+  type?: PrincipalType,
+) {
   const text = constitution.trim();
   if (!text) throw new ProtocolError("bad_request", "constitution is required", 400);
   const db = getDb();
   await db
     .update(principals)
-    .set({ constitution: text, wizardRulesDone: true })
+    .set({
+      constitution: text,
+      wizardRulesDone: true,
+      ...(type === "org" || type === "personal" ? { type } : {}),
+    })
     .where(eq(principals.id, principal.id));
 }
 

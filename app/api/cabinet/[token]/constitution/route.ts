@@ -17,8 +17,9 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   if (!isRecord(body) || typeof body.constitution !== "string") {
     return jsonError("bad_request", "constitution is required", 400);
   }
+  const type = body.type === "org" || body.type === "personal" ? body.type : undefined;
   try {
-    await saveConstitution(principal, body.constitution);
+    await saveConstitution(principal, body.constitution, type);
     return jsonOk({ ok: true });
   } catch (error) {
     return protocolFail(error);

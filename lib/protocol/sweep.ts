@@ -2,6 +2,10 @@ import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { actions, agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { decideBudgetTurn } from "@/agents/budget";
+import { decideCalendarTurn } from "@/agents/calendar";
+import { decideFinanceTurn } from "@/agents/finance";
+import { decideLegalTurn } from "@/agents/legal";
+import { decideSecurityTurn } from "@/agents/security";
 import { fileObjection, recordTimeoutAcks } from "./actions";
 import { actionEvidence, actionPayload, engagedIds, loadActionBundle, type HouseAuth } from "./bundle";
 import { openCourt } from "./court";
@@ -91,7 +95,7 @@ async function runGuardians(
         alreadyObjected: bundle.objections.some((item) => item.objectorId === guardian.id),
       });
     }
-    const drafts = decideBudgetTurn({
+    const drafts = decideForRole(guardian.role, {
       constitution: principal.constitution,
       selfId: guardian.id,
       items,
@@ -116,4 +120,15 @@ async function runGuardians(
     }
   }
   return advanced;
+}
+
+function decideForRole(
+  role: string,
+  input: Parameters<typeof decideBudgetTurn>[0],
+) {
+  if (role === "calendar") return decideCalendarTurn(input);
+  if (role === "security") return decideSecurityTurn(input);
+  if (role === "legal") return decideLegalTurn(input);
+  if (role === "finance") return decideFinanceTurn(input);
+  return decideBudgetTurn(input);
 }
