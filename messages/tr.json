@@ -284,5 +284,22 @@
     "thanks": "Listeye alındınız.",
     "invalid": "Bu bir e-posta gibi durmuyor.",
     "error": "Kaydedilemedi. Lütfen tekrar deneyin."
+  },
+  "status": {
+    "kicker": "Durum",
+    "title": "Servis durumu",
+    "ok": "Veritabanı ayakta.",
+    "down": "Veritabanına ulaşılamıyor.",
+    "stale": "Zamanlanmış tick gecikti.",
+    "tick": "Son tick",
+    "never": "Henüz tick yok.",
+    "env": "Bu yayın",
+    "db": "Veritabanı",
+    "cron": "Zamanlayıcı",
+    "cronHere": "Cron bu yayında çalışır.",
+    "cronElsewhere": "Cron production’da çalışır. Bu yayın aynı depoyu kullanır.",
+    "writes": "Son saatte {n} genel yazma, {limited} sınırlandı.",
+    "open": "Durum",
+    "home": "Başa dön"
   }
 }

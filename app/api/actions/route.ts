@@ -4,7 +4,14 @@ import { sweep } from "@/lib/protocol/sweep";
 import { proposeAction } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
 
+import { guardPublicWrite } from "@/lib/ops/guard";
+import { LIMITS } from "@/lib/ops/rate-limit";
+
 export async function POST(request: Request) {
+  return guardPublicWrite(request, "propose", LIMITS.propose, () => postPropose(request));
+}
+
+async function postPropose(request: Request) {
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;
   await sweep(auth.principal.id, new Date());

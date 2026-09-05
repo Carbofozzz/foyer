@@ -192,3 +192,29 @@ export const spendReceipts = pgTable("spend_receipts", {
   summary: text("summary").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const rateBuckets = pgTable("rate_buckets", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+});
+
+export const requestLogs = pgTable("request_logs", {
+  id: text("id").primaryKey(),
+  route: text("route").notNull(),
+  method: text("method").notNull(),
+  status: integer("status").notNull(),
+  ipHash: text("ip_hash").notNull(),
+  ms: integer("ms").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const cronTicks = pgTable("cron_ticks", {
+  id: text("id").primaryKey(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  houses: integer("houses").notNull().default(0),
+  advanced: integer("advanced").notNull().default(0),
+  ok: boolean("ok").notNull().default(true),
+  error: text("error"),
+});

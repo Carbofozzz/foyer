@@ -3,10 +3,16 @@ import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { sweep } from "@/lib/protocol/sweep";
 import { fileObjection } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
+import { guardPublicWrite } from "@/lib/ops/guard";
+import { LIMITS } from "@/lib/ops/rate-limit";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  return guardPublicWrite(request, "object", LIMITS.object, () => postObjection(request, context));
+}
+
+async function postObjection(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;
   await sweep(auth.principal.id, new Date());

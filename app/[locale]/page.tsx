@@ -28,6 +28,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <WaitlistForm locale={locale} t={t.waitlist} />
       <p>
         <a href={`/${locale}/check`}>{t.check.open}</a>
+        {" · "}
+        <a href={`/${locale}/status`}>{t.status.open}</a>
       </p>
     </main>
   );
