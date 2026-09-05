@@ -392,7 +392,7 @@ Do not cut days 1–3 down to “two curls without a court.” Do not leave onbo
 
 ## 9. How the community tests
 
-**Main path:** open the public Vercel URL (from day 4). Walk the wizard. A person with one chat agent: paste the config, enable the guardian, see a case. A technician: API tab, the same house.
+**Main path:** open **https://foyerapp.dev**. Walk the wizard. A person with one chat agent: paste the config, enable the guardian, see a case. A technician: API tab, the same house.
 
 **Extra:** Spawn / Replay if there is no agent at all.
 

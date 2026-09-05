@@ -30,16 +30,18 @@ export function ReplayView({
               <div className="feed-block">
                 <p className="feed-label">{cabinet.request}</p>
                 <p>
-                  {row.proposer} · {row.kind === "book" ? cabinet.kindBook : cabinet.kindMessage}: {row.asked}
+                  {row.proposer} · {kindLabel(row.kind, cabinet)}: {row.asked}
                 </p>
               </div>
-              <div className="feed-block">
-                <p className="feed-label">{cabinet.objection}</p>
-                <p>
-                  {row.objector}
-                  {row.counter ? `: ${row.counter}` : ""}
-                </p>
-              </div>
+              {row.objector ? (
+                <div className="feed-block">
+                  <p className="feed-label">{cabinet.objection}</p>
+                  <p>
+                    {row.objector}
+                    {row.counter ? `: ${row.counter}` : ""}
+                  </p>
+                </div>
+              ) : null}
               <div className="feed-block">
                 <p className="feed-label">{cabinet.decision}</p>
                 <p>{decisionCopy(row.outcome, row.decided, cabinet)}</p>
@@ -61,6 +63,12 @@ export function ReplayView({
       </p>
     </main>
   );
+}
+
+function kindLabel(kind: "book" | "message" | "spend", cabinet: Messages["cabinet"]) {
+  if (kind === "book") return cabinet.kindBook;
+  if (kind === "spend") return cabinet.kindSpend;
+  return cabinet.kindMessage;
 }
 
 function decisionCopy(
