@@ -13,9 +13,20 @@ npm run db:push
 npm run dev
 ```
 
+## Public URL
+
+Production: **https://foyerapp.dev** (`www` redirects here). Previews and production share Neon.
+
+```bash
+FOYER_URL=https://foyerapp.dev npm run demo
+```
+
+Local: `npm run demo` (defaults to `http://127.0.0.1:3001`). Presenter walkthrough: [docs/DEMO.md](docs/DEMO.md). Community list: `/{locale}/check`.
+
 ## Docs
 
 - [Hackathon plan](docs/HACKATHON.md) — architecture, protocol, build days
+- [Demo script](docs/DEMO.md) — eight-minute walk + §9 checklist
 - [Connect your runtime](docs/CONNECT.md) — MCP paste for Cursor / Claude / ChatGPT / OpenClaw; HTTP for a custom client
 - [Agent instructions](AGENTS.md) — invariants and layout for coding agents
 

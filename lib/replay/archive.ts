@@ -5,8 +5,8 @@ export type ReplayCase = {
   id: string;
   constitution: string;
   proposer: string;
-  objector: string;
-  kind: "book" | "message";
+  objector: string | null;
+  kind: "book" | "message" | "spend";
   asked: string;
   counter: string | null;
   decided: string;
@@ -63,6 +63,34 @@ export const REPLAY_CASES: ReplayCase[] = [
     counter: "Reply without a hard delivery date",
     decided: "Reply without a hard delivery date",
     outcome: "allow_b",
+    objectionGrounded: true,
+    judge: "offline",
+    tx: null,
+  },
+  {
+    id: "e",
+    constitution: REPLAY_CASE_A.constitution,
+    proposer: "Travel",
+    objector: null,
+    kind: "book",
+    asked: "Economy, €180",
+    counter: null,
+    decided: "Economy, €180",
+    outcome: "allow_a",
+    objectionGrounded: false,
+    judge: "offline",
+    tx: null,
+  },
+  {
+    id: "f",
+    constitution: "Spend freely. Never spend.",
+    proposer: "Travel",
+    objector: "Budget",
+    kind: "spend",
+    asked: "Pay the vendor €50",
+    counter: "Do not pay",
+    decided: "",
+    outcome: "escalate",
     objectionGrounded: true,
     judge: "offline",
     tx: null,
