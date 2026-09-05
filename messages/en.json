@@ -26,7 +26,9 @@
     "signInHint": "This wallet later tops up the treasury.",
     "signInError": "Could not sign in. Check the wallet and try again.",
     "openCabinet": "Cabinet",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "priceKicker": "Free while we test.",
+    "priceLead": "No plan yet. Leave an email below if you want a note when accounts open."
   },
   "cabinet": {
     "kicker": "Cabinet",
@@ -96,8 +98,8 @@
     "judgeOffline": "The court returned no verdict — nothing on-chain.",
     "cancel": "Cancel",
     "judgeOnchain": "On-chain verdict.",
-    "houses": "Houses",
-    "houseMine": "Your house",
+    "houses": "Places",
+    "houseMine": "Yours",
     "houseOrg": "Company",
     "members": "People",
     "membersLead": "They sign in with their own wallet. No second password.",
@@ -111,14 +113,14 @@
     "remove": "Remove",
     "memberYou": "you",
     "readOnly": "You can watch. Only the owner changes the rules or the treasury.",
-    "setupWait": "The owner is still setting this house up."
+    "setupWait": "The owner is still setting this up."
   },
   "wizard": {
     "next": "Continue",
     "saving": "Saving…",
     "rulesKicker": "Step 2 of 6",
-    "rulesTitle": "A few questions, then you can edit the text.",
-    "rulesLead": "Assistants will read this text — not the questionnaire.",
+    "rulesTitle": "Answer a few questions. You can edit the text after.",
+    "rulesLead": "Your assistants will follow this text, not the questions.",
     "qType": "Who is this for",
     "typePersonal": "Me",
     "typeOrg": "A company",
@@ -231,14 +233,14 @@
   "replay": {
     "kicker": "Archive",
     "title": "Finished cases",
-    "lead": "Same protocol as a live run. A live house shows a GenLayer tx when the court lands. This archive is frozen.",
+    "lead": "Same protocol as a live run. A live cabinet shows a GenLayer tx when the court lands. This archive is frozen.",
     "banner": "This is an archive. It is not the product.",
     "caseLabel": "Case {id}",
     "home": "Back to the start"
   },
   "tech": {
     "title": "HTTP / OpenAPI",
-    "lead": "Same house, same key. Register is only for a one-time enrollment token. The key below is already issued.",
+    "lead": "Same cabinet, same key. Register is only for a one-time enrollment token. The key below is already issued.",
     "loading": "Loading…",
     "openapi": "OpenAPI",
     "curlLabel": "curl",
@@ -261,14 +263,24 @@
       "A remedy verdict executes from remedy_action, without a human reading prose.",
       "An untouched request still resolves when nobody pokes the app (the tick).",
       "There is execution (at least a stub) and appeal.",
-      "A live house can show an on-chain tx when consensus lands.",
+      "A live cabinet can show an on-chain tx when consensus lands.",
       "Spawn does not pass itself off as the product.",
       "The public URL keeps state after a reload.",
-      "Someone else’s house stays invisible without its agent key or the owner’s wallet."
+      "Someone else’s cabinet stays invisible without its agent key or the owner’s wallet."
     ]
   },
   "protocol": {
     "title": "For developers",
     "lead": "Each assistant gets its own key and talks to Foyer only with that key."
+  },
+  "waitlist": {
+    "title": "Want a note later?",
+    "lead": "No wallet needed. We only write when the public test ends.",
+    "email": "Email",
+    "submit": "Notify me",
+    "submitting": "Saving…",
+    "thanks": "You’re on the list.",
+    "invalid": "That does not look like an email.",
+    "error": "Could not save that. Please try again."
   }
 }

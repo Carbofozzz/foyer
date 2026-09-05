@@ -23,17 +23,19 @@
     "signIn": "Cüzdanla giriş",
     "signingIn": "İmzalanıyor…",
     "checking": "Kontrol…",
-    "signInHint": "Evin kasasını sonra bu cüzdanla doldurursunuz.",
+    "signInHint": "Kasayı sonra bu cüzdanla doldurursunuz.",
     "signInError": "Giriş olmadı. Cüzdanı kontrol edip tekrar deneyin.",
-    "openCabinet": "Kabinet",
-    "signOut": "Çıkış"
+    "openCabinet": "Panel",
+    "signOut": "Çıkış",
+    "priceKicker": "Test sürerken ücretsiz.",
+    "priceLead": "Henüz plan yok. Hesaplar açılınca haber için aşağıya e-posta bırakın."
   },
   "cabinet": {
-    "kicker": "Kabinet",
+    "kicker": "Panel",
     "untitled": "Adsız",
     "constitution": "Kurallarınız",
     "agents": "Bağlı asistanlar",
-    "inbox": "Hareketler",
+    "inbox": "Aktivite",
     "emptyAgents": "Henüz bağlı asistan yok. İlkini bağlamak için aşağıdaki anahtarı kullanın.",
     "emptyInbox": "Henüz bir şey yok. İstekler ve kararlar bu listede görünecek.",
     "enrollment": "Asistan bağlama anahtarı",
@@ -78,7 +80,7 @@
     "depositAmount": "Yatırılacak GEN",
     "deposit": "Yatır",
     "depositing": "Gönderiliyor…",
-    "withdrawHint": "Ücreti kasa öder. Hepsini çekemezsiniz — fee için pay kalır.",
+    "withdrawHint": "Ücreti kasa öder. Hepsini çekemezsiniz — ücret için pay kalır.",
     "refreshing": "Bakiye güncelleniyor…",
     "withdrawAmount": "Çekilecek GEN",
     "withdrawTo": "Çekim adresi",
@@ -96,8 +98,8 @@
     "judgeOffline": "Mahkeme karar vermedi — zincir üstünde bir şey yok.",
     "cancel": "Vazgeç",
     "judgeOnchain": "Zincir üstü karar.",
-    "houses": "Evler",
-    "houseMine": "Sizin eviniz",
+    "houses": "Alanlar",
+    "houseMine": "Sizin",
     "houseOrg": "Şirket",
     "members": "Kişiler",
     "membersLead": "Kendi cüzdanlarıyla girerler. İkinci şifre yok.",
@@ -111,7 +113,7 @@
     "remove": "Kaldır",
     "memberYou": "siz",
     "readOnly": "İzleyebilirsiniz. Kuralları ve kasayı yalnız sahip değiştirir.",
-    "setupWait": "Sahip bu evi hâlâ kuruyor."
+    "setupWait": "Sahip bunu hâlâ kuruyor."
   },
   "wizard": {
     "next": "Devam",
@@ -198,7 +200,7 @@
     "run": "Demoyu dene",
     "running": "Başlatılıyor…",
     "error": "Demo başlamadı. Lütfen tekrar deneyin.",
-    "banner": "Bu bir demo, sizin kabinetiniz değil.",
+    "banner": "Bu bir demo, sizin paneliniz değil.",
     "watch": "Bitmiş bir davayı izle"
   },
   "appeal": {
@@ -216,7 +218,7 @@
   "notFound": {
     "kicker": "Yok",
     "title": "Bu sayfa yok.",
-    "lead": "Bağlantı yanlış olabilir veya bu kabinet yok.",
+    "lead": "Bağlantı yanlış olabilir veya bu panel yok.",
     "home": "Başa dön"
   },
   "outline": {
@@ -231,14 +233,14 @@
   "replay": {
     "kicker": "Arşiv",
     "title": "Bitmiş davalar",
-    "lead": "Canlı koşuyla aynı protokol. Canlı kabinette mahkeme oturunca GenLayer tx görünür. Bu arşiv donmuş.",
+    "lead": "Canlı koşuyla aynı protokol. Canlı panelde mahkeme oturunca GenLayer tx görünür. Bu arşiv donmuş.",
     "banner": "Bu bir arşiv. Ürün bu değil.",
     "caseLabel": "Dava {id}",
     "home": "Başa dön"
   },
   "tech": {
     "title": "HTTP / OpenAPI",
-    "lead": "Aynı kabinet, aynı anahtar. Register yalnızca tek kullanımlık enrollment içindir. Aşağıdaki anahtar zaten verildi.",
+    "lead": "Aynı panel, aynı anahtar. Register yalnızca tek kullanımlık enrollment içindir. Aşağıdaki anahtar zaten verildi.",
     "loading": "Yükleniyor…",
     "openapi": "OpenAPI",
     "curlLabel": "curl",
@@ -250,7 +252,7 @@
   "check": {
     "kicker": "Topluluk",
     "title": "Nasıl test edilir",
-    "lead": "Bu listeyi genel URL’de yürütün. Ürün kabinet, demo değil.",
+    "lead": "Bu listeyi genel URL’de yürütün. Ürün panel, demo değil.",
     "open": "Topluluk listesi",
     "home": "Başa dön",
     "items": [
@@ -258,17 +260,27 @@
       "Tek kendi asistanla bile anlaşmazlık çıkar (koruyucu).",
       "Anlaşmazlık ajan çağrılarıyla gider, “ben bütçeyim” tıklamalarıyla değil.",
       "Dört sonuç da görünür; allow_b hem karşı teklif hem salt blok olarak.",
-      "Remedy kararı remedy_action’dan yürür, insan nesir okumaz.",
+      "Remedy kararı remedy_action’dan yürür, kimse düz metin okumaz.",
       "Dokunulmayan istek, kimse uygulamayı açmasa da kapanır (tick).",
       "Yürütme (en azından stub) ve itiraz vardır.",
-      "Canlı kabinet, konsensüs oturunca zincir üstü tx gösterebilir.",
+      "Canlı panel, konsensüs oturunca zincir üstü tx gösterebilir.",
       "Demo kendini ürün diye satmaz.",
       "Genel URL yenilemeden sonra durumu korur.",
-      "Başkasının kabineti ajan anahtarı veya sahip cüzdanı olmadan görünmez."
+      "Başkasının paneli ajan anahtarı veya sahip cüzdanı olmadan görünmez."
     ]
   },
   "protocol": {
     "title": "Geliştiriciler için",
     "lead": "Her asistan kendi anahtarını alır ve Foyer’e yalnızca onunla gelir."
+  },
+  "waitlist": {
+    "title": "Sonra haber ister misiniz?",
+    "lead": "Cüzdan gerekmez. Genel deneme bitince yazarız.",
+    "email": "E-posta",
+    "submit": "Haber ver",
+    "submitting": "Kaydediliyor…",
+    "thanks": "Listeye alındınız.",
+    "invalid": "Bu bir e-posta gibi durmuyor.",
+    "error": "Kaydedilemedi. Lütfen tekrar deneyin."
   }
 }

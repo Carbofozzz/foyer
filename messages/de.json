@@ -22,11 +22,13 @@
     "error": "Das hat nicht geklappt. Bitte erneut versuchen.",
     "signIn": "Mit Wallet anmelden",
     "signingIn": "Wird unterschrieben…",
-    "checking": "Prüfe…",
+    "checking": "Wird geprüft…",
     "signInHint": "Mit diesem Wallet zahlen Sie später in die Kasse ein.",
     "signInError": "Anmeldung fehlgeschlagen. Wallet prüfen und erneut versuchen.",
     "openCabinet": "Kabinett",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "priceKicker": "Während des Tests kostenlos.",
+    "priceLead": "Noch kein Tarif. Hinterlassen Sie unten eine E-Mail, wenn Sie Bescheid wollen, sobald Konten offen sind."
   },
   "cabinet": {
     "kicker": "Kabinett",
@@ -72,37 +74,37 @@
     "copyAddress": "Adresse kopieren",
     "copied": "Kopiert",
     "connectWallet": "Wallet zum Einzahlen",
-    "connecting": "Verbinde…",
+    "connecting": "Wird verbunden…",
     "walletConnected": "Ihr Wallet",
     "depositHint": "GEN geht von Ihrem verbundenen Wallet an diese Adresse.",
     "depositAmount": "GEN einzahlen",
     "deposit": "Einzahlen",
-    "depositing": "Sende…",
-    "withdrawHint": "Die Gebühr zahlt die Kasse. Nicht alles abheben — ein Rest bleibt für das Fee.",
+    "depositing": "Wird gesendet…",
+    "withdrawHint": "Die Gebühr zahlt die Kasse. Nicht alles abheben — ein Rest bleibt für die Gebühr.",
     "refreshing": "Saldo wird aktualisiert…",
     "withdrawAmount": "GEN abheben",
     "withdrawTo": "Auszahlen an",
     "withdraw": "Abheben",
-    "withdrawing": "Hebe ab…",
+    "withdrawing": "Wird abgehoben…",
     "history": "Transaktionen",
     "emptyHistory": "Noch keine Überweisungen.",
     "txDeposit": "Einzahlung",
     "txWithdraw": "Abhebung",
     "txCourt": "Gericht",
     "exportKey": "Privaten Schlüssel exportieren",
-    "exporting": "Exportiere…",
+    "exporting": "Wird exportiert…",
     "copyKey": "Schlüssel kopieren",
     "privateKeyHint": "Wer den Schlüssel hat, kann dieses GEN ausgeben.",
     "judgeOffline": "Das Gericht hat kein Urteil geliefert — nichts on-chain.",
     "cancel": "Abbrechen",
     "judgeOnchain": "On-Chain-Urteil.",
-    "houses": "Häuser",
-    "houseMine": "Ihr Haus",
+    "houses": "Orte",
+    "houseMine": "Ihres",
     "houseOrg": "Firma",
     "members": "Personen",
     "membersLead": "Sie melden sich mit ihrem eigenen Wallet an. Kein zweites Passwort.",
     "memberOwner": "Inhaber",
-    "memberOperator": "Operator",
+    "memberOperator": "Verwalter",
     "memberObserver": "Beobachter",
     "invite": "Einladen",
     "inviteAddress": "Wallet-Adresse",
@@ -111,7 +113,7 @@
     "remove": "Entfernen",
     "memberYou": "Sie",
     "readOnly": "Sie können zusehen. Nur der Inhaber ändert Regeln oder Kasse.",
-    "setupWait": "Der Inhaber richtet dieses Haus noch ein."
+    "setupWait": "Der Inhaber richtet das noch ein."
   },
   "wizard": {
     "next": "Weiter",
@@ -198,7 +200,7 @@
     "run": "Demo starten",
     "running": "Startet…",
     "error": "Die Demo ging nicht. Bitte erneut versuchen.",
-    "banner": "Das ist eine Demo, nicht dein Kabinett.",
+    "banner": "Das ist eine Demo, nicht Ihr Kabinett.",
     "watch": "Einen abgeschlossenen Fall ansehen"
   },
   "appeal": {
@@ -222,11 +224,11 @@
   "outline": {
     "kicker": "So funktioniert es",
     "constitutionTitle": "Regeln",
-    "constitutionLead": "Du schreibst, was erlaubt ist. Alle Assistenten folgen demselben Text. Das Gericht liest ihn auch.",
+    "constitutionLead": "Sie schreiben, was erlaubt ist. Alle Assistenten folgen demselben Text. Das Gericht liest ihn auch.",
     "gatewayTitle": "Zugang",
     "gatewayLead": "Ein Assistent zahlt, bucht oder schreibt nicht selbst nach draußen. Er fragt über Foyer. Kein Einspruch — dann geht es.",
     "courtTitle": "Gericht",
-    "courtLead": "Uneinig — das Gericht entscheidet: ja, nein, Kompromiss oder dich fragen. Keine Entscheidung — dann du. Berufung ist möglich."
+    "courtLead": "Uneinig — das Gericht entscheidet: ja, nein, Kompromiss oder Sie fragen. Keine Entscheidung — dann Sie. Berufung ist möglich."
   },
   "replay": {
     "kicker": "Archiv",
@@ -270,5 +272,15 @@
   "protocol": {
     "title": "Für Entwickler",
     "lead": "Jeder Assistent bekommt einen eigenen Schlüssel und spricht mit Foyer nur darüber."
+  },
+  "waitlist": {
+    "title": "Später Bescheid?",
+    "lead": "Kein Wallet nötig. Wir schreiben nur, wenn der öffentliche Test endet.",
+    "email": "E-Mail",
+    "submit": "Bescheid geben",
+    "submitting": "Wird gespeichert…",
+    "thanks": "Sie stehen auf der Liste.",
+    "invalid": "Das sieht nicht nach einer E-Mail aus.",
+    "error": "Das hat nicht geklappt. Bitte erneut versuchen."
   }
 }

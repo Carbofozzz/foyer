@@ -25,11 +25,13 @@
     "checking": "Comprobando…",
     "signInHint": "Con esta cartera recargas luego la caja.",
     "signInError": "No se pudo entrar. Revisa la cartera e inténtalo de nuevo.",
-    "openCabinet": "Gabinete",
-    "signOut": "Salir"
+    "openCabinet": "Panel",
+    "signOut": "Salir",
+    "priceKicker": "Gratis mientras probamos.",
+    "priceLead": "Aún no hay plan. Deja un correo abajo si quieres aviso cuando abramos cuentas."
   },
   "cabinet": {
-    "kicker": "Gabinete",
+    "kicker": "Panel",
     "untitled": "Sin título",
     "constitution": "Tus reglas",
     "agents": "Asistentes conectados",
@@ -96,12 +98,12 @@
     "judgeOffline": "El tribunal no dio veredicto: nada en cadena.",
     "cancel": "Cancelar",
     "judgeOnchain": "Veredicto en cadena.",
-    "houses": "Casas",
-    "houseMine": "Tu casa",
+    "houses": "Espacios",
+    "houseMine": "El tuyo",
     "houseOrg": "Empresa",
     "members": "Personas",
     "membersLead": "Entran con su propia cartera. No hay segunda contraseña.",
-    "memberOwner": "Dueño",
+    "memberOwner": "Titular",
     "memberOperator": "Operador",
     "memberObserver": "Observador",
     "invite": "Invitar",
@@ -110,15 +112,15 @@
     "inviting": "Invitando…",
     "remove": "Quitar",
     "memberYou": "tú",
-    "readOnly": "Puedes mirar. Solo el dueño cambia las reglas o la caja.",
-    "setupWait": "El dueño aún está preparando esta casa."
+    "readOnly": "Puedes mirar. Solo el titular cambia las reglas o la caja.",
+    "setupWait": "El titular aún está preparando esto."
   },
   "wizard": {
     "next": "Seguir",
     "saving": "Guardando…",
     "rulesKicker": "Paso 2 de 6",
-    "rulesTitle": "Unas preguntas; luego puedes editar el texto.",
-    "rulesLead": "Los asistentes leerán este texto, no el cuestionario.",
+    "rulesTitle": "Responde unas preguntas. Luego puedes editar el texto.",
+    "rulesLead": "Los asistentes seguirán este texto, no las preguntas.",
     "qType": "Para quién",
     "typePersonal": "Para mí",
     "typeOrg": "Para una empresa",
@@ -198,7 +200,7 @@
     "run": "Probar una demo",
     "running": "Arrancando…",
     "error": "No se pudo arrancar. Inténtalo de nuevo.",
-    "banner": "Esto es una demo, no tu gabinete.",
+    "banner": "Esto es una demo, no tu panel.",
     "watch": "Ver un caso cerrado"
   },
   "appeal": {
@@ -216,7 +218,7 @@
   "notFound": {
     "kicker": "No está",
     "title": "Esta página no está.",
-    "lead": "El enlace puede ser incorrecto, o este gabinete no existe.",
+    "lead": "El enlace puede ser incorrecto, o este panel no existe.",
     "home": "Volver al inicio"
   },
   "outline": {
@@ -231,14 +233,14 @@
   "replay": {
     "kicker": "Archivo",
     "title": "Casos cerrados",
-    "lead": "El mismo protocolo que una corrida en vivo. Un gabinete vivo muestra un tx de GenLayer cuando hay veredicto. Este archivo está congelado.",
+    "lead": "El mismo protocolo que una corrida en vivo. Un panel vivo muestra un tx de GenLayer cuando hay veredicto. Este archivo está congelado.",
     "banner": "Esto es un archivo. No es el producto.",
     "caseLabel": "Caso {id}",
     "home": "Volver al inicio"
   },
   "tech": {
     "title": "HTTP / OpenAPI",
-    "lead": "El mismo gabinete, la misma clave. Register solo sirve para un token de alta. La clave de abajo ya está emitida.",
+    "lead": "El mismo panel, la misma clave. Register solo sirve para un token de alta. La clave de abajo ya está emitida.",
     "loading": "Cargando…",
     "openapi": "OpenAPI",
     "curlLabel": "curl",
@@ -250,7 +252,7 @@
   "check": {
     "kicker": "Comunidad",
     "title": "Cómo probar",
-    "lead": "Recorre esta lista en la URL pública. El producto es el gabinete, no la demo.",
+    "lead": "Recorre esta lista en la URL pública. El producto es el panel, no la demo.",
     "open": "Lista de la comunidad",
     "home": "Volver al inicio",
     "items": [
@@ -261,14 +263,24 @@
       "Un veredicto remedy se ejecuta desde remedy_action, sin que un humano lea prosa.",
       "Una petición sin tocar igual se resuelve si nadie abre la app (el tick).",
       "Hay ejecución (al menos un stub) y apelación.",
-      "Un gabinete vivo puede mostrar un tx en cadena cuando hay consenso.",
+      "Un panel vivo puede mostrar un tx en cadena cuando hay consenso.",
       "La demo no se hace pasar por el producto.",
       "La URL pública guarda el estado tras recargar.",
-      "El gabinete de otro no se ve sin su clave de agente o la cartera del dueño."
+      "El panel de otro no se ve sin su clave de agente o la cartera del titular."
     ]
   },
   "protocol": {
     "title": "Para desarrolladores",
     "lead": "Cada asistente recibe su clave y habla con Foyer solo con esa clave."
+  },
+  "waitlist": {
+    "title": "¿Quieres que te avisemos?",
+    "lead": "No hace falta cartera. Solo escribimos cuando acabe la prueba pública.",
+    "email": "Correo",
+    "submit": "Avísame",
+    "submitting": "Guardando…",
+    "thanks": "Ya estás en la lista.",
+    "invalid": "Eso no parece un correo.",
+    "error": "No se pudo guardar. Inténtalo de nuevo."
   }
 }

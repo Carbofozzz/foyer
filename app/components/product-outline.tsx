@@ -39,15 +39,15 @@ export function ProductOutline({
           </article>
         </div>
       </section>
-      <section className="card stack">
-        <h2 className="section-title">{protocol.title}</h2>
+      <details className="card stack protocol-fold">
+        <summary className="section-title">{protocol.title}</summary>
         <p className="hint">{protocol.lead}</p>
         <ul className="method-list">
           {METHODS.map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>
-      </section>
+      </details>
     </>
   );
 }
