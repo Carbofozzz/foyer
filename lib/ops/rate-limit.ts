@@ -11,6 +11,7 @@ export const LIMITS = {
   nonce: { max: 40, windowSec: 900 },
   verify: { max: 20, windowSec: 900 },
   propose: { max: 40, windowSec: 3600 },
+  proposeAgent: { max: 20, windowSec: 3600 },
   object: { max: 40, windowSec: 3600 },
   enroll: { max: 20, windowSec: 3600 },
   mcp: { max: 80, windowSec: 3600 },
@@ -18,7 +19,11 @@ export const LIMITS = {
 
 /** Returns true when the caller is over the limit. */
 export async function overLimit(request: Request, route: string, limit: RateLimit): Promise<boolean> {
-  const key = `${route}:${hashClient(request)}`;
+  return overLimitKey(`${route}:${hashClient(request)}`, limit);
+}
+
+/** Same bucket math, for a named key (agent id, not IP). */
+export async function overLimitKey(key: string, limit: RateLimit): Promise<boolean> {
   const db = getDb();
   const now = new Date();
   const [row] = await db.select().from(rateBuckets).where(eq(rateBuckets.key, key)).limit(1);

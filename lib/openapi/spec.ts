@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.11.0",
+      version: "0.13.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -98,9 +98,9 @@ export function openApiSpec(origin: string) {
           description: "What the gateway would execute through an adapter.",
           properties: {
             kind: { type: "string", enum: [...ACTION_KINDS] },
-            summary: { type: "string" },
-            amount: { type: "number" },
-            currency: { type: "string" },
+            summary: { type: "string", maxLength: 500 },
+            amount: { type: "number", minimum: 0 },
+            currency: { type: "string", maxLength: 8, pattern: "^[A-Za-z]{1,8}$" },
           },
           required: ["kind", "summary"],
         },
@@ -108,7 +108,7 @@ export function openApiSpec(origin: string) {
           type: "object",
           properties: {
             type: { type: "string", enum: ["text", "link", "stub"] },
-            value: { type: "string" },
+            value: { type: "string", maxLength: 2000 },
           },
           required: ["type", "value"],
         },
@@ -140,16 +140,20 @@ export function openApiSpec(origin: string) {
           properties: {
             kind: { type: "string", enum: [...ACTION_KINDS] },
             payload: { $ref: "#/components/schemas/ActionPayload" },
-            justification: { type: "string" },
-            evidence: { type: "array", items: { $ref: "#/components/schemas/EvidenceItem" } },
+            justification: { type: "string", maxLength: 2000 },
+            evidence: {
+              type: "array",
+              maxItems: 8,
+              items: { $ref: "#/components/schemas/EvidenceItem" },
+            },
           },
-          required: ["kind", "payload"],
+          required: ["kind", "payload", "justification"],
         },
         ObjectionRequest: {
           type: "object",
           description: "Leave counter_action null for a pure block.",
           properties: {
-            justification: { type: "string" },
+            justification: { type: "string", maxLength: 2000 },
             evidence: { type: "array", items: { $ref: "#/components/schemas/EvidenceItem" } },
             counter_action: { oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }] },
           },

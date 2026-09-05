@@ -16,6 +16,7 @@ npm run dev
 ## Docs
 
 - [Hackathon plan](docs/HACKATHON.md) — architecture, protocol, build days
+- [Connect your runtime](docs/CONNECT.md) — MCP paste for Cursor / Claude / ChatGPT / OpenClaw; HTTP for a custom client
 - [Agent instructions](AGENTS.md) — invariants and layout for coding agents
 
 Pitch copy, discussion notes, and other working files live in [`.local/`](.local/) (gitignored).

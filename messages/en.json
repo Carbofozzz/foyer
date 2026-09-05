@@ -197,12 +197,13 @@
     "loading": "Loading…"
   },
   "spawn": {
-    "title": "Want to see it first?",
-    "lead": "A short demo: two assistants disagree, the court decides.",
-    "run": "Try a demo",
+    "kicker": "Harness",
+    "title": "No runtime of your own?",
+    "lead": "A throwaway house with test clients. Same protocol. Not the product.",
+    "run": "Start the harness",
     "running": "Starting…",
-    "error": "Could not start the demo. Please try again.",
-    "banner": "This is a demo, not your cabinet.",
+    "error": "Could not start the harness. Please try again.",
+    "banner": "This is a harness, not your cabinet.",
     "watch": "Watch a finished case"
   },
   "appeal": {
@@ -247,6 +248,7 @@
     "openapi": "OpenAPI",
     "curlLabel": "curl",
     "pythonLabel": "Python",
+    "mcpLabel": "MCP ping",
     "cliLabel": "External client",
     "copy": "Copy",
     "copied": "Copied"
@@ -254,7 +256,7 @@
   "check": {
     "kicker": "Community",
     "title": "How to test",
-    "lead": "Walk this list on the public URL. The product is the cabinet, not spawn.",
+    "lead": "Walk this list on the public URL. The product is the cabinet, not the harness.",
     "open": "Community checklist",
     "home": "Back to the start",
     "items": [
@@ -266,7 +268,7 @@
       "An untouched request still resolves when nobody pokes the app (the tick).",
       "There is execution (at least a stub) and appeal.",
       "A live cabinet can show an on-chain tx when consensus lands.",
-      "Spawn does not pass itself off as the product.",
+      "The harness does not pass itself off as the product.",
       "The public URL keeps state after a reload.",
       "Someone else’s cabinet stays invisible without its agent key or the owner’s wallet."
     ]
@@ -300,6 +302,40 @@
     "cronElsewhere": "Cron runs on production. This deploy uses the same store.",
     "writes": "{n} public writes in the last hour, {limited} limited.",
     "open": "Status",
+    "home": "Back to the start",
+    "health": "Machine status"
+  },
+  "connectDoc": {
+    "kicker": "Connect",
+    "title": "Connect your runtime",
+    "lead": "Your assistant talks to Foyer with an agent key. Paste the MCP block from the cabinet. Spawn is a harness, not this path.",
+    "product": "This is the product path: Cursor, Claude Desktop, ChatGPT, or OpenClaw.",
+    "off": "Turn off payment and calendar tools on the assistant. Otherwise it walks around Foyer.",
+    "prompt": "Put the three cabinet lines in the system prompt. The lock is still the tools, not the prompt.",
+    "cursor": "Cursor → Settings → MCP. Paste the block. Restart the agent if it was already open.",
+    "claude": "Paste the same block into Claude Desktop MCP settings.",
+    "chatgpt": "Add an HTTP MCP server. URL and bearer header are in the block.",
+    "openclaw": "Paste the same block into OpenClaw MCP settings.",
+    "http": "Writing your own client? Use the HTTP / OpenAPI tab in the cabinet. Same key. GET /api/openapi.",
+    "spawn": "No runtime at all? The landing harness starts throwaway clients. That is not your cabinet.",
+    "open": "Connect a runtime",
+    "home": "Back to the start"
+  },
+  "legal": {
+    "kicker": "Legal",
+    "title": "Legal notice",
+    "lead": "Foyer is a public test. This is not a company filing and not legal advice.",
+    "body": "The service is offered as-is while we try the protocol. Do not put real money or production agents on it yet.",
+    "contact": "Questions: leave an email on the home page.",
+    "open": "Legal",
+    "home": "Back to the start"
+  },
+  "privacy": {
+    "kicker": "Privacy",
+    "title": "Privacy",
+    "lead": "We keep as little as we can.",
+    "body": "Wallet address if you sign in. Email if you join the waitlist. Hashed IP on public writes, for rate limits, without request bodies. Agent keys stay in your runtime.",
+    "open": "Privacy",
     "home": "Back to the start"
   }
 }

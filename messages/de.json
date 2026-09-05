@@ -197,12 +197,13 @@
     "loading": "Laden…"
   },
   "spawn": {
-    "title": "Erst mal ansehen?",
-    "lead": "Kurze Demo: zwei Assistenten streiten, das Gericht entscheidet.",
-    "run": "Demo starten",
+    "kicker": "Harness",
+    "title": "Kein eigenes Runtime?",
+    "lead": "Ein Wegwerf-Ort mit Test-Clients. Dasselbe Protokoll. Nicht das Produkt.",
+    "run": "Harness starten",
     "running": "Startet…",
-    "error": "Die Demo ging nicht. Bitte erneut versuchen.",
-    "banner": "Das ist eine Demo, nicht Ihr Kabinett.",
+    "error": "Das Harness ging nicht. Bitte erneut versuchen.",
+    "banner": "Das ist ein Harness, nicht Ihr Kabinett.",
     "watch": "Einen abgeschlossenen Fall ansehen"
   },
   "appeal": {
@@ -247,14 +248,15 @@
     "openapi": "OpenAPI",
     "curlLabel": "curl",
     "pythonLabel": "Python",
+    "mcpLabel": "MCP-Ping",
     "cliLabel": "Externer Client",
     "copy": "Kopieren",
     "copied": "Kopiert"
   },
   "check": {
-    "kicker": "Community",
+    "kicker": "Gemeinschaft",
     "title": "So testen",
-    "lead": "Diese Liste auf der öffentlichen URL durchgehen. Das Produkt ist das Kabinett, nicht die Demo.",
+    "lead": "Diese Liste auf der öffentlichen URL durchgehen. Das Produkt ist das Kabinett, nicht das Harness.",
     "open": "Community-Checkliste",
     "home": "Zurück zum Start",
     "items": [
@@ -266,7 +268,7 @@
       "Eine unberührte Anfrage löst sich trotzdem, wenn niemand die App anfasst (Tick).",
       "Es gibt Ausführung (mindestens Stub) und Berufung.",
       "Ein lebendes Kabinett kann eine On-Chain-Tx zeigen, wenn Konsens landet.",
-      "Die Demo gibt sich nicht als Produkt aus.",
+      "Das Harness gibt sich nicht als Produkt aus.",
       "Die öffentliche URL behält den Stand nach dem Neuladen.",
       "Ein fremdes Kabinett bleibt unsichtbar ohne Agent-Schlüssel oder das Wallet des Besitzers."
     ]
@@ -295,11 +297,45 @@
     "never": "Noch kein Tick gespeichert.",
     "env": "Dieses Deploy",
     "db": "Datenbank",
-    "cron": "Scheduler",
+    "cron": "Zeitplan",
     "cronHere": "Der Cron läuft auf diesem Deploy.",
     "cronElsewhere": "Der Cron läuft in Production. Dieses Deploy nutzt denselben Speicher.",
     "writes": "{n} öffentliche Schreibzugriffe in der letzten Stunde, {limited} begrenzt.",
     "open": "Status",
+    "home": "Zurück zum Start",
+    "health": "Maschinenstatus"
+  },
+  "connectDoc": {
+    "kicker": "Verbinden",
+    "title": "Runtime verbinden",
+    "lead": "Ihr Assistent spricht mit Foyer über einen Agent-Schlüssel. Den MCP-Block aus dem Kabinett einfügen. Das Harness ist nicht dieser Weg.",
+    "product": "Das ist der Produktweg: Cursor, Claude Desktop, ChatGPT oder OpenClaw.",
+    "off": "Zahlungs- und Kalender-Tools des Assistenten ausschalten. Sonst umgeht er Foyer.",
+    "prompt": "Die drei Zeilen aus dem Kabinett in den Systemprompt. Die Sperre sind die Tools, nicht der Text.",
+    "cursor": "Cursor → Settings → MCP. Block einfügen. Agent neu starten, wenn er schon lief.",
+    "claude": "Denselben Block in die MCP-Einstellungen von Claude Desktop.",
+    "chatgpt": "Einen HTTP-MCP-Server hinzufügen. URL und Bearer stehen im Block.",
+    "openclaw": "Denselben Block in die MCP-Einstellungen von OpenClaw.",
+    "http": "Eigenen Client? Den Tab HTTP / OpenAPI im Kabinett. Derselbe Schlüssel. GET /api/openapi.",
+    "spawn": "Kein Runtime? Das Harness auf der Startseite startet Wegwerf-Clients. Das ist nicht Ihr Kabinett.",
+    "open": "Runtime verbinden",
+    "home": "Zurück zum Start"
+  },
+  "legal": {
+    "kicker": "Rechtliches",
+    "title": "Rechtlicher Hinweis",
+    "lead": "Foyer ist ein öffentlicher Test. Das ist keine Firmenangabe und keine Rechtsberatung.",
+    "body": "Der Dienst steht so bereit, während wir das Protokoll prüfen. Legen Sie noch kein echtes Geld und keine Produktionsagenten hinein.",
+    "contact": "Fragen: hinterlassen Sie auf der Startseite eine E-Mail.",
+    "open": "Rechtliches",
+    "home": "Zurück zum Start"
+  },
+  "privacy": {
+    "kicker": "Datenschutz",
+    "title": "Datenschutz",
+    "lead": "Wir speichern so wenig wie möglich.",
+    "body": "Wallet-Adresse, wenn Sie sich anmelden. E-Mail, wenn Sie auf die Liste gehen. Gehashte IP bei öffentlichen Schreibzugriffen, für das Limit, ohne Anfragetext. Agentenschlüssel bleiben in Ihrem Runtime.",
+    "open": "Datenschutz",
     "home": "Zurück zum Start"
   }
 }

@@ -6,6 +6,7 @@ import { ProtocolError } from "./errors";
 import { engagedIds, loadActionBundle, lockedKinds, serializeAction, type HouseAuth } from "./bundle";
 import { parseCounterAction, parseEvidence, parseKind, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
+import { assertHouseProposeRoom, assertJustification } from "./abuse";
 
 export async function proposeAction(auth: HouseAuth, body: Record<string, unknown>, now: Date) {
   const kind = parseKind(body.kind);
@@ -16,7 +17,9 @@ export async function proposeAction(auth: HouseAuth, body: Record<string, unknow
   const payload = parsePayload(kind, body.payload ?? body);
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
   if (!justification) throw new ProtocolError("bad_request", "justification is required", 400);
+  assertJustification(justification);
   const evidence = parseEvidence(body.evidence);
+  await assertHouseProposeRoom(auth.principal.id);
   const id = mintToken("act");
   const db = getDb();
   await db.insert(actions).values({
@@ -53,6 +56,7 @@ export async function fileObjection(
   }
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
   if (!justification) throw new ProtocolError("bad_request", "justification is required", 400);
+  assertJustification(justification);
   const evidence = parseEvidence(body.evidence);
   const counter = parseCounterAction(body.counter_action);
   const objectionId = mintToken("obj");

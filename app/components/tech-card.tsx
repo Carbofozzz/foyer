@@ -14,13 +14,17 @@ type ConnectPayload = {
 export function TechCard({
   token,
   houseId,
+  locale,
   t,
   errorLabel,
+  docLabel,
 }: {
   token: string;
   houseId?: string;
+  locale: string;
   t: Messages["tech"];
   errorLabel: string;
+  docLabel: string;
 }) {
   const [data, setData] = useState<ConnectPayload | null>(null);
   const [error, setError] = useState(false);
@@ -41,12 +45,18 @@ export function TechCard({
   const origin = data.mcp_url.replace(/\/api\/mcp$/, "");
   const curl = curlSample(origin, data.agent_key);
   const python = pythonSample(origin, data.agent_key);
-  const cli = `FOYER_URL=${origin} FOYER_AGENT_KEY=${data.agent_key} npm run http:client`;
+  const mcp = mcpPingSample(origin, data.agent_key);
+  const cli = [
+    `FOYER_URL=${origin} FOYER_AGENT_KEY=${data.agent_key} npm run http:client`,
+    `FOYER_URL=${origin} FOYER_AGENT_KEY=${data.agent_key} npm run http:client -- --propose`,
+  ].join("\n");
 
   return (
     <div className="stack">
       <p className="hint">{t.lead}</p>
       <p>
+        <a href={`/${locale}/connect`}>{docLabel}</a>
+        {" · "}
         <a href="/api/openapi" target="_blank" rel="noreferrer">
           {t.openapi}
         </a>
@@ -62,8 +72,13 @@ export function TechCard({
       </label>
       <CopyButton text={python} copyLabel={t.copy} copiedLabel={t.copied} />
       <label>
+        {t.mcpLabel}
+        <textarea readOnly rows={3} value={mcp} />
+      </label>
+      <CopyButton text={mcp} copyLabel={t.copy} copiedLabel={t.copied} />
+      <label>
         {t.cliLabel}
-        <textarea readOnly rows={2} value={cli} />
+        <textarea readOnly rows={3} value={cli} />
       </label>
       <CopyButton text={cli} copyLabel={t.copy} copiedLabel={t.copied} />
     </div>
@@ -95,5 +110,12 @@ function pythonSample(origin: string, key: string) {
     "    headers={\"Authorization\": f\"Bearer {KEY}\"},",
     ")",
     "print(json.load(urllib.request.urlopen(req)))",
+  ].join("\n");
+}
+
+function mcpPingSample(origin: string, key: string) {
+  return [
+    `curl -s ${origin}/api/mcp \\`,
+    `  -H "Authorization: Bearer ${key}"`,
   ].join("\n");
 }
