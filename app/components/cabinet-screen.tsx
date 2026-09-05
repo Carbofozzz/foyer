@@ -174,7 +174,7 @@ function FeedRow({
   const objector = firstObjection ? (names[firstObjection.objector_id] ?? firstObjection.objector_id) : null;
   const counter = firstObjection ? formatAction(firstObjection.counter_action) : "";
   const decided = decisionAction(item);
-  const decision = decisionLine(item, t, decided);
+  const decision = decisionLine(item, t, decided, now);
   const carried = formatAction(executedPayload(item.executions[0]?.result));
 
   return (
@@ -246,11 +246,16 @@ function statusLabel(status: string, t: FeedCopy) {
   return status;
 }
 
-function decisionLine(item: InboxItem, t: FeedCopy, decided: string) {
+function decisionLine(item: InboxItem, t: FeedCopy, decided: string, now: number) {
   const verdict = item.verdict;
   if (!verdict) {
     if (item.status === "executed") return t.silence;
-    if (item.status === "open") return t.waiting;
+    if (item.status === "open") {
+      // Objected and past the silence window: the court is the only thing left.
+      const deadlocked =
+        item.objections.length > 0 && new Date(item.silence_until).getTime() <= now;
+      return deadlocked ? t.inCourt : t.waiting;
+    }
     return null;
   }
   if (verdict.outcome === "allow_a") return t.allowA;

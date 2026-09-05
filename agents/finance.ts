@@ -1,7 +1,8 @@
 import type { ActionKind } from "@/lib/protocol/types";
 import type { OpenInboxItem, ObjectionDraft } from "./types";
 
-const WATCH = /finance|финанс|spend|limit|трат|finanz|gasto/i;
+/** The org charter has to hand Finance the block over the monthly limit. */
+const GRANT = /(finance|finanzas|finanz|финанс)[^.]*(block|bloquear|blockieren|engelle|блокир)/i;
 
 /** Finance guardian: org counterpart of Budget on spend. */
 export function decideFinanceTurn(input: {
@@ -11,7 +12,7 @@ export function decideFinanceTurn(input: {
 }): ObjectionDraft[] {
   const drafts: ObjectionDraft[] = [];
   const charter = input.constitution.trim();
-  if (!WATCH.test(charter) && charter.length === 0) return drafts;
+  if (!GRANT.test(charter)) return drafts;
 
   for (const item of input.items) {
     if (item.status !== "open") continue;

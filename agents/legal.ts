@@ -1,6 +1,8 @@
 import type { OpenInboxItem, ObjectionDraft } from "./types";
 
-const LEGAL = /contract|legal|deadline|договор|срок|contrato|frist/i;
+/** Legal speaks only for a charter that caps a promise at the contract. */
+const GRANT =
+  /wider than the contract|más amplio que el contrato|weiter ist als der Vertrag|sözleşmeden geniş|срок шире/i;
 const PROMISE = /promise|friday|deadline|обещ|пятниц|fecha|termin/i;
 
 /** Legal guardian: object when a message promises more than the contract. */
@@ -11,7 +13,7 @@ export function decideLegalTurn(input: {
 }): ObjectionDraft[] {
   const drafts: ObjectionDraft[] = [];
   const charter = input.constitution.trim();
-  if (!LEGAL.test(charter) && charter.length === 0) return drafts;
+  if (!GRANT.test(charter)) return drafts;
 
   for (const item of input.items) {
     if (item.status !== "open") continue;
