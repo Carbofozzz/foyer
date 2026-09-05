@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.7.0",
+      version: "0.9.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -197,6 +197,19 @@ export function openApiSpec(origin: string) {
           },
           required: ["items"],
         },
+        WaitlistRequest: {
+          type: "object",
+          properties: {
+            email: { type: "string", format: "email" },
+            locale: { type: "string", enum: ["en", "es", "de", "tr", "ru"] },
+          },
+          required: ["email"],
+        },
+        WaitlistOk: {
+          type: "object",
+          properties: { ok: { type: "boolean" } },
+          required: ["ok"],
+        },
       },
     },
     paths: {
@@ -272,6 +285,15 @@ export function openApiSpec(origin: string) {
       },
       "/api/tick": {
         post: operation({ id: "tick", summary: "Cron sweep for every house", auth: "cron" }),
+      },
+      "/api/waitlist": {
+        post: operation({
+          id: "joinWaitlist",
+          summary: "Join the public-test waitlist; the same email twice is a no-op",
+          body: "WaitlistRequest",
+          ok: "WaitlistOk",
+          created: true,
+        }),
       },
     },
   };

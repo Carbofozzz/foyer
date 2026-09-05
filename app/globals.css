@@ -74,6 +74,48 @@ a {
   margin-bottom: 0.4rem;
 }
 
+.price-line {
+  max-width: 42rem;
+  margin: 0.9rem 0 0.2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.price-line strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.waitlist-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.8rem;
+  align-items: end;
+}
+
+.waitlist-form label {
+  flex: 1 1 16rem;
+}
+
+.protocol-fold > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.protocol-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.protocol-fold > summary::after {
+  content: " ▾";
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.protocol-fold[open] > summary::after {
+  content: " ▴";
+}
+
 .home-gate {
   display: inline-flex;
   align-items: center;

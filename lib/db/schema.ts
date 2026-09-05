@@ -169,3 +169,9 @@ export const houseMembers = pgTable(
   },
   (table) => [primaryKey({ columns: [table.principalId, table.address] })],
 );
+
+export const waitlist = pgTable("waitlist", {
+  email: text("email").primaryKey(),
+  locale: text("locale").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
