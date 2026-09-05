@@ -8,7 +8,14 @@ import {
   sessionCookie,
 } from "@/lib/protocol/session";
 
+import { guardPublicWrite } from "@/lib/ops/guard";
+import { LIMITS } from "@/lib/ops/rate-limit";
+
 export async function POST(request: Request) {
+  return guardPublicWrite(request, "verify", LIMITS.verify, () => postVerify(request));
+}
+
+async function postVerify(request: Request) {
   let body: unknown;
   try {
     body = await request.json();

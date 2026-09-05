@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.10.0",
+      version: "0.11.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -292,6 +292,16 @@ export function openApiSpec(origin: string) {
       "/api/mcp": {
         get: operation({ id: "mcpPing", summary: "MCP ping: tool names and the calling agent", auth: "agent" }),
         post: operation({ id: "mcpRpc", summary: "MCP JSON-RPC over HTTP; the same protocol tools", auth: "agent" }),
+      },
+      "/api/health": {
+        get: {
+          operationId: "getHealth",
+          summary: "Database ping and last cron tick; 503 if the store is down",
+          responses: {
+            "200": { description: "Store is reachable" },
+            "503": { description: "Store is down" },
+          },
+        },
       },
       "/api/tick": {
         post: operation({ id: "tick", summary: "Cron sweep for every house", auth: "cron" }),

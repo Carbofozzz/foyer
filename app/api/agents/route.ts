@@ -5,6 +5,8 @@ import { jsonError, jsonOk, bearerToken } from "@/lib/protocol/http";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { requireAgent } from "@/lib/protocol/auth";
 import { sweep } from "@/lib/protocol/sweep";
+import { guardPublicWrite } from "@/lib/ops/guard";
+import { LIMITS } from "@/lib/ops/rate-limit";
 
 export async function GET(request: Request) {
   const auth = await requireAgent(request);
@@ -22,6 +24,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  return guardPublicWrite(request, "enroll", LIMITS.enroll, () => postEnroll(request));
+}
+
+async function postEnroll(request: Request) {
   const enrollment = bearerToken(request);
   if (!enrollment || !enrollment.startsWith("enr_")) {
     return jsonError("unauthorized", "Enrollment token required", 401);

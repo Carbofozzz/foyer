@@ -284,5 +284,22 @@
     "thanks": "Sie stehen auf der Liste.",
     "invalid": "Das sieht nicht nach einer E-Mail aus.",
     "error": "Das hat nicht geklappt. Bitte erneut versuchen."
+  },
+  "status": {
+    "kicker": "Status",
+    "title": "Dienststatus",
+    "ok": "Die Datenbank antwortet.",
+    "down": "Die Datenbank ist nicht erreichbar.",
+    "stale": "Der geplante Tick ist überfällig.",
+    "tick": "Letzter Tick",
+    "never": "Noch kein Tick gespeichert.",
+    "env": "Dieses Deploy",
+    "db": "Datenbank",
+    "cron": "Scheduler",
+    "cronHere": "Der Cron läuft auf diesem Deploy.",
+    "cronElsewhere": "Der Cron läuft in Production. Dieses Deploy nutzt denselben Speicher.",
+    "writes": "{n} öffentliche Schreibzugriffe in der letzten Stunde, {limited} begrenzt.",
+    "open": "Status",
+    "home": "Zurück zum Start"
   }
 }

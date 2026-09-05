@@ -284,5 +284,22 @@
     "thanks": "Ya estás en la lista.",
     "invalid": "Eso no parece un correo.",
     "error": "No se pudo guardar. Inténtalo de nuevo."
+  },
+  "status": {
+    "kicker": "Estado",
+    "title": "Estado del servicio",
+    "ok": "La base de datos responde.",
+    "down": "La base de datos no responde.",
+    "stale": "El tick programado llega tarde.",
+    "tick": "Último tick",
+    "never": "Aún no hay ningún tick.",
+    "env": "Este despliegue",
+    "db": "Base de datos",
+    "cron": "Programador",
+    "cronHere": "El cron corre en este despliegue.",
+    "cronElsewhere": "El cron corre en producción. Este despliegue usa el mismo almacén.",
+    "writes": "{n} escrituras públicas en la última hora, {limited} limitadas.",
+    "open": "Estado",
+    "home": "Volver al inicio"
   }
 }

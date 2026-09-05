@@ -284,5 +284,22 @@
     "thanks": "You’re on the list.",
     "invalid": "That does not look like an email.",
     "error": "Could not save that. Please try again."
+  },
+  "status": {
+    "kicker": "Status",
+    "title": "Service status",
+    "ok": "The database is up.",
+    "down": "The database is unreachable.",
+    "stale": "The scheduled tick is late.",
+    "tick": "Last tick",
+    "never": "No tick recorded yet.",
+    "env": "This deploy",
+    "db": "Database",
+    "cron": "Scheduler",
+    "cronHere": "Cron runs on this deploy.",
+    "cronElsewhere": "Cron runs on production. This deploy uses the same store.",
+    "writes": "{n} public writes in the last hour, {limited} limited.",
+    "open": "Status",
+    "home": "Back to the start"
   }
 }
