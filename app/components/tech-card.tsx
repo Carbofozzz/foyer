@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { CopyButton } from "@/app/components/copy-button";
 import type { Messages } from "@/lib/i18n/load";
 
@@ -12,10 +13,12 @@ type ConnectPayload = {
 
 export function TechCard({
   token,
+  houseId,
   t,
   errorLabel,
 }: {
   token: string;
+  houseId?: string;
   t: Messages["tech"];
   errorLabel: string;
 }) {
@@ -23,14 +26,14 @@ export function TechCard({
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/cabinet/${token}/connect`)
+    fetch(`/api/cabinet/${token}/connect`, { headers: cabinetHeaders(houseId) })
       .then((response) => {
         if (!response.ok) throw new Error("fail");
         return response.json() as Promise<{ data: ConnectPayload }>;
       })
       .then((payload) => setData(payload.data))
       .catch(() => setError(true));
-  }, [token]);
+  }, [token, houseId]);
 
   if (error) return <p className="error">{errorLabel}</p>;
   if (!data) return <p className="muted">{t.loading}</p>;

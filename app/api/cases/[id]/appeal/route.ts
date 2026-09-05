@@ -1,4 +1,4 @@
-import { requireCabinetRequest } from "@/lib/protocol/auth";
+import { needOperate, requireCabinetRequest } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { appealCase, parseAppealBody } from "@/lib/protocol/appeal";
 import { sweep } from "@/lib/protocol/sweep";
@@ -6,7 +6,7 @@ import { sweep } from "@/lib/protocol/sweep";
 export const maxDuration = 120;
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  const auth = await requireCabinetRequest(request);
+  const auth = needOperate(await requireCabinetRequest(request));
   if ("error" in auth) return auth.error;
   await sweep(auth.principal.id, new Date());
   const { id } = await context.params;

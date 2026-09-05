@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import { requireCabinet } from "@/lib/protocol/auth";
+import { openCabinet } from "@/lib/protocol/auth";
 import { ensureHouseForOwner } from "@/lib/protocol/houses";
 import { incomingRequest } from "@/lib/protocol/incoming";
+import { listHousesFor } from "@/lib/protocol/members";
 import { readSession } from "@/lib/protocol/session";
 import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
@@ -14,23 +15,28 @@ export default async function CabinetMePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ enroll?: string }>;
+  searchParams: Promise<{ enroll?: string; house?: string }>;
 }) {
   const { locale } = await params;
-  const { enroll } = await searchParams;
+  const { enroll, house } = await searchParams;
   if (!isLocale(locale)) notFound();
   const request = await incomingRequest();
-  let principal = await requireCabinet("me", request);
-  if (!principal) {
-    const session = readSession(request);
-    if (!session) redirect(`/${locale}`);
-    principal = await ensureHouseForOwner(session.address);
+  const session = readSession(request);
+  if (!session) redirect(`/${locale}`);
+  await ensureHouseForOwner(session.address);
+  const opened = await openCabinet("me", request, house);
+  if (!opened) {
+    if (house) notFound();
+    redirect(`/${locale}`);
   }
   return (
     <CabinetScreen
       locale={locale}
       token="me"
-      principal={principal}
+      principal={opened.principal}
+      memberRole={opened.role}
+      houses={await listHousesFor(session.address)}
+      viewerAddress={session.address}
       enroll={enroll}
       t={loadMessages(locale)}
     />

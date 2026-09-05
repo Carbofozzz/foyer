@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import type { Messages } from "@/lib/i18n/load";
 
 export function AppealForm({
   token,
+  houseId,
   caseId,
   t,
   errorLabel,
 }: {
   token: string;
+  houseId?: string;
   caseId: string;
   t: Messages["appeal"];
   errorLabel: string;
@@ -29,10 +32,10 @@ export function AppealForm({
     if (outcome) body.outcome = outcome;
     const response = await fetch(`/api/cases/${caseId}/appeal`, {
       method: "POST",
-      headers: {
+      headers: cabinetHeaders(houseId, {
         "content-type": "application/json",
         authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(body),
     });
     if (!response.ok) {

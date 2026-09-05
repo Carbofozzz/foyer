@@ -24,6 +24,8 @@ export default async function CabinetTokenPage({
       locale={locale}
       token={token}
       principal={principal}
+      memberRole="owner"
+      houses={[]}
       enroll={enroll}
       t={loadMessages(locale)}
     />

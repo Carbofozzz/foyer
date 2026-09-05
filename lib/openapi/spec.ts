@@ -252,6 +252,20 @@ export function openApiSpec(origin: string) {
           ok: "Verdict",
         }),
       },
+      "/api/cabinet/{token}/members": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        get: operation({
+          id: "listMembers",
+          summary: "People who can open this house with their wallet",
+          auth: "session",
+        }),
+        post: operation({
+          id: "inviteMember",
+          summary: "Invite a wallet as operator or observer (owner only, org only)",
+          auth: "session",
+          created: true,
+        }),
+      },
       "/api/mcp": {
         get: operation({ id: "mcpPing", summary: "MCP ping: tool names and the calling agent", auth: "agent" }),
         post: operation({ id: "mcpRpc", summary: "MCP JSON-RPC over HTTP; the same protocol tools", auth: "agent" }),

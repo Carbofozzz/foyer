@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { principals, enrollments } from "@/lib/db/schema";
+import { houseMembers, principals, enrollments } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { ownerKey } from "@/lib/gen/chain";
 import { newHouseWallet } from "@/lib/judge/house-wallet";
@@ -44,6 +44,11 @@ export async function createHouse(input: { name: string; type: PrincipalType; ow
     sealedWalletKey: sealKey(wallet.accountKey),
     ownerAddress: input.ownerAddress ? ownerKey(input.ownerAddress) : null,
   });
+
+  const owner = input.ownerAddress ? ownerKey(input.ownerAddress) : null;
+  if (owner) {
+    await db.insert(houseMembers).values({ principalId, address: owner, role: "owner" });
+  }
 
   await db.insert(enrollments).values({
     tokenHash: hashSecret(enrollmentToken),

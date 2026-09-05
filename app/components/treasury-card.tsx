@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from "wagmi";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { CopyButton } from "@/app/components/copy-button";
 import { addressExplorerUrl, asHexAddress, GENLAYER_CHAIN_ID, ownerKey, txExplorerUrl } from "@/lib/gen/chain";
 import { parseGen } from "@/lib/gen/amount";
@@ -28,10 +29,16 @@ type WalletView = {
 
 export function TreasuryCard({
   token,
+  houseId,
+  canDeposit = true,
+  canManage = true,
   t,
   errorLabel,
 }: {
   token: string;
+  houseId?: string;
+  canDeposit?: boolean;
+  canManage?: boolean;
   t: Messages["cabinet"];
   errorLabel: string;
 }) {
@@ -51,11 +58,11 @@ export function TreasuryCard({
   const owner = data?.owner ? ownerKey(data.owner) : null;
 
   const fetchView = useCallback(async () => {
-    const response = await fetch(`/api/cabinet/${token}/treasury`);
+    const response = await fetch(`/api/cabinet/${token}/treasury`, { headers: cabinetHeaders(houseId) });
     if (!response.ok) throw new Error("fail");
     const payload = (await response.json()) as { data: WalletView };
     return payload.data;
-  }, [token]);
+  }, [token, houseId]);
 
   const load = useCallback(() => {
     fetchView()
@@ -114,7 +121,7 @@ export function TreasuryCard({
       }
       const response = await fetch(`/api/cabinet/${token}/treasury`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: cabinetHeaders(houseId, { "Content-Type": "application/json" }),
         body: JSON.stringify({ deposit: true, tx, from: connected, gen: amount }),
       });
       if (!response.ok) throw new Error("fail");
@@ -137,7 +144,7 @@ export function TreasuryCard({
     try {
       const response = await fetch(`/api/cabinet/${token}/treasury`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: cabinetHeaders(houseId, { "Content-Type": "application/json" }),
         body: JSON.stringify({ withdraw: true, to: withdrawTo || owner || connected, gen: amount }),
       });
       if (!response.ok) throw new Error("fail");
@@ -163,7 +170,7 @@ export function TreasuryCard({
     setBusy("export");
     const response = await fetch(`/api/cabinet/${token}/treasury`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: cabinetHeaders(houseId, { "Content-Type": "application/json" }),
       body: JSON.stringify({ export: true }),
     });
     setBusy(null);
@@ -193,9 +200,9 @@ export function TreasuryCard({
           <button
             type="button"
             className="wallet-balance"
-            disabled={!hasBalance && mode !== "deposit"}
+            disabled={!canManage || (!hasBalance && mode !== "deposit")}
             onClick={() => {
-              if (hasBalance && mode === "idle") openWithdraw();
+              if (canManage && hasBalance && mode === "idle") openWithdraw();
             }}
           >
             {data.balance} <span>GEN</span>
@@ -208,12 +215,16 @@ export function TreasuryCard({
 
           {mode === "idle" ? (
             <div className="wallet-actions">
-              <button type="button" className="primary" onClick={() => setMode("deposit")}>
-                {t.deposit}
-              </button>
-              <button type="button" disabled={!hasBalance} onClick={openWithdraw}>
-                {t.withdraw}
-              </button>
+              {canDeposit ? (
+                <button type="button" className="primary" onClick={() => setMode("deposit")}>
+                  {t.deposit}
+                </button>
+              ) : null}
+              {canManage ? (
+                <button type="button" disabled={!hasBalance} onClick={openWithdraw}>
+                  {t.withdraw}
+                </button>
+              ) : null}
             </div>
           ) : mode === "deposit" ? (
             <div className="wallet-field">
@@ -273,6 +284,7 @@ export function TreasuryCard({
             )}
           </div>
 
+          {canManage ? (
           <details>
             <summary>{t.exportKey}</summary>
             {privateKey ? (
@@ -287,6 +299,7 @@ export function TreasuryCard({
               </button>
             )}
           </details>
+          ) : null}
         </>
       ) : error ? (
         <p className="error">{error}</p>

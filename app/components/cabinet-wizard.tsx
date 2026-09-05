@@ -4,12 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { assembleCharter, type HouseKind, type PricePreference } from "@/lib/i18n/charter";
 import type { Messages } from "@/lib/i18n/load";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { ConnectCard } from "@/app/components/connect-card";
 
 type Step = "rules" | "lock" | "connect" | "guardian" | "first";
 
 export function CabinetWizard({
   token,
+  houseId,
   step,
   wizard,
   connect,
@@ -19,6 +21,7 @@ export function CabinetWizard({
   houseType,
 }: {
   token: string;
+  houseId?: string;
   step: Step;
   wizard: Messages["wizard"];
   connect: Messages["connect"];
@@ -31,6 +34,7 @@ export function CabinetWizard({
     return (
       <RulesStep
         token={token}
+        houseId={houseId}
         wizard={wizard}
         charter={charter}
         cabinetError={cabinetError}
@@ -40,15 +44,25 @@ export function CabinetWizard({
     );
   }
   if (step === "lock") {
-    return <LockStep token={token} wizard={wizard} cabinetError={cabinetError} />;
+    return <LockStep token={token} houseId={houseId} wizard={wizard} cabinetError={cabinetError} />;
   }
   if (step === "connect") {
-    return <ConnectCard token={token} t={connect} errorLabel={cabinetError} asWizard />;
+    return (
+      <ConnectCard
+        token={token}
+        houseId={houseId}
+        houseType={houseType}
+        t={connect}
+        errorLabel={cabinetError}
+        asWizard
+      />
+    );
   }
   if (step === "guardian") {
     return (
       <ActionStep
         token={token}
+        houseId={houseId}
         path="guardian"
         cabinetError={cabinetError}
         kicker={wizard.guardianKicker}
@@ -62,6 +76,7 @@ export function CabinetWizard({
   return (
     <ActionStep
       token={token}
+      houseId={houseId}
       path="first-pass"
       cabinetError={cabinetError}
       kicker={wizard.firstKicker}
@@ -75,6 +90,7 @@ export function CabinetWizard({
 
 function RulesStep({
   token,
+  houseId,
   wizard,
   charter,
   cabinetError,
@@ -82,6 +98,7 @@ function RulesStep({
   houseType,
 }: {
   token: string;
+  houseId?: string;
   wizard: Messages["wizard"];
   charter: Messages["charter"];
   cabinetError: string;
@@ -114,7 +131,7 @@ function RulesStep({
     setError(false);
     const response = await fetch(`/api/cabinet/${token}/constitution`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({ constitution: text, type: kind }),
     });
     if (!response.ok) {
@@ -193,10 +210,12 @@ function RulesStep({
 
 function LockStep({
   token,
+  houseId,
   wizard,
   cabinetError,
 }: {
   token: string;
+  houseId?: string;
   wizard: Messages["wizard"];
   cabinetError: string;
 }) {
@@ -218,7 +237,7 @@ function LockStep({
     ];
     const response = await fetch(`/api/cabinet/${token}/locks`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({ kinds }),
     });
     if (!response.ok) {
@@ -258,6 +277,7 @@ function LockStep({
 
 function ActionStep({
   token,
+  houseId,
   path,
   cabinetError,
   kicker,
@@ -267,6 +287,7 @@ function ActionStep({
   pendingLabel,
 }: {
   token: string;
+  houseId?: string;
   path: "guardian" | "first-pass";
   cabinetError: string;
   kicker: string;
@@ -283,7 +304,10 @@ function ActionStep({
     setPending(true);
     setError(false);
     try {
-      const response = await fetch(`/api/cabinet/${token}/${path}`, { method: "POST" });
+      const response = await fetch(`/api/cabinet/${token}/${path}`, {
+        method: "POST",
+        headers: cabinetHeaders(houseId),
+      });
       if (!response.ok) {
         setError(true);
         setPending(false);

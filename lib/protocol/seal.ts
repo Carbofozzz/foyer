@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 function sealSecret(): Buffer {
-  const material = process.env.CRON_SECRET || process.env.DATABASE_URL || "foyer-dev-seal";
+  const material =
+    process.env.FOYER_SEAL_SECRET || process.env.CRON_SECRET || process.env.DATABASE_URL || "foyer-dev-seal";
   return createHash("sha256").update(material).digest();
 }
 

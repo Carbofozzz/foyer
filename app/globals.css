@@ -546,6 +546,37 @@ button.wallet-balance:disabled {
   padding-left: 1.2rem;
 }
 
+.house-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+}
+
+.house-switch a {
+  color: var(--accent);
+}
+
+.house-switch [aria-current="page"] {
+  font-weight: 600;
+}
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.member-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+}
+
 .cabinet-meta {
   display: grid;
   gap: 0.45rem;

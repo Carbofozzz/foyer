@@ -155,3 +155,17 @@ export const walletTransfers = pgTable(
   },
   (table) => [uniqueIndex("wallet_transfers_tx").on(table.tx)],
 );
+
+/** Wallet that can open this house. Same SIWE login — no second password. */
+export const houseMembers = pgTable(
+  "house_members",
+  {
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    address: text("address").notNull(),
+    role: text("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.principalId, table.address] })],
+);
