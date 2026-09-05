@@ -97,7 +97,7 @@
     "exporting": "Exportando…",
     "copyKey": "Copiar clave",
     "privateKeyHint": "Quien tenga la clave puede gastar este GEN.",
-    "judgeOffline": "Decidido sin cadena: no es consenso. No hay transacción.",
+    "judgeOffline": "El tribunal no dio veredicto: nada en cadena.",
     "cancel": "Cancelar",
     "judgeOnchain": "Veredicto en cadena."
   },

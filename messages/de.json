@@ -97,7 +97,7 @@
     "exporting": "Exportiere…",
     "copyKey": "Schlüssel kopieren",
     "privateKeyHint": "Wer den Schlüssel hat, kann dieses GEN ausgeben.",
-    "judgeOffline": "Offline entschieden — kein On-Chain-Konsens. Keine Transaktion.",
+    "judgeOffline": "Das Gericht hat kein Urteil geliefert — nichts on-chain.",
     "cancel": "Abbrechen",
     "judgeOnchain": "On-Chain-Urteil."
   },

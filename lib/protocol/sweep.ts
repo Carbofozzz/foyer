@@ -14,7 +14,11 @@ import { executeAfterAck, executeSilenceAllow } from "./execute";
  * Advances time for one house. Idempotent.
  * Guardian runs first so a late tick can still object before silence closes.
  */
-export async function sweep(principalId: string, now: Date): Promise<{ advanced: number }> {
+export async function sweep(
+  principalId: string,
+  now: Date,
+  options?: { courts?: number },
+): Promise<{ advanced: number }> {
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };
@@ -27,12 +31,18 @@ export async function sweep(principalId: string, now: Date): Promise<{ advanced:
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
+  // A live judge write takes about a minute, so one sweep opens one court.
+  // The rest stay open and are judged by the next read or tick.
+  let courts = options?.courts ?? 1;
+
   for (const row of openRows) {
     const bundle = await loadActionBundle(row.id);
     if (!bundle || bundle.action.status !== "open") continue;
     if (bundle.objections.length === 0) {
       await executeSilenceAllow(bundle.action);
     } else {
+      if (courts <= 0) continue;
+      courts -= 1;
       await openCourt(bundle.action, principal, now);
     }
     advanced += 1;

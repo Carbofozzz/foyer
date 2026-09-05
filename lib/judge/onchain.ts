@@ -18,7 +18,7 @@ export type JudgeExtra = {
   appeal_note?: string;
 };
 
-function resolveChain() {
+export function resolveChain() {
   const raw = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase();
   if (raw === "studiodevnet" || raw === "studionetdev" || raw === "studio-dev" || raw === "studiodev") {
     return studioDevnet;
@@ -32,7 +32,7 @@ function resolveChain() {
 function waitOpts() {
   return {
     interval: Number(process.env.GENLAYER_TX_WAIT_INTERVAL_MS ?? 5_000),
-    retries: Number(process.env.GENLAYER_TX_WAIT_RETRIES ?? 8),
+    retries: Number(process.env.GENLAYER_TX_WAIT_RETRIES ?? 24),
   };
 }
 
@@ -40,8 +40,9 @@ function asAddress(value: string): Address | null {
   return asHexAddress(value);
 }
 
+/** A leader plus validators on a judge write take about a minute on studio-dev. */
 function budgetMs(): number {
-  return Number(process.env.GENLAYER_BUDGET_MS ?? 45_000);
+  return Number(process.env.GENLAYER_BUDGET_MS ?? 100_000);
 }
 
 function clientFor(accountKey: `0x${string}`) {
