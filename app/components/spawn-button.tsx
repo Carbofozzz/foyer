@@ -23,6 +23,7 @@ export function SpawnButton({ locale, t }: { locale: Locale; t: Messages["spawn"
 
   return (
     <section className="card stack">
+      <p className="kicker">{t.kicker}</p>
       <h2 className="section-title">{t.title}</h2>
       <p className="hint">{t.lead}</p>
       <div className="row">

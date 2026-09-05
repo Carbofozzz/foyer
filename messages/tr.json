@@ -197,12 +197,13 @@
     "loading": "Yükleniyor…"
   },
   "spawn": {
-    "title": "Önce görmek ister misiniz?",
-    "lead": "Kısa bir demo: iki asistan anlaşamaz, mahkeme karar verir.",
-    "run": "Demoyu dene",
+    "kicker": "Harness",
+    "title": "Kendi runtime’ınız yok mu?",
+    "lead": "Deneme istemcili tek kullanımlık alan. Aynı protokol. Ürün bu değil.",
+    "run": "Harness’i başlat",
     "running": "Başlatılıyor…",
-    "error": "Demo başlamadı. Lütfen tekrar deneyin.",
-    "banner": "Bu bir demo, sizin paneliniz değil.",
+    "error": "Harness başlamadı. Lütfen tekrar deneyin.",
+    "banner": "Bu bir harness, sizin paneliniz değil.",
     "watch": "Bitmiş bir davayı izle"
   },
   "appeal": {
@@ -247,6 +248,7 @@
     "openapi": "OpenAPI",
     "curlLabel": "curl",
     "pythonLabel": "Python",
+    "mcpLabel": "MCP yoklama",
     "cliLabel": "Dış istemci",
     "copy": "Kopyala",
     "copied": "Kopyalandı"
@@ -254,7 +256,7 @@
   "check": {
     "kicker": "Topluluk",
     "title": "Nasıl test edilir",
-    "lead": "Bu listeyi genel URL’de yürütün. Ürün panel, demo değil.",
+    "lead": "Bu listeyi genel URL’de yürütün. Ürün panel, harness değil.",
     "open": "Topluluk listesi",
     "home": "Başa dön",
     "items": [
@@ -266,7 +268,7 @@
       "Dokunulmayan istek, kimse uygulamayı açmasa da kapanır (tick).",
       "Yürütme (en azından stub) ve itiraz vardır.",
       "Canlı panel, konsensüs oturunca zincir üstü tx gösterebilir.",
-      "Demo kendini ürün diye satmaz.",
+      "Harness kendini ürün diye satmaz.",
       "Genel URL yenilemeden sonra durumu korur.",
       "Başkasının paneli ajan anahtarı veya sahip cüzdanı olmadan görünmez."
     ]
@@ -300,6 +302,40 @@
     "cronElsewhere": "Cron production’da çalışır. Bu yayın aynı depoyu kullanır.",
     "writes": "Son saatte {n} genel yazma, {limited} sınırlandı.",
     "open": "Durum",
+    "home": "Başa dön",
+    "health": "Makine durumu"
+  },
+  "connectDoc": {
+    "kicker": "Bağlan",
+    "title": "Runtime’ı bağlayın",
+    "lead": "Asistanınız Foyer’e ajan anahtarıyla gelir. Paneldeki MCP bloğunu yapıştırın. Harness bu yol değil.",
+    "product": "Ürün yolu bu: Cursor, Claude Desktop, ChatGPT veya OpenClaw.",
+    "off": "Asistanın ödeme ve takvim araçlarını kapatın. Yoksa Foyer’i atlar.",
+    "prompt": "Paneldeki üç satırı sistem istemine koyun. Kilit hâlâ araçlar, metin değil.",
+    "cursor": "Cursor → Settings → MCP. Bloğu yapıştırın. Açıksa ajanı yeniden başlatın.",
+    "claude": "Aynı bloğu Claude Desktop MCP ayarlarına yapıştırın.",
+    "chatgpt": "HTTP MCP sunucusu ekleyin. URL ve bearer blokta.",
+    "openclaw": "Aynı bloğu OpenClaw MCP ayarlarına yapıştırın.",
+    "http": "Kendi istemciniz mi? Panelde HTTP / OpenAPI sekmesi. Aynı anahtar. GET /api/openapi.",
+    "spawn": "Runtime yok mu? Ana sayfadaki harness tek kullanımlık istemci açar. O sizin paneliniz değil.",
+    "open": "Runtime bağla",
+    "home": "Başa dön"
+  },
+  "legal": {
+    "kicker": "Hukuk",
+    "title": "Yasal uyarı",
+    "lead": "Foyer herkese açık bir denemedir. Şirket kaydı veya hukuki tavsiye değildir.",
+    "body": "Protokolü denerken hizmet olduğu gibi sunulur. Henüz gerçek para veya üretim ajanı koymayın.",
+    "contact": "Sorular: ana sayfada e-posta bırakın.",
+    "open": "Hukuk",
+    "home": "Başa dön"
+  },
+  "privacy": {
+    "kicker": "Gizlilik",
+    "title": "Gizlilik",
+    "lead": "Mümkün olduğunca az şey tutarız.",
+    "body": "Girişte cüzdan adresi. Listeye yazılırsa e-posta. Genel yazımlarda hız limiti için hash’li IP, gövde yok. Ajan anahtarları sizin runtime’ınızda kalır.",
+    "open": "Gizlilik",
     "home": "Başa dön"
   }
 }

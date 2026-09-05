@@ -197,12 +197,13 @@
     "loading": "Cargando…"
   },
   "spawn": {
-    "title": "¿Quieres verlo primero?",
-    "lead": "Una demo corta: dos asistentes discrepan, el tribunal decide.",
-    "run": "Probar una demo",
+    "kicker": "Harness",
+    "title": "¿Sin un runtime propio?",
+    "lead": "Un espacio de usar y tirar con clientes de prueba. El mismo protocolo. No es el producto.",
+    "run": "Arrancar el harness",
     "running": "Arrancando…",
     "error": "No se pudo arrancar. Inténtalo de nuevo.",
-    "banner": "Esto es una demo, no tu panel.",
+    "banner": "Esto es un harness, no tu panel.",
     "watch": "Ver un caso cerrado"
   },
   "appeal": {
@@ -247,6 +248,7 @@
     "openapi": "OpenAPI",
     "curlLabel": "curl",
     "pythonLabel": "Python",
+    "mcpLabel": "Ping MCP",
     "cliLabel": "Cliente externo",
     "copy": "Copiar",
     "copied": "Copiado"
@@ -254,7 +256,7 @@
   "check": {
     "kicker": "Comunidad",
     "title": "Cómo probar",
-    "lead": "Recorre esta lista en la URL pública. El producto es el panel, no la demo.",
+    "lead": "Recorre esta lista en la URL pública. El producto es el panel, no el harness.",
     "open": "Lista de la comunidad",
     "home": "Volver al inicio",
     "items": [
@@ -266,7 +268,7 @@
       "Una petición sin tocar igual se resuelve si nadie abre la app (el tick).",
       "Hay ejecución (al menos un stub) y apelación.",
       "Un panel vivo puede mostrar un tx en cadena cuando hay consenso.",
-      "La demo no se hace pasar por el producto.",
+      "El harness no se hace pasar por el producto.",
       "La URL pública guarda el estado tras recargar.",
       "El panel de otro no se ve sin su clave de agente o la cartera del titular."
     ]
@@ -300,6 +302,40 @@
     "cronElsewhere": "El cron corre en producción. Este despliegue usa el mismo almacén.",
     "writes": "{n} escrituras públicas en la última hora, {limited} limitadas.",
     "open": "Estado",
+    "home": "Volver al inicio",
+    "health": "Estado de la máquina"
+  },
+  "connectDoc": {
+    "kicker": "Conectar",
+    "title": "Conecta tu runtime",
+    "lead": "Tu asistente habla con Foyer con una clave de agente. Pega el bloque MCP del panel. El harness no es este camino.",
+    "product": "Este es el camino del producto: Cursor, Claude Desktop, ChatGPT u OpenClaw.",
+    "off": "Apaga las herramientas de pago y calendario del asistente. Si no, se salta Foyer.",
+    "prompt": "Pon en el prompt las tres líneas del panel. El candado siguen siendo las herramientas, no el texto.",
+    "cursor": "Cursor → Settings → MCP. Pega el bloque. Reinicia el agente si ya estaba abierto.",
+    "claude": "Pega el mismo bloque en los ajustes MCP de Claude Desktop.",
+    "chatgpt": "Añade un servidor MCP HTTP. La URL y el bearer están en el bloque.",
+    "openclaw": "Pega el mismo bloque en los ajustes MCP de OpenClaw.",
+    "http": "¿Escribes tu propio cliente? Usa la pestaña HTTP / OpenAPI del panel. La misma clave. GET /api/openapi.",
+    "spawn": "¿Sin runtime? El harness de la portada arranca clientes de usar y tirar. Eso no es tu panel.",
+    "open": "Conectar un runtime",
+    "home": "Volver al inicio"
+  },
+  "legal": {
+    "kicker": "Legal",
+    "title": "Aviso legal",
+    "lead": "Foyer es una prueba pública. Esto no es un registro mercantil ni un consejo jurídico.",
+    "body": "El servicio se ofrece tal cual mientras probamos el protocolo. Aún no pongas dinero real ni agentes de producción.",
+    "contact": "Preguntas: deja un correo en la portada.",
+    "open": "Legal",
+    "home": "Volver al inicio"
+  },
+  "privacy": {
+    "kicker": "Privacidad",
+    "title": "Privacidad",
+    "lead": "Guardamos lo mínimo.",
+    "body": "La dirección del wallet si entras. El correo si te apuntas a la lista. La IP en hash en las escrituras públicas, para el límite, sin cuerpos. Las claves de agente se quedan en tu runtime.",
+    "open": "Privacidad",
     "home": "Volver al inicio"
   }
 }

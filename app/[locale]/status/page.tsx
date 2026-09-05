@@ -46,7 +46,7 @@ export default async function StatusPage({ params }: { params: Promise<{ locale:
       <p>
         <a href={`/${locale}`}>{t.status.home}</a>
         {" · "}
-        <a href="/api/health">GET /api/health</a>
+        <a href="/api/health">{t.status.health}</a>
       </p>
     </main>
   );

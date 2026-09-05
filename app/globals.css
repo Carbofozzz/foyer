@@ -116,6 +116,14 @@ a {
   content: " ▴";
 }
 
+.connect-doc {
+  max-width: 42rem;
+}
+
+.connect-doc .card .section-title {
+  margin-top: 0.4rem;
+}
+
 .home-gate {
   display: inline-flex;
   align-items: center;
@@ -638,18 +646,79 @@ button.wallet-balance:disabled {
   font-size: 0.72rem;
 }
 
+.site-foot {
+  margin-top: 2.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.app-shell:has(.cabinet) .site-foot {
+  display: none;
+}
+
 @media (max-width: 840px) {
+  .app-shell {
+    padding: 0.9rem 0.9rem 2.4rem;
+  }
+
+  .app-shell:has(.cabinet) {
+    padding-bottom: 0.9rem;
+  }
+
+  .topbar {
+    margin-bottom: 1.2rem;
+  }
+
   .cabinet {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
+    gap: 0.75rem;
+  }
+
+  .cabinet-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .cabinet-head h1 {
+    font-size: 1.3rem;
+  }
+
+  .cabinet-head-actions {
+    width: 100%;
   }
 
   .cabinet-panel {
     max-height: none;
+    padding: 0.8rem 0.85rem;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tx-list li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .wallet-id {
+    flex-wrap: wrap;
+  }
+
+  .cabinet textarea,
+  .cabinet .mono,
+  .cabinet pre {
+    max-width: 100%;
+  }
+
+  .runtime-tabs button,
+  button[type="submit"],
+  .primary,
+  button.ghost,
+  a.primary,
+  a.ghost {
+    min-height: 2.6rem;
   }
 }
 

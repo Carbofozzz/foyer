@@ -177,7 +177,14 @@ export async function CabinetScreen({
               {operate ? (
                 <details>
                   <summary>{t.tech.title}</summary>
-                  <TechCard token={token} houseId={houseId} t={t.tech} errorLabel={t.cabinet.error} />
+                  <TechCard
+                    token={token}
+                    houseId={houseId}
+                    locale={locale}
+                    t={t.tech}
+                    errorLabel={t.cabinet.error}
+                    docLabel={t.connectDoc.open}
+                  />
                 </details>
               ) : null}
               {signedIn && principal.type === "org" && !principal.isSpawn ? (

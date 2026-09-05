@@ -3,7 +3,9 @@ import { ackAction, fileObjection, getAction, inboxFor, proposeAction } from "@/
 import type { HouseAuth } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { sweep } from "@/lib/protocol/sweep";
+import { ABUSE } from "@/lib/protocol/abuse";
 import { isRecord } from "@/lib/protocol/parse";
+import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
 
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: unknown };
 
@@ -111,6 +113,9 @@ export async function handleMcpPost(request: Request): Promise<Response> {
 
 async function readRpc(request: Request): Promise<{ rpc: Rpc } | { error: Response }> {
   const raw = await request.text();
+  if (raw.length > ABUSE.bodyBytes) {
+    return { error: rpcError(null, -32600, "Body is too large") };
+  }
   if (!raw.trim()) {
     return { rpc: { jsonrpc: "2.0", id: 1, method: "initialize", params: {} } };
   }
@@ -165,6 +170,9 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
     };
   }
   if (name === "propose") {
+    if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {
+      throw new ProtocolError("rate_limited", "Too many proposals from this agent", 429);
+    }
     return proposeAction(auth, args, now);
   }
   if (name === "object") {

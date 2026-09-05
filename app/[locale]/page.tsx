@@ -27,6 +27,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <SpawnButton locale={locale} t={t.spawn} />
       <WaitlistForm locale={locale} t={t.waitlist} />
       <p>
+        <a href={`/${locale}/connect`}>{t.connectDoc.open}</a>
+        {" · "}
         <a href={`/${locale}/check`}>{t.check.open}</a>
         {" · "}
         <a href={`/${locale}/status`}>{t.status.open}</a>

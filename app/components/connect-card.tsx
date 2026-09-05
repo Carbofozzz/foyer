@@ -84,38 +84,34 @@ export function ConnectCard({
       ) : compact ? null : (
         <h2 className="section-title">{t.title}</h2>
       )}
-      {compact ? null : (
-        <>
-          <div className="runtime-tabs">
-            {RUNTIMES.map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={id === runtime ? "primary" : "ghost"}
-                onClick={() => setRuntime(id)}
-              >
-                {runtimeLabel(id, t)}
-              </button>
-            ))}
-          </div>
-          <p className="hint">{runtimeLead(runtime, t)}</p>
-          <p>{t.offTools}</p>
-          {data?.roles && data.roles.length > 1 ? (
-            <div className="runtime-tabs">
-              {data.roles.map((item) => (
-                <button
-                  key={item.role}
-                  type="button"
-                  className={item.role === role ? "primary" : "ghost"}
-                  onClick={() => setRole(item.role)}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </>
-      )}
+      <div className="runtime-tabs">
+        {RUNTIMES.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={id === runtime ? "primary" : "ghost"}
+            onClick={() => setRuntime(id)}
+          >
+            {runtimeLabel(id, t)}
+          </button>
+        ))}
+      </div>
+      <p className="hint">{runtimeLead(runtime, t)}</p>
+      <p>{t.offTools}</p>
+      {data?.roles && data.roles.length > 1 ? (
+        <div className="runtime-tabs">
+          {data.roles.map((item) => (
+            <button
+              key={item.role}
+              type="button"
+              className={item.role === role ? "primary" : "ghost"}
+              onClick={() => setRole(item.role)}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {data ? (
         <>
           <label>

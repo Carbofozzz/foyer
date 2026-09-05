@@ -40,6 +40,11 @@ export default async function LocaleLayout({ children, params }: Props) {
               <LanguageSwitcher locale={locale} label={t.nav.locale} />
             </header>
             {children}
+            <footer className="site-foot">
+              <a href={`/${locale}/legal`}>{t.legal.open}</a>
+              {" · "}
+              <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
+            </footer>
           </div>
         </WalletProviders>
       </body>
