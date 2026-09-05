@@ -1,16 +1,24 @@
+import { bookAdapter, cancelAdapter, messageAdapter } from "./stubs";
+import { spendAdapter } from "./spend";
+import type { Adapter, AdapterContext, AdapterMap } from "./types";
 import type { ActionKind, ActionPayload } from "@/lib/protocol/types";
 
-const RESULT_KEY: Record<ActionKind, string> = {
-  spend: "would_charge",
-  book: "would_book",
-  message: "would_message",
-  cancel: "would_cancel",
+const adapters: AdapterMap = {
+  spend: spendAdapter,
+  book: bookAdapter,
+  message: messageAdapter,
+  cancel: cancelAdapter,
 };
 
-/** Stub adapters. Same `apply` shape that later wires to real APIs. */
-export function apply(kind: ActionKind, payload: ActionPayload): Record<string, unknown> {
-  return {
-    [RESULT_KEY[kind]]: payload,
-    at: new Date().toISOString(),
-  };
+export function adapterOf(kind: ActionKind): Adapter {
+  return adapters[kind];
+}
+
+/** Same `apply` shape for every kind. Spend is almost-real; the rest stay stubs. */
+export async function apply(
+  kind: ActionKind,
+  payload: ActionPayload,
+  ctx: AdapterContext,
+): Promise<Record<string, unknown>> {
+  return adapters[kind].apply(payload, ctx);
 }

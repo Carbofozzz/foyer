@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { acks, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import type { ActionKind, ActionPayload, EvidenceItem, Outcome } from "./types";
+import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type EvidenceItem, type Outcome } from "./types";
 import { asEvidence, asPayload } from "./parse";
 
 export type HouseAgent = typeof agents.$inferSelect;
@@ -60,8 +60,32 @@ export function engagedIds(proposerId: string, objectorIds: string[]): string[] 
   return [...new Set([proposerId, ...objectorIds])];
 }
 
+function chosenKind(
+  bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>,
+): ActionKind | null {
+  const verdict = bundle.verdict;
+  if (!verdict) return bundle.action.kind as ActionKind;
+  if (verdict.outcome === "allow_a") return bundle.action.kind as ActionKind;
+  if (verdict.outcome === "remedy" && verdict.remedyAction) return asPayload(verdict.remedyAction).kind;
+  if (verdict.outcome === "allow_b") {
+    const counter = bundle.objections[0]?.counterAction;
+    return counter ? asPayload(counter).kind : null;
+  }
+  return null;
+}
+
 export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
   const verdict = bundle.verdict;
+  const kind = chosenKind(bundle);
+  const held =
+    Boolean(
+      kind &&
+        !KIND_REVERSIBLE[kind] &&
+        bundle.action.status === "awaiting_ack" &&
+        bundle.action.appealUntil &&
+        bundle.action.appealUntil > new Date() &&
+        !bundle.action.executedAt,
+    );
   return {
     id: bundle.action.id,
     kind: bundle.action.kind,
@@ -72,6 +96,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     silence_until: bundle.action.silenceUntil.toISOString(),
     ack_until: bundle.action.ackUntil?.toISOString() ?? null,
     appeal_until: bundle.action.appealUntil?.toISOString() ?? null,
+    held_until: held ? bundle.action.appealUntil?.toISOString() ?? null : null,
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
     proposer_id: bundle.action.proposerId,
     objections: bundle.objections.map((row) => ({
@@ -98,6 +123,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
           judge: verdict.judge,
           tx: verdict.tx,
           appeal_of: verdict.appealOf,
+          escalate_external: verdict.escalateExternal,
         }
       : null,
     acks: bundle.acks.map((row) => ({

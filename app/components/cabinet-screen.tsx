@@ -231,7 +231,7 @@ function FeedRow({
 
   return (
     <li className="feed-item">
-      <p className="muted">{statusLabel(item.status, t)}</p>
+      <p className="muted">{statusLabel(item.status, t, Boolean(item.held_until && new Date(item.held_until).getTime() > now))}</p>
       <div className="feed-block">
         <p className="feed-label">{t.request}</p>
         <p>
@@ -252,6 +252,9 @@ function FeedRow({
         <div className="feed-block">
           <p className="feed-label">{t.decision}</p>
           <p>{decision}</p>
+          {item.held_until && new Date(item.held_until).getTime() > now ? (
+            <p className="hint">{t.holdAppeal}</p>
+          ) : null}
           {item.verdict?.outcome !== "escalate" && carried && carried !== decided ? (
             <p className="hint">{t.done.replace("{summary}", carried)}</p>
           ) : null}
@@ -296,7 +299,8 @@ function kindLabel(kind: string, t: FeedCopy) {
   return kind;
 }
 
-function statusLabel(status: string, t: FeedCopy) {
+function statusLabel(status: string, t: FeedCopy, held = false) {
+  if (held) return t.statusHeld;
   if (status === "open") return t.statusOpen;
   if (status === "awaiting_ack") return t.statusAck;
   if (status === "executed") return t.statusExecuted;
@@ -337,7 +341,7 @@ function decisionAction(item: InboxItem) {
 function executedPayload(result: unknown) {
   if (!result || typeof result !== "object") return null;
   const row = result as Record<string, unknown>;
-  return row.would_book ?? row.would_charge ?? row.would_message ?? row.would_cancel ?? null;
+  return row.charged ?? row.would_book ?? row.would_charge ?? row.would_message ?? row.would_cancel ?? null;
 }
 
 function formatAction(payload: unknown) {

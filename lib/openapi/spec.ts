@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.9.0",
+      version: "0.10.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -172,6 +172,10 @@ export function openApiSpec(origin: string) {
             objection_grounded: { type: "boolean" },
             judge: { type: "string", enum: ["onchain", "offline"] },
             tx: { oneOf: [{ type: "string" }, { type: "null" }] },
+            escalate_external: {
+              type: "boolean",
+              description: "Reserved for a later bridge to an external court. Always false for now.",
+            },
           },
           required: ["outcome", "objection_grounded", "judge"],
         },
@@ -186,6 +190,12 @@ export function openApiSpec(origin: string) {
               enum: ["open", "awaiting_ack", "executed", "escalated", "cancelled"],
             },
             silence_until: { type: "string", format: "date-time" },
+            appeal_until: { type: "string", format: "date-time" },
+            held_until: {
+              type: "string",
+              format: "date-time",
+              description: "Set when an irreversible kind is waiting for the appeal window.",
+            },
             verdict: { oneOf: [{ $ref: "#/components/schemas/Verdict" }, { type: "null" }] },
           },
           required: ["id", "kind", "status"],

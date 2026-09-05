@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { apply } from "@/lib/adapters";
+import { adapterOf, apply } from "@/lib/adapters";
 import { actions, executions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "./keys";
-import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type Outcome } from "./types";
+import type { ActionKind, ActionPayload, Outcome } from "./types";
 import { ProtocolError } from "./errors";
 import { actionPayload, loadActionBundle, type ActionRow } from "./bundle";
 import { asPayload } from "./parse";
@@ -49,8 +49,7 @@ export async function executeAfterAck(actionId: string): Promise<void> {
     return;
   }
 
-  const reversible = KIND_REVERSIBLE[chosen.kind];
-  if (!reversible && bundle.action.appealUntil && bundle.action.appealUntil > new Date()) {
+  if (!adapterOf(chosen.kind).reversible && bundle.action.appealUntil && bundle.action.appealUntil > new Date()) {
     return;
   }
 
@@ -68,7 +67,10 @@ async function writeExecution(action: ActionRow, kind: ActionKind, payload: Acti
       .where(eq(actions.id, action.id));
     return;
   }
-  const result = apply(kind, payload);
+  const result = await apply(kind, payload, {
+    principalId: action.principalId,
+    actionId: action.id,
+  });
   await db.insert(executions).values({
     id: mintToken("exe"),
     actionId: action.id,
