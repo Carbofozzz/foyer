@@ -3,7 +3,11 @@ import type { ObjectionDraft, OpenInboxItem } from "./types";
 
 export type { ObjectionDraft, OpenInboxItem };
 
-const SAVE = /save|econom|budget|cheap|ahorr|spar|tasarruf|эконом/i;
+/**
+ * Budget speaks for a charter that prefers the cheaper option. A charter that
+ * lets comfort win over price leaves the proposal alone.
+ */
+const GRANT = /save money|cheaper|ahorra|más barato|spar geld|günstigere|tasarruf|ucuz|эконом|дешевле/i;
 
 /** Budget guardian: a real protocol client. Sweep wakes it; it decides whether to object. */
 export function decideBudgetTurn(input: {
@@ -19,7 +23,7 @@ export function decideBudgetTurn(input: {
     if (item.kind !== "book" && item.kind !== "spend") continue;
     const amount = item.payload.amount;
     if (typeof amount !== "number" || amount < 200) continue;
-    if (!SAVE.test(input.constitution) && input.constitution.trim().length === 0) continue;
+    if (!GRANT.test(input.constitution)) continue;
 
     const kind = item.kind as ActionKind;
     const economy = Math.round(amount * (180 / 420));

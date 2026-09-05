@@ -14,7 +14,12 @@ export const CASE_C = {
   ] satisfies EvidenceItem[],
 };
 
-const GUARD = /secur|data|block|безопас|данн|correo|daten|güven/i;
+/**
+ * The charter has to grant the block, not just mention security: "Security may
+ * block mail…" reads as a power, "Security does not veto ordinary mail." does not.
+ */
+const GRANT =
+  /(security|seguridad|sicherheit|güvenlik|безопасн)[^.]*(may block|puede bloquear|blockieren|engelleyebilir|блокировать)/i;
 const RISK = /spreadsheet|email|address|payment|данн|адрес|платёж|pago|zahlung/i;
 
 /** Security guardian: pure block, no counter_action. */
@@ -25,7 +30,7 @@ export function decideSecurityTurn(input: {
 }): ObjectionDraft[] {
   const drafts: ObjectionDraft[] = [];
   const charter = input.constitution.trim();
-  if (!GUARD.test(charter) && charter.length === 0) return drafts;
+  if (!GRANT.test(charter)) return drafts;
 
   for (const item of input.items) {
     if (item.status !== "open") continue;
