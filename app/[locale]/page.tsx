@@ -20,6 +20,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <p className="lead">{t.home.lead}</p>
       <HomeGate locale={locale} t={t.home} initialAddress={session?.address ?? null} />
       <ProductOutline outline={t.outline} protocol={t.protocol} />
+      <p>
+        <a href={`/${locale}/check`}>{t.check.open}</a>
+      </p>
       <SpawnButton locale={locale} t={t.spawn} />
     </main>
   );

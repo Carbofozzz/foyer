@@ -7,6 +7,7 @@ import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { CabinetWizard } from "@/app/components/cabinet-wizard";
 import { ConnectCard } from "@/app/components/connect-card";
+import { TechCard } from "@/app/components/tech-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { WalletButton } from "@/app/components/wallet-button";
@@ -33,6 +34,7 @@ export async function CabinetScreen({
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
   const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
+  const liveIds = liveAgentIds(inbox.items);
   const hasGuardian = houseAgents.some((agent) => agent.isGuardian);
   const step = !principal.wizardRulesDone
     ? "rules"
@@ -77,6 +79,7 @@ export async function CabinetScreen({
             charter={t.charter}
             cabinetError={t.cabinet.error}
             constitution={principal.constitution}
+            houseType={principal.type === "org" ? "org" : "personal"}
           />
         ) : (
           <>
@@ -85,9 +88,16 @@ export async function CabinetScreen({
               {houseAgents.length > 0 ? (
                 <ul className="agent-chips">
                   {houseAgents.map((agent) => (
-                    <li key={agent.id}>
+                    <li
+                      key={agent.id}
+                      className={liveIds.has(agent.id) || agent.isGuardian ? "agent-live" : "agent-wait"}
+                    >
                       {agent.name}
-                      {agent.isGuardian ? ` · ${t.cabinet.guardian}` : ""}
+                      {agent.isGuardian
+                        ? ` · ${t.cabinet.guardian}`
+                        : liveIds.has(agent.id)
+                          ? ` · ${t.cabinet.agentLive}`
+                          : ` · ${t.cabinet.agentWait}`}
                     </li>
                   ))}
                 </ul>
@@ -127,6 +137,10 @@ export async function CabinetScreen({
               <details>
                 <summary>{t.connect.title}</summary>
                 <ConnectCard token={token} t={t.connect} errorLabel={t.cabinet.error} compact />
+              </details>
+              <details>
+                <summary>{t.tech.title}</summary>
+                <TechCard token={token} t={t.tech} errorLabel={t.cabinet.error} />
               </details>
             </div>
           </>
@@ -203,6 +217,15 @@ function FeedRow({
       ) : null}
     </li>
   );
+}
+
+function liveAgentIds(items: InboxItem[]) {
+  const ids = new Set<string>();
+  for (const item of items) {
+    ids.add(item.proposer_id);
+    for (const row of item.objections) ids.add(row.objector_id);
+  }
+  return ids;
 }
 
 function kindLabel(kind: string, t: FeedCopy) {

@@ -487,6 +487,12 @@ button.wallet-balance:disabled {
   text-underline-offset: 0.15em;
 }
 
+.runtime-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -523,6 +529,21 @@ button.wallet-balance:disabled {
   border: 1px solid var(--line);
   padding: 0.2rem 0.5rem;
   font-size: 0.82rem;
+}
+
+.agent-chips li.agent-live {
+  border-color: #3d6b3d;
+}
+
+.agent-chips li.agent-wait {
+  color: var(--muted);
+}
+
+.check-list {
+  max-width: 42rem;
+  display: grid;
+  gap: 0.55rem;
+  padding-left: 1.2rem;
 }
 
 .cabinet-meta {

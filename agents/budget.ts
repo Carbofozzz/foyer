@@ -1,21 +1,7 @@
-import type { ActionKind, ActionPayload, EvidenceItem } from "@/lib/protocol/types";
+import type { ActionKind } from "@/lib/protocol/types";
+import type { ObjectionDraft, OpenInboxItem } from "./types";
 
-export type OpenInboxItem = {
-  id: string;
-  proposerId: string;
-  kind: string;
-  payload: ActionPayload;
-  evidence: EvidenceItem[];
-  status: string;
-  alreadyObjected: boolean;
-};
-
-export type ObjectionDraft = {
-  actionId: string;
-  justification: string;
-  evidence: EvidenceItem[];
-  counter_action: ActionPayload;
-};
+export type { ObjectionDraft, OpenInboxItem };
 
 const SAVE = /save|econom|budget|cheap|ahorr|spar|tasarruf|эконом/i;
 
@@ -41,10 +27,7 @@ export function decideBudgetTurn(input: {
     drafts.push({
       actionId: item.id,
       justification: `Budget: save money. Charter: ${cited}`,
-      evidence: [
-        ...item.evidence,
-        { type: "text", value: `Economy alternative is €${economy}` },
-      ],
+      evidence: [...item.evidence, { type: "text", value: `Economy alternative is €${economy}` }],
       counter_action: {
         kind,
         summary: `Economy, €${economy}`,

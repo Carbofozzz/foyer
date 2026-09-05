@@ -12,6 +12,10 @@ type ConnectPayload = {
   prompt_lines: string[];
 };
 
+type Runtime = "cursor" | "claude" | "chatgpt" | "openclaw";
+
+const RUNTIMES: Runtime[] = ["cursor", "claude", "chatgpt", "openclaw"];
+
 export function ConnectCard({
   token,
   t,
@@ -29,6 +33,7 @@ export function ConnectCard({
   const [data, setData] = useState<ConnectPayload | null>(null);
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
+  const [runtime, setRuntime] = useState<Runtime>("cursor");
 
   useEffect(() => {
     fetch(`/api/cabinet/${token}/connect`)
@@ -67,7 +72,19 @@ export function ConnectCard({
       )}
       {compact ? null : (
         <>
-          <p className="hint">{t.lead}</p>
+          <div className="runtime-tabs">
+            {RUNTIMES.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={id === runtime ? "primary" : "ghost"}
+                onClick={() => setRuntime(id)}
+              >
+                {runtimeLabel(id, t)}
+              </button>
+            ))}
+          </div>
+          <p className="hint">{runtimeLead(runtime, t)}</p>
           <p>{t.offTools}</p>
         </>
       )}
@@ -101,4 +118,18 @@ export function ConnectCard({
       ) : null}
     </section>
   );
+}
+
+function runtimeLabel(id: Runtime, t: Messages["connect"]) {
+  if (id === "claude") return t.runtimeClaude;
+  if (id === "chatgpt") return t.runtimeChatgpt;
+  if (id === "openclaw") return t.runtimeOpenclaw;
+  return t.runtimeCursor;
+}
+
+function runtimeLead(id: Runtime, t: Messages["connect"]) {
+  if (id === "claude") return t.leadClaude;
+  if (id === "chatgpt") return t.leadChatgpt;
+  if (id === "openclaw") return t.leadOpenclaw;
+  return t.leadCursor;
 }

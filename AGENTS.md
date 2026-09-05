@@ -75,3 +75,5 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-04: Login sign is a short `personal_sign` text, not SIWE boilerplate. Connect button sits on the landing card, not the top bar.
 - 2026-09-04: First wallet sign-in opens the house. No name/type form — one wallet is one house.
 - 2026-09-04: After login the landing keeps the same wallet row plus a quiet cabinet link. Cabinet header is account + sign out; treasury does not repeat the address or Connect.
+- 2026-09-05: Day 6 — cases B/C/D through protocol clients (Calendar, Security, Sales/Legal); `allow_b` as counter and as a pure block; Finance guardian on org spend. Wizard sets personal/org after login (no second login). First pass runs A+B+C or D. Connect card has Cursor / Claude / ChatGPT / OpenClaw tabs over the same MCP. Sweep wakes guardians by role.
+- 2026-09-05: Day 7 MVP — tech tab in the cabinet (OpenAPI at `GET /api/openapi`, curl, Python, `npm run http:client`); agent chips show live vs waiting; community checklist at `/:locale/check`; Replay archives A–D; optional `NEXT_PUBLIC_REPLAY_TX` for a recorded on-chain hash. MVP freeze.

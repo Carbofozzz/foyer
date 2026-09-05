@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { assembleCharter, type PricePreference } from "@/lib/i18n/charter";
+import { assembleCharter, type HouseKind, type PricePreference } from "@/lib/i18n/charter";
 import type { Messages } from "@/lib/i18n/load";
 import { ConnectCard } from "@/app/components/connect-card";
 
@@ -16,6 +16,7 @@ export function CabinetWizard({
   charter,
   cabinetError,
   constitution,
+  houseType,
 }: {
   token: string;
   step: Step;
@@ -24,9 +25,19 @@ export function CabinetWizard({
   charter: Messages["charter"];
   cabinetError: string;
   constitution: string;
+  houseType: HouseKind;
 }) {
   if (step === "rules") {
-    return <RulesStep token={token} wizard={wizard} charter={charter} cabinetError={cabinetError} constitution={constitution} />;
+    return (
+      <RulesStep
+        token={token}
+        wizard={wizard}
+        charter={charter}
+        cabinetError={cabinetError}
+        constitution={constitution}
+        houseType={houseType}
+      />
+    );
   }
   if (step === "lock") {
     return <LockStep token={token} wizard={wizard} cabinetError={cabinetError} />;
@@ -41,8 +52,8 @@ export function CabinetWizard({
         path="guardian"
         cabinetError={cabinetError}
         kicker={wizard.guardianKicker}
-        title={wizard.guardianTitle}
-        lead={wizard.guardianLead}
+        title={houseType === "org" ? wizard.guardianTitleOrg : wizard.guardianTitle}
+        lead={houseType === "org" ? wizard.guardianLeadOrg : wizard.guardianLead}
         label={wizard.guardianEnable}
         pendingLabel={wizard.guardianEnabling}
       />
@@ -54,8 +65,8 @@ export function CabinetWizard({
       path="first-pass"
       cabinetError={cabinetError}
       kicker={wizard.firstKicker}
-      title={wizard.firstTitle}
-      lead={wizard.firstLead}
+      title={houseType === "org" ? wizard.firstTitleOrg : wizard.firstTitle}
+      lead={houseType === "org" ? wizard.firstLeadOrg : wizard.firstLead}
       label={wizard.firstRun}
       pendingLabel={wizard.firstRunning}
     />
@@ -68,24 +79,27 @@ function RulesStep({
   charter,
   cabinetError,
   constitution,
+  houseType,
 }: {
   token: string;
   wizard: Messages["wizard"];
   charter: Messages["charter"];
   cabinetError: string;
   constitution: string;
+  houseType: HouseKind;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [kind, setKind] = useState<HouseKind>(houseType);
   const [spendLimit, setSpendLimit] = useState("500");
   const [price, setPrice] = useState<PricePreference>("save");
   const [promises, setPromises] = useState(true);
   const [security, setSecurity] = useState(true);
   const [human, setHuman] = useState("");
   const assembled = useMemo(
-    () => assembleCharter({ spendLimit, price, promises, security, human }, charter),
-    [spendLimit, price, promises, security, human, charter],
+    () => assembleCharter({ spendLimit, price, promises, security, human }, charter, kind),
+    [spendLimit, price, promises, security, human, charter, kind],
   );
   const [text, setText] = useState(constitution.trim() || assembled);
   const [edited, setEdited] = useState(Boolean(constitution.trim()));
@@ -101,7 +115,7 @@ function RulesStep({
     const response = await fetch(`/api/cabinet/${token}/constitution`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ constitution: text }),
+      body: JSON.stringify({ constitution: text, type: kind }),
     });
     if (!response.ok) {
       setPending(false);
@@ -119,26 +133,35 @@ function RulesStep({
       </div>
       <div className="form-grid">
         <label>
-          {wizard.qSpend}
-          <input value={spendLimit} onChange={(event) => setSpendLimit(event.target.value)} inputMode="numeric" />
-        </label>
-        <label>
-          {wizard.qPrice}
-          <select value={price} onChange={(event) => setPrice(event.target.value as PricePreference)}>
-            <option value="save">{wizard.qSave}</option>
-            <option value="balance">{wizard.qBalance}</option>
-            <option value="comfort">{wizard.qComfort}</option>
+          {wizard.qType}
+          <select value={kind} onChange={(event) => setKind(event.target.value as HouseKind)}>
+            <option value="personal">{wizard.typePersonal}</option>
+            <option value="org">{wizard.typeOrg}</option>
           </select>
         </label>
         <label>
-          {wizard.qPromises}
+          {wizard.qSpend}
+          <input value={spendLimit} onChange={(event) => setSpendLimit(event.target.value)} inputMode="numeric" />
+        </label>
+        {kind === "personal" ? (
+          <label>
+            {wizard.qPrice}
+            <select value={price} onChange={(event) => setPrice(event.target.value as PricePreference)}>
+              <option value="save">{wizard.qSave}</option>
+              <option value="balance">{wizard.qBalance}</option>
+              <option value="comfort">{wizard.qComfort}</option>
+            </select>
+          </label>
+        ) : null}
+        <label>
+          {kind === "org" ? wizard.qLegal : wizard.qPromises}
           <select value={promises ? "yes" : "no"} onChange={(event) => setPromises(event.target.value === "yes")}>
             <option value="yes">{wizard.yes}</option>
             <option value="no">{wizard.no}</option>
           </select>
         </label>
         <label>
-          {wizard.qSecurity}
+          {kind === "org" ? wizard.qFinance : wizard.qSecurity}
           <select value={security ? "yes" : "no"} onChange={(event) => setSecurity(event.target.value === "yes")}>
             <option value="yes">{wizard.yes}</option>
             <option value="no">{wizard.no}</option>

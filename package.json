@@ -8,7 +8,8 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "court:deploy": "node scripts/deploy-court.mjs"
+    "court:deploy": "node scripts/deploy-court.mjs",
+    "http:client": "node scripts/http-client.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
