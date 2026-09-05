@@ -18,7 +18,7 @@ export type Judge = (typeof JUDGES)[number];
 
 /** Each kind declares whether execute can run before the appeal window closes. */
 export const KIND_REVERSIBLE: Record<ActionKind, boolean> = {
-  spend: true,
+  spend: false,
   book: true,
   message: true,
   cancel: true,

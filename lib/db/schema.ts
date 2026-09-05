@@ -111,6 +111,7 @@ export const verdicts = pgTable("verdicts", {
   judge: text("judge").notNull(),
   tx: text("tx"),
   appealOf: text("appeal_of"),
+  escalateExternal: boolean("escalate_external").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -173,5 +174,21 @@ export const houseMembers = pgTable(
 export const waitlist = pgTable("waitlist", {
   email: text("email").primaryKey(),
   locale: text("locale").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Almost-real spend adapter receipts. Not a bank wire. */
+export const spendReceipts = pgTable("spend_receipts", {
+  id: text("id").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  actionId: text("action_id")
+    .notNull()
+    .references(() => actions.id)
+    .unique(),
+  amount: text("amount"),
+  currency: text("currency"),
+  summary: text("summary").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

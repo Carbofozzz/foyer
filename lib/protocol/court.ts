@@ -56,6 +56,7 @@ export async function openCourt(action: ActionRow, principal: HousePrincipal, no
     objectionGrounded: answer.objection_grounded,
     judge,
     tx,
+    escalateExternal: false,
   });
   await recordCourtTx(principal, tx, contractAddress);
 

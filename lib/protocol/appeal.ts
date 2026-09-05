@@ -4,10 +4,18 @@ import { getDb } from "@/lib/db";
 import { decide } from "@/lib/judge/decide";
 import { ensureHouseCourt } from "@/lib/judge/house-court";
 import { recordCourtTx } from "@/lib/judge/wallet";
-import { actionEvidence, actionPayload, loadActionBundle, serializeAction, type HousePrincipal } from "./bundle";
+import {
+  actionEvidence,
+  actionPayload,
+  engagedIds,
+  loadActionBundle,
+  serializeAction,
+  type HousePrincipal,
+} from "./bundle";
 import { ProtocolError } from "./errors";
 import { mintToken } from "./keys";
 import { asEvidence, asPayload, isRecord } from "./parse";
+import { executeAfterAck } from "./execute";
 import { OUTCOMES, type Judge, type Outcome, type VerdictAnswer } from "./types";
 
 export async function appealCase(
@@ -100,8 +108,21 @@ export async function appealCase(
     judge,
     tx,
     appealOf: prior.id,
+    escalateExternal: false,
   });
   await recordCourtTx(principal, tx, principal.courtContract);
+
+  const after = await loadActionBundle(bundle.action.id);
+  if (!after) throw new ProtocolError("internal", "Failed to load action", 500);
+  const engaged = engagedIds(
+    after.action.proposerId,
+    after.objections.map((item) => item.objectorId),
+  );
+  const acked = new Set(after.acks.map((item) => item.agentId));
+  const timedOut = after.action.ackUntil !== null && after.action.ackUntil <= now;
+  if (engaged.every((id) => acked.has(id)) || timedOut) {
+    await executeAfterAck(after.action.id);
+  }
 
   const next = await loadActionBundle(bundle.action.id);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
