@@ -219,15 +219,35 @@ async function ensureSealed(
   return (await insertSealedAgent(principalId, input)).agent;
 }
 
-export async function issueConnectAgent(principal: HousePrincipal) {
-  const role = principal.type === "org" ? "sales" : "travel";
-  const name = principal.type === "org" ? "Sales" : "Travel";
-  const existing = await findAgentByRole(principal.id, role);
+const CONNECT_ROLES = {
+  personal: [
+    { role: "travel", name: "Travel" },
+    { role: "assistant", name: "Assistant" },
+  ],
+  org: [
+    { role: "sales", name: "Sales" },
+    { role: "legal", name: "Legal" },
+    { role: "finance", name: "Finance" },
+  ],
+} as const;
+
+export function connectRolesFor(type: string) {
+  return type === "org" ? CONNECT_ROLES.org : CONNECT_ROLES.personal;
+}
+
+export async function issueConnectAgent(principal: HousePrincipal, wanted?: string) {
+  const catalog = connectRolesFor(principal.type);
+  const spec = catalog.find((row) => row.role === wanted) ?? catalog[0];
+  const existing = await findAgentByRole(principal.id, spec.role);
   if (existing?.sealedKey) {
-    return { agent_key: unsealKey(existing.sealedKey), created: false };
+    return { agent_key: unsealKey(existing.sealedKey), created: false, role: spec.role, name: spec.name };
   }
-  const { agentKey } = await insertSealedAgent(principal.id, { role, name, isGuardian: false });
-  return { agent_key: agentKey, created: true };
+  const { agentKey } = await insertSealedAgent(principal.id, {
+    role: spec.role,
+    name: spec.name,
+    isGuardian: false,
+  });
+  return { agent_key: agentKey, created: true, role: spec.role, name: spec.name };
 }
 
 async function findGuardian(principalId: string) {

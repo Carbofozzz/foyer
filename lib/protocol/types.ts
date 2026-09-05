@@ -7,6 +7,12 @@ export type Outcome = (typeof OUTCOMES)[number];
 export const PRINCIPAL_TYPES = ["personal", "org"] as const;
 export type PrincipalType = (typeof PRINCIPAL_TYPES)[number];
 
+/** Wallet roles inside one house. Same SIWE login — not a second account. */
+export const MEMBER_ROLES = ["owner", "operator", "observer"] as const;
+export type MemberRole = (typeof MEMBER_ROLES)[number];
+export const INVITE_ROLES = ["operator", "observer"] as const;
+export type InviteRole = (typeof INVITE_ROLES)[number];
+
 export const JUDGES = ["onchain", "offline"] as const;
 export type Judge = (typeof JUDGES)[number];
 

@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { CopyButton } from "@/app/components/copy-button";
 import type { Messages } from "@/lib/i18n/load";
 
 type ConnectPayload = {
   agent_key: string;
+  role?: string;
+  name?: string;
+  roles?: { role: string; name: string }[];
   mcp_url: string;
   mcp_config: string;
   prompt_lines: string[];
@@ -18,12 +22,16 @@ const RUNTIMES: Runtime[] = ["cursor", "claude", "chatgpt", "openclaw"];
 
 export function ConnectCard({
   token,
+  houseId,
+  houseType,
   t,
   errorLabel,
   asWizard,
   compact,
 }: {
   token: string;
+  houseId?: string;
+  houseType?: "personal" | "org";
   t: Messages["connect"];
   errorLabel: string;
   asWizard?: boolean;
@@ -34,20 +42,26 @@ export function ConnectCard({
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
   const [runtime, setRuntime] = useState<Runtime>("cursor");
+  const [role, setRole] = useState(houseType === "org" ? "sales" : "travel");
 
   useEffect(() => {
-    fetch(`/api/cabinet/${token}/connect`)
+    fetch(`/api/cabinet/${token}/connect?role=${encodeURIComponent(role)}`, {
+      headers: cabinetHeaders(houseId),
+    })
       .then((response) => {
         if (!response.ok) throw new Error("fail");
         return response.json() as Promise<{ data: ConnectPayload }>;
       })
       .then((payload) => setData(payload.data))
       .catch(() => setError(true));
-  }, [token]);
+  }, [token, houseId, role]);
 
   async function finish() {
     setPending(true);
-    const response = await fetch(`/api/cabinet/${token}/connect`, { method: "POST" });
+    const response = await fetch(`/api/cabinet/${token}/connect`, {
+      method: "POST",
+      headers: cabinetHeaders(houseId),
+    });
     if (!response.ok) {
       setPending(false);
       setError(true);
@@ -86,6 +100,20 @@ export function ConnectCard({
           </div>
           <p className="hint">{runtimeLead(runtime, t)}</p>
           <p>{t.offTools}</p>
+          {data?.roles && data.roles.length > 1 ? (
+            <div className="runtime-tabs">
+              {data.roles.map((item) => (
+                <button
+                  key={item.role}
+                  type="button"
+                  className={item.role === role ? "primary" : "ghost"}
+                  onClick={() => setRole(item.role)}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </>
       )}
       {data ? (

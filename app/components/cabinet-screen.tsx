@@ -10,8 +10,12 @@ import { ConnectCard } from "@/app/components/connect-card";
 import { TechCard } from "@/app/components/tech-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { AppealForm } from "@/app/components/appeal-form";
+import { HouseSwitch } from "@/app/components/house-switch";
+import { MembersCard } from "@/app/components/members-card";
 import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
+import { canManage, canOperate, type HouseListing } from "@/lib/protocol/members";
+import type { MemberRole } from "@/lib/protocol/types";
 
 type FeedCopy = Messages["cabinet"];
 type InboxItem = Awaited<ReturnType<typeof inboxForPrincipal>>["items"][number];
@@ -20,12 +24,18 @@ export async function CabinetScreen({
   locale,
   token,
   principal,
+  memberRole = "owner",
+  houses = [],
+  viewerAddress = null,
   enroll,
   t,
 }: {
   locale: string;
   token: string;
   principal: HousePrincipal;
+  memberRole?: MemberRole;
+  houses?: HouseListing[];
+  viewerAddress?: string | null;
   enroll?: string;
   t: Messages;
 }) {
@@ -49,6 +59,9 @@ export async function CabinetScreen({
             : null;
   const now = Date.now();
   const signedIn = token === "me";
+  const houseId = signedIn ? principal.id : undefined;
+  const manage = canManage(memberRole);
+  const operate = canOperate(memberRole);
 
   return (
     <main className="cabinet">
@@ -56,23 +69,35 @@ export async function CabinetScreen({
         <div>
           <h1>{t.cabinet.kicker}</h1>
           {principal.isSpawn ? <p className="hint">{t.spawn.banner}</p> : null}
+          {signedIn ? <HouseSwitch locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} /> : null}
+          {!manage ? <p className="hint">{t.cabinet.readOnly}</p> : null}
         </div>
         {signedIn ? (
           <WalletButton
             locale={locale}
             signOutLabel={t.cabinet.signOut}
             connectLabel={t.home.signIn}
-            initialAddress={principal.ownerAddress}
+            initialAddress={viewerAddress ?? principal.ownerAddress}
           />
         ) : null}
       </header>
 
-      <TreasuryCard token={token} t={t.cabinet} errorLabel={t.cabinet.error} />
+      <TreasuryCard
+        token={token}
+        houseId={houseId}
+        canDeposit={operate}
+        canManage={manage}
+        t={t.cabinet}
+        errorLabel={t.cabinet.error}
+      />
 
       <section className="cabinet-panel">
-        {step ? (
+        {step && !manage ? (
+          <p className="hint">{t.cabinet.setupWait}</p>
+        ) : step ? (
           <CabinetWizard
             token={token}
+            houseId={houseId}
             step={step}
             wizard={t.wizard}
             connect={t.connect}
@@ -116,6 +141,8 @@ export async function CabinetScreen({
                       t={t.cabinet}
                       appeal={t.appeal}
                       token={token}
+                      houseId={houseId}
+                      canAppeal={operate}
                       errorLabel={t.cabinet.error}
                       now={now}
                     />
@@ -134,14 +161,35 @@ export async function CabinetScreen({
                 <summary>{t.cabinet.constitution}</summary>
                 <p className="charter">{principal.constitution}</p>
               </details>
-              <details>
-                <summary>{t.connect.title}</summary>
-                <ConnectCard token={token} t={t.connect} errorLabel={t.cabinet.error} compact />
-              </details>
-              <details>
-                <summary>{t.tech.title}</summary>
-                <TechCard token={token} t={t.tech} errorLabel={t.cabinet.error} />
-              </details>
+              {operate ? (
+                <details>
+                  <summary>{t.connect.title}</summary>
+                  <ConnectCard
+                    token={token}
+                    houseId={houseId}
+                    houseType={principal.type === "org" ? "org" : "personal"}
+                    t={t.connect}
+                    errorLabel={t.cabinet.error}
+                    compact
+                  />
+                </details>
+              ) : null}
+              {operate ? (
+                <details>
+                  <summary>{t.tech.title}</summary>
+                  <TechCard token={token} houseId={houseId} t={t.tech} errorLabel={t.cabinet.error} />
+                </details>
+              ) : null}
+              {signedIn && principal.type === "org" && !principal.isSpawn ? (
+                <MembersCard
+                  token={token}
+                  houseId={principal.id}
+                  selfAddress={viewerAddress}
+                  canInvite={manage}
+                  t={t.cabinet}
+                  errorLabel={t.cabinet.error}
+                />
+              ) : null}
             </div>
           </>
         )}
@@ -156,6 +204,8 @@ function FeedRow({
   t,
   appeal,
   token,
+  houseId,
+  canAppeal,
   errorLabel,
   now,
 }: {
@@ -164,6 +214,8 @@ function FeedRow({
   t: FeedCopy;
   appeal: Messages["appeal"];
   token: string;
+  houseId?: string;
+  canAppeal: boolean;
   errorLabel: string;
   now: number;
 }) {
@@ -212,9 +264,15 @@ function FeedRow({
           ) : null}
         </div>
       ) : null}
-      {item.case && item.appeal_until && new Date(item.appeal_until).getTime() > now ? (
+      {canAppeal && item.case && item.appeal_until && new Date(item.appeal_until).getTime() > now ? (
         <div className="feed-block">
-          <AppealForm token={token} caseId={item.case.id} t={appeal} errorLabel={errorLabel} />
+          <AppealForm
+            token={token}
+            houseId={houseId}
+            caseId={item.case.id}
+            t={appeal}
+            errorLabel={errorLabel}
+          />
         </div>
       ) : null}
     </li>

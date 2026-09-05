@@ -1,11 +1,11 @@
-import { cabinetFromToken } from "@/lib/protocol/auth";
+import { cabinetFromToken, needManage } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { isRecord } from "@/lib/protocol/parse";
 import { saveConstitution } from "@/lib/protocol/cabinet";
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
-  const auth = await cabinetFromToken(token, request);
+  const auth = needManage(await cabinetFromToken(token, request));
   if ("error" in auth) return auth.error;
   const principal = auth.principal;
   let body: unknown;

@@ -4,7 +4,9 @@ import { getDb } from "@/lib/db";
 import { bearerToken, jsonError } from "./http";
 import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
+import { accessFor, canManage, canOperate } from "./members";
 import { readSession } from "./session";
+import type { MemberRole } from "./types";
 
 export async function requireAgent(request: Request) {
   const token = bearerToken(request);
@@ -28,20 +30,51 @@ export async function requireAgent(request: Request) {
 }
 
 export async function cabinetFromToken(token: string, request: Request) {
-  const principal = await requireCabinet(token, request);
-  if (principal) return { principal };
+  const opened = await openCabinet(token, request);
+  if (opened) return opened;
   if (token === "me" && !readSession(request)) {
     return { error: jsonError("unauthorized", "Sign in required", 401) };
   }
   return { error: jsonError("not_found", "Unknown house", 404) };
 }
 
-export async function requireCabinet(token: string, request?: Request) {
+type CabinetAuth = Awaited<ReturnType<typeof cabinetFromToken>>;
+
+export function needOperate(auth: CabinetAuth): CabinetAuth {
+  if ("error" in auth) return auth;
+  if (!canOperate(auth.role)) {
+    return { error: jsonError("forbidden", "This wallet can only watch", 403) };
+  }
+  return auth;
+}
+
+export function needManage(auth: CabinetAuth): CabinetAuth {
+  if ("error" in auth) return auth;
+  if (!canManage(auth.role)) {
+    return { error: jsonError("forbidden", "Only the owner can do that", 403) };
+  }
+  return auth;
+}
+
+export async function requireCabinet(token: string, request?: Request, houseId?: string | null) {
+  const opened = await openCabinet(token, request, houseId);
+  return opened?.principal ?? null;
+}
+
+export async function openCabinet(token: string, request?: Request, houseId?: string | null) {
   if (token === "me") {
     if (!request) return null;
     const session = readSession(request);
     if (!session) return null;
-    return findHouseByOwner(session.address);
+    const wanted = houseId?.trim() || request.headers.get("x-foyer-house")?.trim() || null;
+    if (wanted) {
+      const access = await accessFor(session.address, wanted);
+      if (!access) return null;
+      return { principal: access.principal, role: access.role, token: "me" as const };
+    }
+    const principal = await findHouseByOwner(session.address);
+    if (!principal) return null;
+    return { principal, role: "owner" as const, token: "me" as const };
   }
   if (!token.startsWith("cab_")) return null;
   const db = getDb();
@@ -50,22 +83,22 @@ export async function requireCabinet(token: string, request?: Request) {
     .from(principals)
     .where(eq(principals.cabinetTokenHash, hashSecret(token)))
     .limit(1);
-  return principal ?? null;
+  return principal ? { principal, role: "owner" as MemberRole, token } : null;
 }
 
 export async function requireCabinetRequest(request: Request) {
   const token = bearerToken(request);
   if (token === "me" || !token) {
-    const principal = await requireCabinet("me", request);
-    if (!principal) return { error: jsonError("unauthorized", "Sign in required", 401) };
-    return { principal, token: "me" };
+    const opened = await openCabinet("me", request);
+    if (!opened) return { error: jsonError("unauthorized", "Sign in required", 401) };
+    return opened;
   }
   if (!token.startsWith("cab_")) {
     return { error: jsonError("unauthorized", "Cabinet link required", 401) };
   }
-  const principal = await requireCabinet(token, request);
-  if (!principal) {
+  const opened = await openCabinet(token, request);
+  if (!opened) {
     return { error: jsonError("not_found", "Unknown house", 404) };
   }
-  return { principal, token };
+  return opened;
 }

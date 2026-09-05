@@ -56,14 +56,14 @@ export async function exportHouseWalletKey(principal: HousePrincipal): Promise<{
 
 export async function recordDeposit(
   principal: HousePrincipal,
-  input: { tx: string; from: string; gen: string },
+  input: { tx: string; from: string; gen: string; payer?: string | null },
 ): Promise<HouseWalletView> {
   const wallet = await ensureHouseWallet(principal);
   const from = asHexAddress(input.from);
   const tx = parseTx(input.tx);
   if (!from) throw new ProtocolError("bad_request", "from must be an address", 400);
-  const owner = principal.ownerAddress ? ownerKey(principal.ownerAddress) : null;
-  if (owner && owner !== ownerKey(from)) {
+  const payer = input.payer ? ownerKey(input.payer) : principal.ownerAddress ? ownerKey(principal.ownerAddress) : null;
+  if (payer && payer !== ownerKey(from)) {
     throw new ProtocolError("forbidden", "Deposit must come from the signed-in wallet", 403);
   }
   let wei: bigint;
