@@ -4,7 +4,7 @@
 const origin = (process.env.FOYER_URL ?? "http://127.0.0.1:3001").replace(/\/$/, "");
 
 async function get(path) {
-  const response = await fetch(`${origin}${path}`, { redirect: "manual" });
+  const response = await fetch(`${origin}${path}`, { redirect: "follow" });
   const text = await response.text();
   if (response.status >= 400) {
     throw new Error(`${path} → ${response.status}`);
