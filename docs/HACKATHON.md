@@ -390,6 +390,8 @@ Do not cut days 1–3 down to “two curls without a court.” Do not leave onbo
 
 **Day 14.** Startup-ready freeze. Prod URL, demo script, checklist from §9 still green.
 
+**After day 14.** Depth: [IMPLEMENT.md](IMPLEMENT.md) — permit the agent, do not fake execute; demo/test follow that; door stats; Telegram; court off the read path. No bonds or duties.
+
 ---
 
 ## 9. How the community tests

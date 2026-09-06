@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const principals = pgTable("principals", {
@@ -50,25 +50,29 @@ export const enrollments = pgTable("enrollments", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
-export const actions = pgTable("actions", {
-  id: text("id").primaryKey(),
-  principalId: text("principal_id")
-    .notNull()
-    .references(() => principals.id),
-  proposerId: text("proposer_id")
-    .notNull()
-    .references(() => agents.id),
-  kind: text("kind").notNull(),
-  payload: jsonb("payload").notNull(),
-  justification: text("justification").notNull(),
-  evidence: jsonb("evidence").notNull(),
-  status: text("status").notNull(),
-  silenceUntil: timestamp("silence_until", { withTimezone: true }).notNull(),
-  ackUntil: timestamp("ack_until", { withTimezone: true }),
-  appealUntil: timestamp("appeal_until", { withTimezone: true }),
-  executedAt: timestamp("executed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const actions = pgTable(
+  "actions",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    proposerId: text("proposer_id")
+      .notNull()
+      .references(() => agents.id),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    justification: text("justification").notNull(),
+    evidence: jsonb("evidence").notNull(),
+    status: text("status").notNull(),
+    silenceUntil: timestamp("silence_until", { withTimezone: true }).notNull(),
+    ackUntil: timestamp("ack_until", { withTimezone: true }),
+    appealUntil: timestamp("appeal_until", { withTimezone: true }),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("actions_principal_status_silence").on(table.principalId, table.status, table.silenceUntil)],
+);
 
 export const objections = pgTable(
   "objections",

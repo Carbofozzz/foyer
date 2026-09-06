@@ -40,7 +40,7 @@ export async function CabinetScreen({
   enroll?: string;
   t: Messages;
 }) {
-  await sweep(principal.id, new Date());
+  await sweep(principal.id, new Date(), { courts: 0 });
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
