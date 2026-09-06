@@ -332,26 +332,6 @@
     "copy": "Copiar",
     "copied": "Copiado"
   },
-  "check": {
-    "kicker": "Comunidad",
-    "title": "Cómo probar",
-    "lead": "Recorre esta lista en la URL pública. El producto es el panel, no el harness.",
-    "open": "Lista de la comunidad",
-    "home": "Volver al inicio",
-    "items": [
-      "Una persona sin OpenAPI conecta un asistente en unos copiar y pegar.",
-      "Con un solo asistente propio, igual aparece una disputa (guardián de prueba; solo frases hechas).",
-      "La disputa va por llamadas de agente, no por clics de “yo soy presupuesto”.",
-      "Se ven los cuatro resultados, incluido allow_b como contra y como bloqueo puro.",
-      "Un veredicto remedy nombra remedy_action; tras el pase el asistente actúa, sin que un humano lea prosa.",
-      "Una petición sin tocar igual se resuelve si nadie abre la app (el tick).",
-      "Tras un pase el cliente de prueba actúa (o el test lo ve). La apelación sigue.",
-      "Un panel vivo puede mostrar un tx en cadena cuando hay consenso.",
-      "El harness no se hace pasar por el producto.",
-      "La URL pública guarda el estado tras recargar.",
-      "El panel de otro no se ve sin su clave de agente o la cartera del titular."
-    ]
-  },
   "protocol": {
     "title": "Para desarrolladores",
     "lead": "Cada asistente recibe su clave y habla con Foyer solo con esa clave."
@@ -366,55 +346,24 @@
     "invalid": "Eso no parece un correo.",
     "error": "No se pudo guardar. Inténtalo de nuevo."
   },
-  "status": {
-    "kicker": "Estado",
-    "title": "Estado del servicio",
-    "ok": "La base de datos responde.",
-    "down": "La base de datos no responde.",
-    "stale": "El tick programado llega tarde.",
-    "tick": "Último tick",
-    "never": "Aún no hay ningún tick.",
-    "env": "Este despliegue",
-    "db": "Base de datos",
-    "cron": "Programador",
-    "cronHere": "El cron corre en este despliegue.",
-    "cronElsewhere": "El cron corre en producción. Este despliegue usa el mismo almacén.",
-    "writes": "{n} escrituras públicas en la última hora, {limited} limitadas.",
-    "open": "Estado",
-    "home": "Volver al inicio",
-    "health": "Estado de la máquina"
-  },
-  "connectDoc": {
-    "kicker": "Conectar",
-    "title": "Conecta tu runtime",
-    "lead": "Tu asistente habla con Foyer con una clave de agente. Pega el bloque MCP del panel. El harness no es este camino.",
-    "product": "Este es el camino del producto: Cursor, Claude Desktop, ChatGPT u OpenClaw. Un guardián de verdad es otro asistente que conectas igual. Los clientes de prueba del panel solo coinciden con frases hechas.",
-    "off": "Cualquier acción hacia fuera empieza como una solicitud aquí. Tras el permiso el asistente la hace con sus herramientas y reporta.",
-    "prompt": "Pon en el prompt las tres líneas del panel. El candado siguen siendo las herramientas, no el texto.",
-    "cursor": "Cursor → Settings → MCP. Pega el bloque. Reinicia el agente si ya estaba abierto.",
-    "claude": "Pega el mismo bloque en los ajustes MCP de Claude Desktop.",
-    "chatgpt": "Añade un servidor MCP HTTP. La URL y el bearer están en el bloque.",
-    "openclaw": "Pega el mismo bloque en los ajustes MCP de OpenClaw.",
-    "http": "¿Escribes tu propio cliente? Usa la pestaña HTTP / OpenAPI del panel. La misma clave. GET /api/openapi.",
-    "spawn": "¿Sin runtime? En la portada hay una demo compartida. Eso no es tu panel.",
-    "open": "Conectar un runtime",
-    "home": "Volver al inicio"
+  "footer": {
+    "copy": "© 2026 Foyer",
+    "powered": "Con tecnología de",
+    "links": "Legal"
   },
   "legal": {
     "kicker": "Legal",
     "title": "Aviso legal",
-    "lead": "Foyer es una prueba pública. Esto no es un registro mercantil ni un consejo jurídico.",
-    "body": "El servicio se ofrece tal cual mientras probamos el protocolo. Aún no pongas dinero real ni agentes de producción.",
+    "lead": "Foyer es una prueba pública. No es una empresa, ni un consejo jurídico, ni un banco.",
+    "body": "Los asistentes de una persona o empresa comparten caja y nombre, no un objetivo. Piden por Foyer. Si hay empate, GenLayer lee tus reglas y responde: seguir, no, un término medio o preguntarte. La caja guarda GEN de prueba para las tasas del tribunal. No pongas dinero real ni agentes de producción.",
     "contact": "Preguntas: deja un correo en la portada.",
-    "open": "Legal",
-    "home": "Volver al inicio"
+    "open": "Legal"
   },
   "privacy": {
     "kicker": "Privacidad",
-    "title": "Privacidad",
-    "lead": "Guardamos lo mínimo.",
-    "body": "La dirección del wallet si entras. El correo si te apuntas a la lista. La IP en hash en las escrituras públicas, para el límite, sin cuerpos. Las claves de agente se quedan en tu runtime.",
-    "open": "Privacidad",
-    "home": "Volver al inicio"
+    "title": "Qué guardamos",
+    "lead": "Solo lo que la casa necesita para funcionar.",
+    "body": "La dirección del wallet al entrar — esa es la cuenta. El correo si te apuntas a la lista. La IP en hash en las escrituras públicas, para el límite, sin cuerpos. Las claves de agente se quedan en tu runtime; nosotros guardamos un hash. Reglas, casos y transferencias están en nuestra base de tu casa. Las transacciones del tribunal van a GenLayer.",
+    "open": "Privacidad"
   }
 }

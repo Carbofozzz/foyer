@@ -1,5 +1,4 @@
 import { cookies, headers } from "next/headers";
-import Link from "next/link";
 import { isLocale, negotiateLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
 
@@ -18,9 +17,6 @@ export async function NotFoundView() {
       <p className="kicker">{t.notFound.kicker}</p>
       <h1>{t.notFound.title}</h1>
       <p className="lead">{t.notFound.lead}</p>
-      <p>
-        <Link href={`/${locale}`}>{t.notFound.home}</Link>
-      </p>
     </main>
   );
 }

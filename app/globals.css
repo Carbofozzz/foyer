@@ -70,7 +70,14 @@ a {
 .app-shell {
   max-width: 68rem;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 4rem;
+  padding: 1.5rem 1.5rem 2rem;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell > .cabinet {
+  flex: 1 1 auto;
 }
 
 .app-shell:has(.cabinet) {
@@ -434,7 +441,8 @@ h1 {
 }
 
 /* The grid gap is the spacing; drop the UA paragraph margins. */
-.stack > p {
+.stack > p,
+.stack > .card {
   margin: 0;
 }
 
@@ -729,7 +737,7 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-height: calc(100dvh - 7.25rem);
+  min-height: 0;
 }
 
 .cabinet-head {
@@ -1178,13 +1186,34 @@ label.segment {
 }
 
 .site-foot {
-  margin-top: 2.2rem;
-  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-top: auto;
+  padding-top: 1.6rem;
+  font-size: 0.82rem;
   color: var(--muted);
 }
 
-.app-shell:has(.cabinet) .site-foot {
-  display: none;
+.site-foot p {
+  margin: 0;
+}
+
+.site-foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.site-foot a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-foot a:hover {
+  color: var(--ink);
 }
 
 @media (max-width: 840px) {

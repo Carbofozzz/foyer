@@ -17,11 +17,6 @@ export default async function LegalPage({ params }: { params: Promise<{ locale: 
         <p>{d.body}</p>
         <p className="hint">{d.contact}</p>
       </section>
-      <p>
-        <a href={`/${locale}`}>{d.home}</a>
-        {" · "}
-        <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
-      </p>
     </main>
   );
 }

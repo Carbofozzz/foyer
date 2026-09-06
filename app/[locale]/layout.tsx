@@ -41,9 +41,18 @@ export default async function LocaleLayout({ children, params }: Props) {
             </header>
             {children}
             <footer className="site-foot">
-              <a href={`/${locale}/legal`}>{t.legal.open}</a>
-              {" · "}
-              <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
+              <p>
+                {t.footer.copy}
+                {" · "}
+                {t.footer.powered}{" "}
+                <a href="https://genlayer.com" target="_blank" rel="noreferrer">
+                  GenLayer
+                </a>
+              </p>
+              <nav className="site-foot-links" aria-label={t.footer.links}>
+                <a href={`/${locale}/legal`}>{t.legal.open}</a>
+                <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
+              </nav>
             </footer>
           </div>
         </WalletProviders>

@@ -332,26 +332,6 @@
     "copy": "Kopyala",
     "copied": "Kopyalandı"
   },
-  "check": {
-    "kicker": "Topluluk",
-    "title": "Nasıl test edilir",
-    "lead": "Bu listeyi genel URL’de yürütün. Ürün panel, harness değil.",
-    "open": "Topluluk listesi",
-    "home": "Başa dön",
-    "items": [
-      "OpenAPI bilmeyen biri birkaç kopyala-yapıştırla asistan bağlar.",
-      "Tek kendi asistanla bile anlaşmazlık çıkar (test koruyucu; yalnızca kalıp cümleler).",
-      "Anlaşmazlık ajan çağrılarıyla gider, “ben bütçeyim” tıklamalarıyla değil.",
-      "Dört sonuç da görünür; allow_b hem karşı teklif hem salt blok olarak.",
-      "Remedy kararı remedy_action’ı adlandırır; geçişten sonra asistan hareket eder, kimse düz metin okumaz.",
-      "Dokunulmayan istek, kimse uygulamayı açmasa da kapanır (tick).",
-      "Geçişten sonra test istemcisi hareket eder (veya test görür). İtiraz durur.",
-      "Canlı panel, konsensüs oturunca zincir üstü tx gösterebilir.",
-      "Harness kendini ürün diye satmaz.",
-      "Genel URL yenilemeden sonra durumu korur.",
-      "Başkasının paneli ajan anahtarı veya sahip cüzdanı olmadan görünmez."
-    ]
-  },
   "protocol": {
     "title": "Geliştiriciler için",
     "lead": "Her asistan kendi anahtarını alır ve Foyer’e yalnızca onunla gelir."
@@ -366,55 +346,24 @@
     "invalid": "Bu bir e-posta gibi durmuyor.",
     "error": "Kaydedilemedi. Lütfen tekrar deneyin."
   },
-  "status": {
-    "kicker": "Durum",
-    "title": "Servis durumu",
-    "ok": "Veritabanı ayakta.",
-    "down": "Veritabanına ulaşılamıyor.",
-    "stale": "Zamanlanmış tick gecikti.",
-    "tick": "Son tick",
-    "never": "Henüz tick yok.",
-    "env": "Bu yayın",
-    "db": "Veritabanı",
-    "cron": "Zamanlayıcı",
-    "cronHere": "Cron bu yayında çalışır.",
-    "cronElsewhere": "Cron production’da çalışır. Bu yayın aynı depoyu kullanır.",
-    "writes": "Son saatte {n} genel yazma, {limited} sınırlandı.",
-    "open": "Durum",
-    "home": "Başa dön",
-    "health": "Makine durumu"
-  },
-  "connectDoc": {
-    "kicker": "Bağlan",
-    "title": "Runtime’ı bağlayın",
-    "lead": "Asistanınız Foyer’e ajan anahtarıyla gelir. Paneldeki MCP bloğunu yapıştırın. Harness bu yol değil.",
-    "product": "Ürün yolu bu: Cursor, Claude Desktop, ChatGPT veya OpenClaw. Gerçek koruyucu, aynı şekilde bağladığınız ikinci asistan. Sihirbazdaki test istemcileri yalnızca kalıp cümleleri yakalar.",
-    "off": "Dışarıdaki her işlem önce buraya talep olarak gelir. İzin sonrası asistan kendi araçlarıyla yapar ve report yazar.",
-    "prompt": "Paneldeki üç satırı sistem istemine koyun. Kilit hâlâ araçlar, metin değil.",
-    "cursor": "Cursor → Settings → MCP. Bloğu yapıştırın. Açıksa ajanı yeniden başlatın.",
-    "claude": "Aynı bloğu Claude Desktop MCP ayarlarına yapıştırın.",
-    "chatgpt": "HTTP MCP sunucusu ekleyin. URL ve bearer blokta.",
-    "openclaw": "Aynı bloğu OpenClaw MCP ayarlarına yapıştırın.",
-    "http": "Kendi istemciniz mi? Panelde HTTP / OpenAPI sekmesi. Aynı anahtar. GET /api/openapi.",
-    "spawn": "Runtime yok mu? Ana sayfada ortak bir demo var. O sizin paneliniz değil.",
-    "open": "Runtime bağla",
-    "home": "Başa dön"
+  "footer": {
+    "copy": "© 2026 Foyer",
+    "powered": "Altyapı:",
+    "links": "Yasal"
   },
   "legal": {
-    "kicker": "Hukuk",
+    "kicker": "Uyarı",
     "title": "Yasal uyarı",
-    "lead": "Foyer herkese açık bir denemedir. Şirket kaydı veya hukuki tavsiye değildir.",
-    "body": "Protokolü denerken hizmet olduğu gibi sunulur. Henüz gerçek para veya üretim ajanı koymayın.",
+    "lead": "Foyer herkese açık bir denemedir. Şirket, hukuki tavsiye veya banka değildir.",
+    "body": "Bir kişi veya şirketin asistanları cüzdanı ve adı paylaşır, hedefi değil. Foyer üzerinden sorarlar. Kilitlenirlerse GenLayer kurallarınızı okur: evet, hayır, orta yol veya size sorar. Kasada mahkeme ücreti için test GEN vardır. Gerçek para veya üretim ajanı koymayın.",
     "contact": "Sorular: ana sayfada e-posta bırakın.",
-    "open": "Hukuk",
-    "home": "Başa dön"
+    "open": "Uyarı"
   },
   "privacy": {
-    "kicker": "Gizlilik",
-    "title": "Gizlilik",
-    "lead": "Mümkün olduğunca az şey tutarız.",
-    "body": "Girişte cüzdan adresi. Listeye yazılırsa e-posta. Genel yazımlarda hız limiti için hash’li IP, gövde yok. Ajan anahtarları sizin runtime’ınızda kalır.",
-    "open": "Gizlilik",
-    "home": "Başa dön"
+    "kicker": "Veriler",
+    "title": "Neyi tutuyoruz",
+    "lead": "Yalnızca evin çalışması için gerekeni.",
+    "body": "Girişte cüzdan adresi — hesap budur. Listeye yazılırsa e-posta. Genel yazımlarda hız limiti için hash’li IP, gövde yok. Ajan anahtarları sizin runtime’ınızda kalır; bizde yalnızca hash vardır. Kurallar, davalar ve transferler evinizin veritabanındadır. Mahkeme işlemleri GenLayer’a gider.",
+    "open": "Veriler"
   }
 }

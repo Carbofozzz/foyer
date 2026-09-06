@@ -332,26 +332,6 @@
     "copy": "Copy",
     "copied": "Copied"
   },
-  "check": {
-    "kicker": "Community",
-    "title": "How to test",
-    "lead": "Walk this list on the public URL. The product is the cabinet, not the harness.",
-    "open": "Community checklist",
-    "home": "Back to the start",
-    "items": [
-      "A person without OpenAPI can connect an assistant in a few copy-pastes.",
-      "With one own assistant, a dispute still appears (test guardian; canned phrases only).",
-      "The dispute goes through agent calls, not “I am budget” clicks.",
-      "All four outcomes show up, including allow_b as a counter and as a pure block.",
-      "A remedy verdict names remedy_action; after a pass the assistant acts, without a human reading prose.",
-      "An untouched request still resolves when nobody pokes the app (the tick).",
-      "After a pass the test client acts (or the test sees it). Appeal still exists.",
-      "A live cabinet can show an on-chain tx when consensus lands.",
-      "The harness does not pass itself off as the product.",
-      "The public URL keeps state after a reload.",
-      "Someone else’s cabinet stays invisible without its agent key or the owner’s wallet."
-    ]
-  },
   "protocol": {
     "title": "For developers",
     "lead": "Each assistant gets its own key and talks to Foyer only with that key."
@@ -366,55 +346,24 @@
     "invalid": "That does not look like an email.",
     "error": "Could not save that. Please try again."
   },
-  "status": {
-    "kicker": "Status",
-    "title": "Service status",
-    "ok": "The database is up.",
-    "down": "The database is unreachable.",
-    "stale": "The scheduled tick is late.",
-    "tick": "Last tick",
-    "never": "No tick recorded yet.",
-    "env": "This deploy",
-    "db": "Database",
-    "cron": "Scheduler",
-    "cronHere": "Cron runs on this deploy.",
-    "cronElsewhere": "Cron runs on production. This deploy uses the same store.",
-    "writes": "{n} public writes in the last hour, {limited} limited.",
-    "open": "Status",
-    "home": "Back to the start",
-    "health": "Machine status"
-  },
-  "connectDoc": {
-    "kicker": "Connect",
-    "title": "Connect your runtime",
-    "lead": "Your assistant talks to Foyer with an agent key. Paste the MCP block from the cabinet. Spawn is a harness, not this path.",
-    "product": "This is the product path: Cursor, Claude Desktop, ChatGPT, or OpenClaw. A real guardian is a second assistant you connect the same way. Wizard test clients only match canned phrases.",
-    "off": "Any action into the world starts as a request here. After a pass the assistant does it with its own tools and reports.",
-    "prompt": "Put the three cabinet lines in the system prompt. The lock is still the tools, not the prompt.",
-    "cursor": "Cursor → Settings → MCP. Paste the block. Restart the agent if it was already open.",
-    "claude": "Paste the same block into Claude Desktop MCP settings.",
-    "chatgpt": "Add an HTTP MCP server. URL and bearer header are in the block.",
-    "openclaw": "Paste the same block into OpenClaw MCP settings.",
-    "http": "Writing your own client? Use the HTTP / OpenAPI tab in the cabinet. Same key. GET /api/openapi.",
-    "spawn": "No runtime at all? The landing demo is one shared cabinet you can look at. That is not your house.",
-    "open": "Connect a runtime",
-    "home": "Back to the start"
+  "footer": {
+    "copy": "© 2026 Foyer",
+    "powered": "Powered by",
+    "links": "Legal"
   },
   "legal": {
     "kicker": "Legal",
     "title": "Legal notice",
-    "lead": "Foyer is a public test. This is not a company filing and not legal advice.",
-    "body": "The service is offered as-is while we try the protocol. Do not put real money or production agents on it yet.",
+    "lead": "Foyer is a public test. Not a company, not legal advice, not a bank.",
+    "body": "Assistants of one person or company share a wallet and a name, not a goal. They ask through Foyer. If they deadlock, GenLayer reads your rules and answers: go ahead, block, a compromise, or ask you. The house wallet holds test GEN for court fees. Do not put real money or production agents here.",
     "contact": "Questions: leave an email on the home page.",
-    "open": "Legal",
-    "home": "Back to the start"
+    "open": "Legal"
   },
   "privacy": {
     "kicker": "Privacy",
-    "title": "Privacy",
-    "lead": "We keep as little as we can.",
-    "body": "Wallet address if you sign in. Email if you join the waitlist. Hashed IP on public writes, for rate limits, without request bodies. Agent keys stay in your runtime.",
-    "open": "Privacy",
-    "home": "Back to the start"
+    "title": "What we store",
+    "lead": "Only what the house needs to run.",
+    "body": "Wallet address when you sign in — that is the account. Email if you join the waitlist. Hashed IP on public writes, for rate limits, no request bodies. Agent keys stay in your runtime; we keep a hash. Rules, cases, and transfers sit in our database for your house. Court transactions go to GenLayer.",
+    "open": "Privacy"
   }
 }

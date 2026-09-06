@@ -17,6 +17,7 @@ type Transfer = {
   from: string;
   to: string;
   amount: string;
+  case_id: string | null;
   created_at: string;
 };
 
@@ -283,8 +284,8 @@ export function TreasuryCard({
           {data.transfers.map((row) => (
             <li key={row.id}>
               <span>{kindLabel(row.kind)}</span>
-              <span title={row.kind === "court" ? undefined : row.amount}>
-                {row.kind === "court" ? "—" : `${shortGen(row.amount)} GEN`}
+              <span title={row.case_id ?? (row.kind === "court" ? undefined : row.amount)}>
+                {row.case_id ? shortId(row.case_id) : row.kind === "court" ? "—" : `${shortGen(row.amount)} GEN`}
               </span>
               <TxLink tx={row.tx} />
             </li>
@@ -333,6 +334,10 @@ function AddressLink({ address }: { address: string }) {
       {address}
     </a>
   );
+}
+
+function shortId(value: string) {
+  return value.length <= 18 ? value : `${value.slice(0, 10)}…${value.slice(-4)}`;
 }
 
 function TxLink({ tx }: { tx: string }) {

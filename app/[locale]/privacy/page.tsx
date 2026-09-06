@@ -16,11 +16,6 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       <section className="card stack">
         <p>{d.body}</p>
       </section>
-      <p>
-        <a href={`/${locale}`}>{d.home}</a>
-        {" · "}
-        <a href={`/${locale}/legal`}>{t.legal.open}</a>
-      </p>
     </main>
   );
 }
