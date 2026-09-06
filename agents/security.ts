@@ -15,14 +15,14 @@ export const CASE_C = {
 };
 
 /**
- * The charter has to grant the block, not just mention security: "Security may
- * block mail…" reads as a power, "Security does not veto ordinary mail." does not.
+ * Test-only phrase gate. The charter has to grant the block, not just mention
+ * security. Free-form text without this clause never fires.
  */
 const GRANT =
   /(security|seguridad|sicherheit|güvenlik|безопасн)[^.]*(may block|puede bloquear|blockieren|engelleyebilir|блокировать)/i;
 const RISK = /spreadsheet|email|address|payment|данн|адрес|платёж|pago|zahlung/i;
 
-/** Security guardian: pure block, no counter_action. */
+/** Test-only Security client: canned charter phrases; pure block. Not a product guardian. */
 export function decideSecurityTurn(input: {
   constitution: string;
   selfId: string;

@@ -27,7 +27,7 @@ export function SpawnButton({ locale, t }: { locale: Locale; t: Messages["spawn"
       <h2 className="section-title">{t.title}</h2>
       <p className="hint">{t.lead}</p>
       <div className="row">
-        <button type="button" className="ghost" disabled={pending} onClick={onClick}>
+        <button type="button" className="ghost" disabled={pending} aria-busy={pending} onClick={onClick}>
           {pending ? t.running : t.run}
         </button>
         <a className="ghost" href={`/${locale}/replay`}>

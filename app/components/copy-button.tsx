@@ -12,7 +12,7 @@ export function CopyButton({ text, copyLabel, copiedLabel }: { text: string; cop
   }
 
   return (
-    <button type="button" className="ghost" onClick={onCopy}>
+    <button type="button" className={copied ? "ghost is-copied" : "ghost"} onClick={onCopy}>
       {copied ? copiedLabel : copyLabel}
     </button>
   );

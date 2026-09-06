@@ -97,6 +97,7 @@ export function WalletButton({
             type="button"
             className="primary"
             disabled={busy}
+            aria-busy={busy}
             onClick={() => void signIn(openConnectModal)}
           >
             {busy ? (signingInLabel ?? connectLabel) : connectLabel}

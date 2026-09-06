@@ -43,7 +43,7 @@ export function WaitlistForm({ locale, t }: { locale: Locale; t: Messages["waitl
             {t.email}
             <input type="email" name="email" autoComplete="email" required />
           </label>
-          <button type="submit" className="primary" disabled={pending}>
+          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>
             {pending ? t.submitting : t.submit}
           </button>
         </form>

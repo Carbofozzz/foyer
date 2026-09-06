@@ -7,8 +7,8 @@ Public URL: **https://foyerapp.dev**. Local stand-in: `http://127.0.0.1:3001`. S
 ## 1. Person with one chat agent (~5 min)
 
 1. Open `/{locale}` → **Sign in with your wallet**. One wallet is one house.
-2. Wizard: rules → lock kinds → paste the MCP block ([Connect](CONNECT.md)) → enable the guardian → first pass.
-3. Point at the feed: a propose, a guardian object, a verdict. No “I am Budget” click.
+2. Wizard: rules → lock kinds → paste the MCP block ([Connect](CONNECT.md)) → start the **test** clients → first pass. Say out loud: these clients match canned phrases; a real guardian is a second connected assistant.
+3. Point at the feed: a propose, a test-client object, a verdict. No “I am Budget” click.
 4. Open **HTTP / OpenAPI** in the same cabinet. Same key. Optional: `npm run http:client`.
 
 ## 2. Extra if there is no runtime (~2 min)
@@ -23,7 +23,7 @@ Walk `/{locale}/check`. §9 of [HACKATHON.md](HACKATHON.md) stays green:
 | §9 | Where |
 |---|---|
 | Connect without OpenAPI | Cabinet MCP tabs + `/connect` |
-| Guardian dispute | Wizard “enable guardian”, then first pass |
+| Test-client dispute | Wizard “start the test clients”, then first pass. Real guardian = second connected assistant |
 | Agent calls, not UI clicks | Feed rows come from `propose` / `object` |
 | Four outcomes, both `allow_b` readings | Replay A–F; live first pass hits B/C or D |
 | `remedy` executes `remedy_action` | Replay A; gateway `execute` |

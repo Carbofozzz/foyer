@@ -117,7 +117,7 @@ export function MembersCard({
               <option value="observer">{t.memberObserver}</option>
             </select>
           </label>
-          <button type="submit" className="primary" disabled={pending || !address.trim()}>
+          <button type="submit" className="primary" disabled={pending || !address.trim()} aria-busy={pending}>
             {pending ? t.inviting : t.invite}
           </button>
         </form>

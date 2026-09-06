@@ -2,9 +2,27 @@
   --paper: #f4efe6;
   --ink: #16140f;
   --muted: #6b6458;
-  --line: #d8d0c3;
+  --line: #ded6c8;
+  --hairline: rgba(22, 20, 15, 0.09);
   --accent: #8a5a2b;
+  --accent-soft: rgba(138, 90, 43, 0.09);
   --card: #fffdf8;
+  --field: #fffefb;
+
+  --ui: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: var(--font-serif), Georgia, serif;
+
+  --ok: #2f6b3d;
+  --warn: #8a5a2b;
+  --info: #3d5a8a;
+  --danger: #8a2b2b;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(22, 20, 15, 0.04), 0 8px 24px -14px rgba(22, 20, 15, 0.22);
+  --shadow-raised: 0 1px 2px rgba(22, 20, 15, 0.12), 0 10px 22px -12px rgba(22, 20, 15, 0.45);
+  --ring: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
+  --ease: 140ms cubic-bezier(0.2, 0, 0.2, 1);
 }
 
 * {
@@ -17,7 +35,21 @@ body {
   min-height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: inherit;
+  font-family: var(--ui);
+  /* Very slight warmth toward the top so the page is not a flat fill. */
+  background-image: radial-gradient(120% 70% at 50% -10%, rgba(255, 255, 255, 0.75), transparent 60%);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+.lead,
+.charter,
+.section-title,
+.wallet-balance,
+.feed-item p {
+  font-family: var(--display);
 }
 
 button,
@@ -25,10 +57,21 @@ input,
 select,
 textarea {
   font: inherit;
+  font-family: var(--ui);
 }
 
 a {
   color: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
 }
 
 .app-shell {
@@ -141,7 +184,7 @@ a {
 .skeleton {
   display: inline-block;
   background: var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   animation: skeleton-pulse 1.1s ease-in-out infinite;
 }
 
@@ -181,8 +224,159 @@ a {
   margin: 0.4rem 0 0;
 }
 
+.flow {
+  margin: 0.5rem 0 1.4rem;
+}
+
+.flow-track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.6fr) minmax(0, 1fr) minmax(5rem, 0.6fr) minmax(0, 1.15fr) minmax(5rem, 0.6fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.flow-node {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 0.7rem 0.85rem 0.75rem;
+  display: grid;
+  gap: 0.12rem;
+  align-content: start;
+}
+
+.flow-node-court {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.flow-num {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-name {
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.flow-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.flow-outcomes {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.flow-wire {
+  position: relative;
+  height: 1px;
+  margin-top: 2.15rem;
+  background: linear-gradient(90deg, transparent, var(--line) 22%, var(--line) 78%, transparent);
+}
+
+/* Arrow head at the receiving end. */
+.flow-wire::after {
+  content: "";
+  position: absolute;
+  right: 0.15rem;
+  top: 50%;
+  width: 0.34rem;
+  height: 0.34rem;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.flow-wire-label {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.flow-pulse {
+  position: absolute;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: flow-run 3.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+@keyframes flow-run {
+  0% {
+    left: 0;
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 0.4rem);
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .flow-track {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-wire {
+    justify-self: center;
+    width: 1px;
+    height: 2.1rem;
+    margin: 0.35rem 0;
+    background: linear-gradient(180deg, var(--line), var(--line));
+  }
+
+  .flow-wire::after {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 0.1rem;
+    transform: translateX(-50%) rotate(135deg);
+  }
+
+  .flow-wire-label {
+    bottom: auto;
+    top: 50%;
+    left: 0.55rem;
+    transform: translateY(-50%);
+  }
+
+  .flow-pulse {
+    display: none;
+  }
+}
+
 .home-outline .card {
   margin: 0;
+}
+
+.card.stack > .section-title {
+  margin-bottom: 0;
 }
 
 @media (max-width: 800px) {
@@ -220,6 +414,7 @@ h1 {
   font-weight: 600;
   font-size: 2.2rem;
   line-height: 1.15;
+  letter-spacing: -0.015em;
   margin: 0 0 0.8rem;
 }
 
@@ -233,7 +428,9 @@ h1 {
 
 .card {
   background: var(--card);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   padding: 1.15rem 1.2rem;
   margin: 1.2rem 0;
 }
@@ -241,6 +438,11 @@ h1 {
 .stack {
   display: grid;
   gap: 0.7rem;
+}
+
+/* The grid gap is the spacing; drop the UA paragraph margins. */
+.stack > p {
+  margin: 0;
 }
 
 label {
@@ -253,9 +455,29 @@ input,
 select,
 textarea {
   border: 1px solid var(--line);
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--field);
   color: var(--ink);
   padding: 0.55rem 0.7rem;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: #c9bfad;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+::placeholder {
+  color: #a49b8c;
 }
 
 textarea {
@@ -295,6 +517,71 @@ textarea {
   margin: 0 0 0.25rem;
 }
 
+.feed-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.25rem;
+}
+
+.feed-label-row .feed-label {
+  margin: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.16rem 0.6rem 0.18rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: var(--tone, var(--muted));
+  background: color-mix(in srgb, var(--tone, var(--muted)) 8%, transparent);
+  border-color: color-mix(in srgb, var(--tone, var(--muted)) 28%, transparent);
+}
+
+.pill-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.pill-ok {
+  --tone: var(--ok);
+}
+
+.pill-warn {
+  --tone: var(--warn);
+}
+
+.pill-info {
+  --tone: var(--info);
+}
+
+.pill-danger {
+  --tone: var(--danger);
+}
+
+.pill-neutral {
+  --tone: var(--muted);
+}
+
+.feed-item > .pill {
+  margin-bottom: 0.55rem;
+}
+
+.charter + .feed {
+  margin-top: 0.9rem;
+}
+
 .feed-block + .feed-block {
   margin-top: 0.85rem;
 }
@@ -307,29 +594,79 @@ button[type="submit"],
 .primary,
 a.primary {
   border: 0;
+  border-radius: var(--radius-sm);
   background: var(--ink);
   color: var(--paper);
   padding: 0.65rem 1rem;
+  font-weight: 500;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  box-shadow: var(--shadow-raised);
+  transition: transform var(--ease), box-shadow var(--ease), background var(--ease);
+}
+
+button[type="submit"]:hover:not(:disabled),
+.primary:hover,
+a.primary:hover {
+  background: #2a2620;
+  box-shadow: 0 2px 4px rgba(22, 20, 15, 0.14), 0 14px 26px -12px rgba(22, 20, 15, 0.5);
+}
+
+button[type="submit"]:active:not(:disabled),
+.primary:active,
+a.primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(22, 20, 15, 0.16);
 }
 
 button.ghost,
 a.ghost {
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink);
   padding: 0.55rem 0.9rem;
   cursor: pointer;
   text-decoration: none;
+  transition: background var(--ease), border-color var(--ease), transform var(--ease);
+}
+
+button.ghost:hover:not(:disabled),
+a.ghost:hover {
+  background: var(--card);
+  border-color: #c9bfad;
+}
+
+button.ghost:active:not(:disabled),
+a.ghost:active {
+  transform: translateY(1px);
+}
+
+button.ghost.is-copied {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 7%, transparent);
+}
+
+/* Inside a one-column stack these should hug their label, not the column. */
+.stack > .ghost,
+.stack > .segmented {
+  justify-self: start;
 }
 
 button[type="submit"]:disabled,
 button.ghost:disabled,
 button:disabled {
-  opacity: 0.55;
-  cursor: wait;
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* A button left in a pending state reads as busy, not broken. */
+button[aria-busy="true"] {
+  cursor: progress;
 }
 
 .row {
@@ -377,7 +714,9 @@ strong {
   font-size: 0.78rem;
   word-break: break-all;
   background: #efe8dc;
+  border-radius: var(--radius-sm);
   padding: 0.55rem 0.65rem;
+  font-variant-numeric: tabular-nums;
 }
 
 pre {
@@ -426,13 +765,17 @@ pre {
 
 .cabinet-panel {
   background: var(--card);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   padding: 0.95rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
   min-height: 0;
   max-height: calc(100dvh - 8.5rem);
+  /* Everything that grows lives in .cabinet-scroll; nothing may spill out. */
+  overflow: hidden;
 }
 
 .cabinet-panel > .card {
@@ -449,6 +792,8 @@ pre {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .cabinet-panel-head .section-title {
@@ -457,7 +802,8 @@ pre {
 
 .cabinet-scroll {
   overflow: auto;
-  min-height: 0;
+  /* Keep the feed readable when the settings rows below are expanded. */
+  min-height: 11rem;
   flex: 1;
 }
 
@@ -466,6 +812,8 @@ pre {
   font-weight: 600;
   margin: 0;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 button.wallet-balance {
@@ -530,6 +878,7 @@ button.wallet-balance:disabled {
   grid-template-columns: 5.5rem 1fr auto;
   gap: 0.45rem;
   font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .tx-link {
@@ -537,10 +886,40 @@ button.wallet-balance:disabled {
   text-underline-offset: 0.15em;
 }
 
-.runtime-tabs {
-  display: flex;
+.segmented {
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border: 1px solid var(--hairline);
+  align-self: start;
+  justify-self: start;
+  max-width: 100%;
+}
+
+.segment {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.34rem 0.78rem;
+  font-size: 0.86rem;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease);
+}
+
+.segment:hover {
+  color: var(--ink);
+}
+
+.segment.is-active {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(22, 20, 15, 0.1);
 }
 
 .form-grid {
@@ -577,12 +956,16 @@ button.wallet-balance:disabled {
 
 .agent-chips li {
   border: 1px solid var(--line);
-  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
   font-size: 0.82rem;
+  background: var(--card);
 }
 
 .agent-chips li.agent-live {
   border-color: #3d6b3d;
+  color: #2f552f;
+  background: rgba(61, 107, 61, 0.07);
 }
 
 .agent-chips li.agent-wait {
@@ -629,21 +1012,62 @@ button.wallet-balance:disabled {
 
 .cabinet-meta {
   display: grid;
-  gap: 0.45rem;
-  border-top: 1px solid var(--line);
-  padding-top: 0.55rem;
+  border-top: 1px solid var(--hairline);
+  margin-top: 0.8rem;
 }
 
 .cabinet details {
   font-size: 0.9rem;
 }
 
+/* Disclosure rows read as a settings list, not a stack of links. */
 .cabinet details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.4rem 0.5rem 0.15rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--accent);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.72rem;
+  color: var(--ink);
+  font-size: 0.86rem;
+  list-style: none;
+  transition: background var(--ease);
+}
+
+.cabinet details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cabinet details > summary::after {
+  content: "";
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-0.1rem) rotate(-45deg);
+  transition: transform var(--ease);
+}
+
+.cabinet details[open] > summary::after {
+  transform: translateY(0.05rem) rotate(45deg);
+}
+
+.cabinet details > summary:hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.cabinet-meta > details {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cabinet-meta > details:last-child {
+  border-bottom: 0;
+}
+
+.cabinet-meta > details > *:not(summary) {
+  margin: 0 0 0.7rem;
 }
 
 .site-foot {
@@ -712,7 +1136,7 @@ button.wallet-balance:disabled {
     max-width: 100%;
   }
 
-  .runtime-tabs button,
+  .segment,
   button[type="submit"],
   .primary,
   button.ghost,
@@ -727,4 +1151,14 @@ button.wallet-balance:disabled {
   padding-left: 1.1rem;
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n/load";
+import { FlowDiagram } from "@/app/components/flow-diagram";
 
 const METHODS = [
   "POST /api/agents",
@@ -16,14 +17,17 @@ const METHODS = [
 export function ProductOutline({
   outline,
   protocol,
+  cabinet,
 }: {
   outline: Messages["outline"];
   protocol: Messages["protocol"];
+  cabinet: Messages["cabinet"];
 }) {
   return (
     <>
       <section className="home-outline-wrap">
         <p className="kicker">{outline.kicker}</p>
+        <FlowDiagram outline={outline} cabinet={cabinet} />
         <div className="home-outline">
           <article className="card stack">
             <h2 className="section-title">{outline.constitutionTitle}</h2>

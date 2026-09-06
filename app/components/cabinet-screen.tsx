@@ -12,6 +12,7 @@ import { TreasuryCard } from "@/app/components/treasury-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { HouseSwitch } from "@/app/components/house-switch";
 import { MembersCard } from "@/app/components/members-card";
+import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
 import { canManage, canOperate, type HouseListing } from "@/lib/protocol/members";
@@ -149,54 +150,54 @@ export async function CabinetScreen({
                   ))}
                 </ul>
               )}
-            </div>
-            <div className="cabinet-meta">
-              {enroll ? (
+              <div className="cabinet-meta">
+                {enroll ? (
+                  <details>
+                    <summary>{t.cabinet.enrollment}</summary>
+                    <p className="mono">{enroll}</p>
+                  </details>
+                ) : null}
                 <details>
-                  <summary>{t.cabinet.enrollment}</summary>
-                  <p className="mono">{enroll}</p>
+                  <summary>{t.cabinet.constitution}</summary>
+                  <p className="charter">{principal.constitution}</p>
                 </details>
-              ) : null}
-              <details>
-                <summary>{t.cabinet.constitution}</summary>
-                <p className="charter">{principal.constitution}</p>
-              </details>
-              {operate ? (
-                <details>
-                  <summary>{t.connect.title}</summary>
-                  <ConnectCard
+                {operate ? (
+                  <details>
+                    <summary>{t.connect.title}</summary>
+                    <ConnectCard
+                      token={token}
+                      houseId={houseId}
+                      houseType={principal.type === "org" ? "org" : "personal"}
+                      t={t.connect}
+                      errorLabel={t.cabinet.error}
+                      compact
+                    />
+                  </details>
+                ) : null}
+                {operate ? (
+                  <details>
+                    <summary>{t.tech.title}</summary>
+                    <TechCard
+                      token={token}
+                      houseId={houseId}
+                      locale={locale}
+                      t={t.tech}
+                      errorLabel={t.cabinet.error}
+                      docLabel={t.connectDoc.open}
+                    />
+                  </details>
+                ) : null}
+                {signedIn && principal.type === "org" && !principal.isSpawn ? (
+                  <MembersCard
                     token={token}
-                    houseId={houseId}
-                    houseType={principal.type === "org" ? "org" : "personal"}
-                    t={t.connect}
+                    houseId={principal.id}
+                    selfAddress={viewerAddress}
+                    canInvite={manage}
+                    t={t.cabinet}
                     errorLabel={t.cabinet.error}
-                    compact
                   />
-                </details>
-              ) : null}
-              {operate ? (
-                <details>
-                  <summary>{t.tech.title}</summary>
-                  <TechCard
-                    token={token}
-                    houseId={houseId}
-                    locale={locale}
-                    t={t.tech}
-                    errorLabel={t.cabinet.error}
-                    docLabel={t.connectDoc.open}
-                  />
-                </details>
-              ) : null}
-              {signedIn && principal.type === "org" && !principal.isSpawn ? (
-                <MembersCard
-                  token={token}
-                  houseId={principal.id}
-                  selfAddress={viewerAddress}
-                  canInvite={manage}
-                  t={t.cabinet}
-                  errorLabel={t.cabinet.error}
-                />
-              ) : null}
+                ) : null}
+              </div>
             </div>
           </>
         )}
@@ -235,10 +236,12 @@ function FeedRow({
   const decided = decisionAction(item);
   const decision = decisionLine(item, t, decided, now);
   const carried = formatAction(executedPayload(item.executions[0]?.result));
+  const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
+  const outcome = item.verdict?.outcome;
 
   return (
     <li className="feed-item">
-      <p className="muted">{statusLabel(item.status, t, Boolean(item.held_until && new Date(item.held_until).getTime() > now))}</p>
+      <StatusPill tone={statusTone(item.status, held)}>{statusLabel(item.status, t, held)}</StatusPill>
       <div className="feed-block">
         <p className="feed-label">{t.request}</p>
         <p>
@@ -257,11 +260,14 @@ function FeedRow({
       ) : null}
       {decision ? (
         <div className="feed-block">
-          <p className="feed-label">{t.decision}</p>
+          <div className="feed-label-row">
+            <p className="feed-label">{t.decision}</p>
+            {outcome ? (
+              <StatusPill tone={outcomeTone(outcome)}>{outcomeLabel(outcome, t)}</StatusPill>
+            ) : null}
+          </div>
           <p>{decision}</p>
-          {item.held_until && new Date(item.held_until).getTime() > now ? (
-            <p className="hint">{t.holdAppeal}</p>
-          ) : null}
+          {held ? <p className="hint">{t.holdAppeal}</p> : null}
           {item.verdict?.outcome !== "escalate" && carried && carried !== decided ? (
             <p className="hint">{t.done.replace("{summary}", carried)}</p>
           ) : null}
@@ -304,6 +310,13 @@ function kindLabel(kind: string, t: FeedCopy) {
   if (kind === "message") return t.kindMessage;
   if (kind === "cancel") return t.kindCancel;
   return kind;
+}
+
+function outcomeLabel(outcome: string, t: FeedCopy) {
+  if (outcome === "allow_a") return t.outcomeAllowA;
+  if (outcome === "allow_b") return t.outcomeAllowB;
+  if (outcome === "remedy") return t.outcomeRemedy;
+  return t.outcomeEscalate;
 }
 
 function statusLabel(status: string, t: FeedCopy, held = false) {

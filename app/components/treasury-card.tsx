@@ -6,7 +6,7 @@ import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from 
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { CopyButton } from "@/app/components/copy-button";
 import { addressExplorerUrl, asHexAddress, GENLAYER_CHAIN_ID, ownerKey, txExplorerUrl } from "@/lib/gen/chain";
-import { parseGen } from "@/lib/gen/amount";
+import { parseGen, shortGen } from "@/lib/gen/amount";
 import type { Messages } from "@/lib/i18n/load";
 
 type Transfer = {
@@ -200,12 +200,13 @@ export function TreasuryCard({
           <button
             type="button"
             className="wallet-balance"
+            title={data.balance}
             disabled={!canManage || (!hasBalance && mode !== "deposit")}
             onClick={() => {
               if (canManage && hasBalance && mode === "idle") openWithdraw();
             }}
           >
-            {data.balance} <span>GEN</span>
+            {shortGen(data.balance)} <span>GEN</span>
           </button>
           {busy === "refresh" ? <p className="muted">{t.refreshing}</p> : null}
           <div className="wallet-id">
@@ -233,10 +234,10 @@ export function TreasuryCard({
                 <input value={amount} onChange={(event) => setAmount(event.target.value)} />
               </label>
               <div className="wallet-actions">
-                <button type="button" className="primary" onClick={() => void deposit()} disabled={busy !== null}>
+                <button type="button" className="primary" onClick={() => void deposit()} disabled={busy !== null} aria-busy={busy !== null}>
                   {busy === "deposit" ? t.depositing : t.deposit}
                 </button>
-                <button type="button" className="ghost" onClick={() => setMode("idle")} disabled={busy !== null}>
+                <button type="button" className="ghost" onClick={() => setMode("idle")} disabled={busy !== null} aria-busy={busy !== null}>
                   {t.cancel}
                 </button>
               </div>
@@ -257,10 +258,10 @@ export function TreasuryCard({
                 />
               </label>
               <div className="wallet-actions">
-                <button type="button" className="primary" onClick={() => void withdraw()} disabled={busy !== null || !hasBalance}>
+                <button type="button" className="primary" onClick={() => void withdraw()} disabled={busy !== null || !hasBalance} aria-busy={busy !== null}>
                   {busy === "withdraw" ? t.withdrawing : t.withdraw}
                 </button>
-                <button type="button" className="ghost" onClick={() => setMode("idle")} disabled={busy !== null}>
+                <button type="button" className="ghost" onClick={() => setMode("idle")} disabled={busy !== null} aria-busy={busy !== null}>
                   {t.cancel}
                 </button>
               </div>
@@ -276,30 +277,40 @@ export function TreasuryCard({
                 {data.transfers.map((row) => (
                   <li key={row.id}>
                     <span>{kindLabel(row.kind)}</span>
-                    <span>{row.kind === "court" ? "—" : `${row.amount} GEN`}</span>
+                    <span title={row.kind === "court" ? undefined : row.amount}>
+                      {row.kind === "court" ? "—" : `${shortGen(row.amount)} GEN`}
+                    </span>
                     <TxLink tx={row.tx} />
                   </li>
                 ))}
               </ul>
             )}
-          </div>
 
-          {canManage ? (
-          <details>
-            <summary>{t.exportKey}</summary>
-            {privateKey ? (
-              <>
-                <p className="hint">{t.privateKeyHint}</p>
-                <p className="mono">{privateKey}</p>
-                <CopyButton text={privateKey} copyLabel={t.copyKey} copiedLabel={t.copied} />
-              </>
-            ) : (
-              <button type="button" className="ghost" onClick={() => void exportKey()} disabled={busy !== null}>
-                {busy === "export" ? t.exporting : t.exportKey}
-              </button>
-            )}
-          </details>
-          ) : null}
+            {canManage ? (
+              <div className="cabinet-meta">
+                <details>
+                  <summary>{t.exportKey}</summary>
+                  {privateKey ? (
+                    <>
+                      <p className="hint">{t.privateKeyHint}</p>
+                      <p className="mono">{privateKey}</p>
+                      <CopyButton text={privateKey} copyLabel={t.copyKey} copiedLabel={t.copied} />
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => void exportKey()}
+                      disabled={busy !== null}
+                      aria-busy={busy !== null}
+                    >
+                      {busy === "export" ? t.exporting : t.exportKey}
+                    </button>
+                  )}
+                </details>
+              </div>
+            ) : null}
+          </div>
         </>
       ) : error ? (
         <p className="error">{error}</p>

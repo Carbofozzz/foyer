@@ -1,10 +1,10 @@
 import type { ActionKind } from "@/lib/protocol/types";
 import type { OpenInboxItem, ObjectionDraft } from "./types";
 
-/** The org charter has to hand Finance the block over the monthly limit. */
+/** Test-only phrase gate. Free-form text without this clause never fires. */
 const GRANT = /(finance|finanzas|finanz|финанс)[^.]*(block|bloquear|blockieren|engelle|блокир)/i;
 
-/** Finance guardian: org counterpart of Budget on spend. */
+/** Test-only Finance client: canned charter phrases. Not a product guardian. */
 export function decideFinanceTurn(input: {
   constitution: string;
   selfId: string;

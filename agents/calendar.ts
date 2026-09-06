@@ -1,13 +1,13 @@
 import type { OpenInboxItem, ObjectionDraft } from "./types";
 
 /**
- * Only the charter that ranks an outside promise above internal convenience
- * lets Calendar hold the slot. The opposite line hands the move to Travel.
+ * Test-only phrase gate. Only the charter that ranks an outside promise above
+ * internal convenience lets Calendar hold the slot. Free-form text may miss.
  */
 const GRANT = /outrank|pesan más|gelten vor|önce gelir|обещания важнее/i;
 const MOVE = /move|reschedul|11:00|сдвин|перенес/i;
 
-/** Calendar guardian: objects when a booking breaks a promised outside slot. */
+/** Test-only Calendar client: canned charter phrases. Not a product guardian. */
 export function decideCalendarTurn(input: {
   constitution: string;
   selfId: string;
