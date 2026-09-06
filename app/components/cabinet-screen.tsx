@@ -4,18 +4,18 @@ import { getDb } from "@/lib/db";
 import { inboxForPrincipal } from "@/lib/protocol/actions";
 import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
 import { sweep } from "@/lib/protocol/sweep";
-import type { HousePrincipal } from "@/lib/protocol/bundle";
+import { lockedKinds, type HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { CabinetWizard } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
-import { TechCard } from "@/app/components/tech-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { HouseSwitch } from "@/app/components/house-switch";
 import { MembersCard } from "@/app/components/members-card";
 import { TestClientsToggle } from "@/app/components/test-clients-toggle";
+import { TestRequestCard } from "@/app/components/test-request-card";
 import { markHarnessProposers } from "@/lib/protocol/house-clients";
 import { PagedList } from "@/app/components/paged-list";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
@@ -54,40 +54,41 @@ export async function CabinetScreen({
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
   const showTest = principal.testClients;
-  const feedItems = showTest ? inbox.items : inbox.items.filter((item) => !item.test_pass);
+  const testIds = new Set(houseAgents.filter((agent) => agent.isGuardian).map((agent) => agent.id));
+  const isTestItem = (item: InboxItem) =>
+    item.test_pass || testIds.has(item.proposer_id) || item.objections.some((row) => testIds.has(row.objector_id));
+  const feedItems = showTest ? inbox.items : inbox.items.filter((item) => !isTestItem(item));
   const visibleAgents = showTest ? houseAgents : houseAgents.filter((agent) => !agent.isGuardian);
-  const testAgents = houseAgents.filter((agent) => agent.isGuardian);
   const door = await doorStatsFor(principal.id);
   const doorById = Object.fromEntries(door.map((row) => [row.agent_id, row]));
   const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
   const liveIds = liveAgentIds(feedItems);
-  const hasGuardian = houseAgents.some((agent) => agent.isGuardian);
-  const harnessDone = principal.wizardHarnessDone || hasGuardian || inbox.items.length > 0;
   const step = !principal.wizardRulesDone
     ? "rules"
     : !principal.wizardLockDone
       ? "lock"
       : !principal.wizardConnectDone && inbox.items.length === 0
         ? "connect"
-        : !harnessDone && !hasGuardian
-          ? "guardian"
-          : !harnessDone && inbox.items.length === 0
-            ? "first"
-            : null;
+        : null;
   const now = Date.now();
   const signedIn = token === "me";
   const houseId = signedIn ? principal.id : undefined;
   const manage = canManage(memberRole);
   const operate = canOperate(memberRole);
   const tabIds: CabinetTabId[] = ["inbox", "treasury", "rules"];
-  if (operate) tabIds.push("connect");
+  if (operate) tabIds.push("connect", "test");
   if (signedIn && principal.type === "org" && !principal.isSpawn) tabIds.push("people");
   const currentTab = parseCabinetTab(tab, tabIds);
   const tabItems: { id: CabinetTabId; label: string }[] = [
     { id: "inbox", label: t.cabinet.inbox },
     { id: "treasury", label: t.cabinet.treasury },
     { id: "rules", label: t.cabinet.tabRules },
-    ...(operate ? [{ id: "connect" as CabinetTabId, label: t.cabinet.tabConnect }] : []),
+    ...(operate
+      ? [
+          { id: "connect" as CabinetTabId, label: t.cabinet.tabConnect },
+          { id: "test" as CabinetTabId, label: t.cabinet.tabTest },
+        ]
+      : []),
     ...(signedIn && principal.type === "org" && !principal.isSpawn
       ? [{ id: "people" as CabinetTabId, label: t.cabinet.members }]
       : []),
@@ -124,6 +125,7 @@ export async function CabinetScreen({
             step={step}
             wizard={t.wizard}
             connect={t.connect}
+            tech={t.tech}
             charter={t.charter}
             cabinetError={t.cabinet.error}
             constitution={principal.constitution}
@@ -151,43 +153,33 @@ export async function CabinetScreen({
           </nav>
           <div className="cabinet-scroll">
             <div data-cabinet-pane="inbox">
-              {visibleAgents.length > 0 ? (
-                <div className="agent-chips-block">
+              <div className="agent-chips-block">
+                {visibleAgents.length > 0 ? (
                   <ul className="agent-chips">
                     {visibleAgents.map((agent) => (
                       <li
                         key={agent.id}
-                        className={liveIds.has(agent.id) || agent.isGuardian ? "agent-live" : "agent-wait"}
+                        className={liveIds.has(agent.id) ? "agent-live" : "agent-wait"}
                         title={doorTitle(doorById[agent.id], t.cabinet)}
                       >
                         {agent.name}
-                        {agent.isGuardian
-                          ? ` · ${t.cabinet.guardian}`
-                          : liveIds.has(agent.id)
-                            ? ` · ${t.cabinet.agentLive}`
-                            : ` · ${t.cabinet.agentWait}`}
+                        {agent.isGuardian ? ` · ${t.cabinet.guardian}` : null}
                         {doorChip(doorById[agent.id], t.cabinet)}
                       </li>
                     ))}
                   </ul>
-                  {visibleAgents.some((agent) => (doorById[agent.id]?.proposed ?? 0) > 0) ? (
-                    <p className="hint door-hint">{t.cabinet.doorHint}</p>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="empty">{t.cabinet.emptyAgents}</p>
-              )}
-              {operate && testAgents.length > 0 ? (
-                <TestClientsToggle
-                  token={token}
-                  houseId={houseId}
-                  on={showTest}
-                  onLabel={t.cabinet.testClientsOn}
-                  offLabel={t.cabinet.testClientsOff}
-                  hint={t.cabinet.testClientsHint}
-                  errorLabel={t.cabinet.error}
-                />
-              ) : null}
+                ) : null}
+                {operate ? (
+                  <TestClientsToggle
+                    token={token}
+                    houseId={houseId}
+                    on={showTest}
+                    onLabel={t.cabinet.testRecordsOn}
+                    offLabel={t.cabinet.testRecordsOff}
+                    errorLabel={t.cabinet.error}
+                  />
+                ) : null}
+              </div>
               {feedItems.length === 0 ? (
                 <p className="empty">{t.cabinet.emptyInbox}</p>
               ) : (
@@ -202,6 +194,7 @@ export async function CabinetScreen({
                       key={item.id}
                       item={item}
                       names={names}
+                      testIds={testIds}
                       t={t.cabinet}
                       appeal={t.appeal}
                       token={token}
@@ -209,6 +202,7 @@ export async function CabinetScreen({
                       canAppeal={operate}
                       errorLabel={t.cabinet.error}
                       now={now}
+                      locale={locale}
                     />
                   ))}
                 </PagedList>
@@ -237,18 +231,26 @@ export async function CabinetScreen({
               />
             </div>
             {operate ? (
-              <div data-cabinet-pane="connect" className="stack">
+              <div data-cabinet-pane="connect">
                 <ConnectCard
                   token={token}
                   houseId={houseId}
                   t={t.connect}
+                  tech={t.tech}
                   errorLabel={t.cabinet.error}
                   compact
                 />
-                <details>
-                  <summary>{t.connect.advanced}</summary>
-                  <TechCard token={token} houseId={houseId} t={t.tech} errorLabel={t.cabinet.error} />
-                </details>
+              </div>
+            ) : null}
+            {operate ? (
+              <div data-cabinet-pane="test">
+                <TestRequestCard
+                  token={token}
+                  houseId={houseId}
+                  kinds={lockedKinds(principal)}
+                  t={t.cabinet}
+                  errorLabel={t.cabinet.error}
+                />
               </div>
             ) : null}
             {signedIn && principal.type === "org" && !principal.isSpawn ? (
@@ -274,6 +276,7 @@ export async function CabinetScreen({
 function FeedRow({
   item,
   names,
+  testIds,
   t,
   appeal,
   token,
@@ -281,9 +284,11 @@ function FeedRow({
   canAppeal,
   errorLabel,
   now,
+  locale,
 }: {
   item: InboxItem;
   names: Record<string, string>;
+  testIds: Set<string>;
   t: FeedCopy;
   appeal: Messages["appeal"];
   token: string;
@@ -291,23 +296,30 @@ function FeedRow({
   canAppeal: boolean;
   errorLabel: string;
   now: number;
+  locale: string;
 }) {
-  const proposer = names[item.proposer_id] ?? item.proposer_id;
+  const proposer = agentLine(item.proposer_id, names, testIds, t);
   const kind = kindLabel(item.kind, t);
   const asked = formatAction(item.payload);
   const firstObjection = item.objections[0];
-  const objector = firstObjection ? (names[firstObjection.objector_id] ?? firstObjection.objector_id) : null;
+  const objector = firstObjection ? agentLine(firstObjection.objector_id, names, testIds, t) : null;
   const counter = firstObjection ? formatAction(firstObjection.counter_action) : "";
   const decided = decisionAction(item);
   const decision = decisionLine(item, t, decided, now);
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
   const outcome = item.verdict?.outcome;
+  const courtTx = item.verdict?.tx || item.case?.tx;
 
   return (
     <li className="feed-item">
-      <StatusPill tone={statusTone(item.status, held, item.may_act)}>
-        {statusLabel(item.status, t, held, item.may_act)}
-      </StatusPill>
+      <div className="feed-head">
+        <StatusPill tone={statusTone(item.status, held, item.may_act)}>
+          {statusLabel(item.status, t, held, item.may_act)}
+        </StatusPill>
+        <time className="feed-at" dateTime={item.created_at}>
+          {formatAskedAt(item.created_at, locale)}
+        </time>
+      </div>
       <div className="feed-block">
         <p className="feed-label">{t.request}</p>
         <p>
@@ -338,9 +350,13 @@ function FeedRow({
             <p className="hint">{item.may_act ? t.mayAct : t.mustNot}</p>
           ) : null}
           {item.report ? <p className="hint">{reportLine(item.report.result, t)}</p> : null}
-          {item.verdict?.judge === "onchain" && item.verdict.tx ? (
+          {item.verdict?.judge === "onchain" && courtTx ? (
             <p className="hint">
-              {t.judgeOnchain} <TxLink tx={item.verdict.tx} />
+              {t.judgeOnchain} <TxLink tx={courtTx} />
+            </p>
+          ) : item.case?.tx ? (
+            <p className="hint">
+              {t.courtTx} <TxLink tx={item.case.tx} />
             </p>
           ) : item.verdict ? (
             <p className="hint">{t.judgeOffline}</p>
@@ -362,6 +378,11 @@ function FeedRow({
   );
 }
 
+function agentLine(id: string, names: Record<string, string>, testIds: Set<string>, t: FeedCopy) {
+  const name = names[id] ?? id;
+  return testIds.has(id) ? `${name} · ${t.guardian}` : name;
+}
+
 function doorChip(stats: DoorStats | undefined, t: FeedCopy) {
   if (!stats || stats.proposed === 0) return null;
   const bits = [
@@ -373,21 +394,14 @@ function doorChip(stats: DoorStats | undefined, t: FeedCopy) {
 }
 
 function doorTitle(stats: DoorStats | undefined, t: FeedCopy) {
-  if (!stats) return t.doorHint;
+  if (!stats || stats.proposed === 0) return "";
   return [
     t.doorLine.replace("{asked}", String(stats.proposed)).replace("{did}", String(stats.did)),
     stats.broke ? t.doorBroke.replace("{n}", String(stats.broke)) : "",
     stats.pending ? t.doorPending.replace("{n}", String(stats.pending)) : "",
-    t.doorHint,
   ]
     .filter(Boolean)
     .join(" · ");
-}
-
-function reportLine(result: string, t: FeedCopy) {
-  if (result === "broke") return t.reportBroke;
-  if (result === "skipped") return t.reportSkipped;
-  return t.reportDid;
 }
 
 function liveAgentIds(items: InboxItem[]) {
@@ -397,6 +411,12 @@ function liveAgentIds(items: InboxItem[]) {
     for (const row of item.objections) ids.add(row.objector_id);
   }
   return ids;
+}
+
+function reportLine(result: string, t: FeedCopy) {
+  if (result === "broke") return t.reportBroke;
+  if (result === "skipped") return t.reportSkipped;
+  return t.reportDid;
 }
 
 function kindLabel(kind: string, t: FeedCopy) {
@@ -431,7 +451,8 @@ function decisionLine(item: InboxItem, t: FeedCopy, decided: string, now: number
     if (item.status === "open") {
       // Objected and past the silence window: the court is the only thing left.
       const deadlocked =
-        item.objections.length > 0 && new Date(item.silence_until).getTime() <= now;
+        item.objections.length > 0 &&
+        (item.test_pass || new Date(item.silence_until).getTime() <= now);
       return deadlocked ? t.inCourt : t.waiting;
     }
     return null;
@@ -468,6 +489,12 @@ function formatAction(payload: unknown) {
     summary = summary ? `${summary}, ${money}` : money;
   }
   return summary.replace(/\s*\(compromise\)\s*/i, "").trim();
+}
+
+function formatAskedAt(iso: string, locale: string) {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return iso;
+  return new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(at);
 }
 
 function TxLink({ tx }: { tx: string }) {

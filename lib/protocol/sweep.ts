@@ -1,19 +1,13 @@
-import { and, eq, isNotNull, lte } from "drizzle-orm";
-import { actions, agents, principals } from "@/lib/db/schema";
+import { and, eq, lte } from "drizzle-orm";
+import { actions, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { decideBudgetTurn } from "@/agents/budget";
-import { decideCalendarTurn } from "@/agents/calendar";
-import { decideFinanceTurn } from "@/agents/finance";
-import { decideLegalTurn } from "@/agents/legal";
-import { decideSecurityTurn } from "@/agents/security";
-import { fileObjection, recordTimeoutAcks } from "./actions";
-import { actionEvidence, actionPayload, engagedIds, loadActionBundle, type HouseAuth } from "./bundle";
+import { recordTimeoutAcks } from "./actions";
+import { engagedIds, loadActionBundle } from "./bundle";
 import { stepHouseCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 /**
  * Advances time for one house. Idempotent.
- * Phrase-matching test clients run first so a late tick can still object
- * before silence closes. They are not a product guardian.
+ * Test objections come from the cabinet test form, not phrase matchers.
  * Reads pass courts: 0. Only tick opens a court.
  */
 export async function sweep(
@@ -26,7 +20,6 @@ export async function sweep(
   if (!principal) return { advanced: 0 };
 
   let advanced = 0;
-  if (principal.testClients) advanced += await runGuardians(principalId, principal, now);
 
   const openRows = await db
     .select()
@@ -73,73 +66,3 @@ export async function sweep(
 }
 
 export { findHouseNeedingCourt } from "./court";
-
-async function runGuardians(
-  principalId: string,
-  principal: typeof principals.$inferSelect,
-  now: Date,
-): Promise<number> {
-  const db = getDb();
-  const guardians = await db
-    .select()
-    .from(agents)
-    .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, true), isNotNull(agents.sealedKey)));
-
-  let advanced = 0;
-  const openRows = await db
-    .select()
-    .from(actions)
-    .where(and(eq(actions.principalId, principalId), eq(actions.status, "open")));
-
-  for (const guardian of guardians) {
-    const items = [];
-    for (const row of openRows) {
-      const bundle = await loadActionBundle(row.id);
-      if (!bundle) continue;
-      items.push({
-        id: row.id,
-        proposerId: row.proposerId,
-        kind: row.kind,
-        payload: actionPayload(row),
-        evidence: actionEvidence(row),
-        status: row.status,
-        alreadyObjected: bundle.objections.some((item) => item.objectorId === guardian.id),
-      });
-    }
-    const drafts = decideForRole(guardian.role, {
-      constitution: principal.constitution,
-      selfId: guardian.id,
-      items,
-    });
-    const auth: HouseAuth = { agent: guardian, principal };
-    for (const draft of drafts) {
-      try {
-        await fileObjection(
-          auth,
-          draft.actionId,
-          {
-            justification: draft.justification,
-            evidence: draft.evidence,
-            counter_action: draft.counter_action,
-          },
-          now,
-        );
-        advanced += 1;
-      } catch {
-        // Already objected or window closed — sweep stays idempotent.
-      }
-    }
-  }
-  return advanced;
-}
-
-function decideForRole(
-  role: string,
-  input: Parameters<typeof decideBudgetTurn>[0],
-) {
-  if (role === "calendar") return decideCalendarTurn(input);
-  if (role === "security") return decideSecurityTurn(input);
-  if (role === "legal") return decideLegalTurn(input);
-  if (role === "finance") return decideFinanceTurn(input);
-  return decideBudgetTurn(input);
-}

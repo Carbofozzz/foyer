@@ -96,6 +96,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     justification: bundle.action.justification,
     evidence: bundle.action.evidence,
     status: bundle.action.status,
+    created_at: bundle.action.createdAt.toISOString(),
     silence_until: bundle.action.silenceUntil.toISOString(),
     ack_until: bundle.action.ackUntil?.toISOString() ?? null,
     appeal_until: bundle.action.appealUntil?.toISOString() ?? null,

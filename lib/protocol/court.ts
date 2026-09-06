@@ -1,5 +1,5 @@
-import { and, desc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
-import { actions, cases, objections, verdicts } from "@/lib/db/schema";
+import { and, desc, eq, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { actions, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { COURT_FLOOR_WEI, ensureCourtFunds } from "@/lib/judge/funds";
 import { ensureHouseCourt } from "@/lib/judge/house-court";
@@ -63,13 +63,22 @@ export async function stepHouseCourt(principal: HousePrincipal, now: Date): Prom
   return false;
 }
 
+const liveHouse = and(eq(principals.isSpawn, false), isNotNull(principals.ownerAddress));
+
 export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
   const db = getDb();
   const [inflight] = await db
     .select({ principalId: actions.principalId })
     .from(cases)
     .innerJoin(actions, eq(cases.actionId, actions.id))
-    .where(and(isNotNull(cases.tx), sql`not exists (select 1 from verdicts v where v.case_id = ${cases.id} and v.tx = ${cases.tx})`))
+    .innerJoin(principals, eq(actions.principalId, principals.id))
+    .where(
+      and(
+        liveHouse,
+        isNotNull(cases.tx),
+        sql`not exists (select 1 from verdicts v where v.case_id = ${cases.id} and v.tx = ${cases.tx})`,
+      ),
+    )
     .limit(1);
   if (inflight) return inflight.principalId;
 
@@ -77,7 +86,8 @@ export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
     .select({ principalId: actions.principalId })
     .from(cases)
     .innerJoin(actions, eq(cases.actionId, actions.id))
-    .where(and(isNull(cases.tx), ne(cases.status, "judged")))
+    .innerJoin(principals, eq(actions.principalId, principals.id))
+    .where(and(liveHouse, isNull(cases.tx), ne(cases.status, "judged")))
     .limit(1);
   if (bare) return bare.principalId;
 
@@ -85,8 +95,16 @@ export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
     .select({ principalId: actions.principalId })
     .from(actions)
     .innerJoin(objections, eq(objections.actionId, actions.id))
+    .innerJoin(principals, eq(actions.principalId, principals.id))
     .leftJoin(cases, eq(cases.actionId, actions.id))
-    .where(and(eq(actions.status, "open"), lte(actions.silenceUntil, now), isNull(cases.id)))
+    .where(
+      and(
+        liveHouse,
+        eq(actions.status, "open"),
+        isNull(cases.id),
+        or(lte(actions.silenceUntil, now), eq(actions.testPass, true)),
+      ),
+    )
     .limit(1);
   return row?.principalId ?? null;
 }
@@ -148,8 +166,8 @@ async function findDeadlock(principalId: string, now: Date): Promise<ActionRow |
       and(
         eq(actions.principalId, principalId),
         eq(actions.status, "open"),
-        lte(actions.silenceUntil, now),
         isNull(cases.id),
+        or(lte(actions.silenceUntil, now), eq(actions.testPass, true)),
       ),
     )
     .limit(1);

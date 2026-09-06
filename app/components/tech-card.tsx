@@ -24,25 +24,34 @@ export function TechCard({
   errorLabel: string;
   preview?: ConnectPayload | null;
 }) {
-  const [data, setData] = useState<ConnectPayload | null>(null);
+  const [data, setData] = useState<ConnectPayload | null>(preview);
+  const [ready, setReady] = useState(Boolean(preview));
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (preview) {
       setData(preview);
+      setReady(true);
       return;
     }
     fetch(`/api/cabinet/${token}/connect`, { headers: cabinetHeaders(houseId) })
       .then((response) => {
         if (!response.ok) throw new Error("fail");
-        return response.json() as Promise<{ data: ConnectPayload }>;
+        return response.json() as Promise<{ data: { agents?: ConnectPayload[] } }>;
       })
-      .then((payload) => setData(payload.data))
-      .catch(() => setError(true));
+      .then((payload) => {
+        setData(payload.data.agents?.at(-1) ?? null);
+        setReady(true);
+      })
+      .catch(() => {
+        setError(true);
+        setReady(true);
+      });
   }, [preview, token, houseId]);
 
+  if (!ready) return <p className="muted">{t.loading}</p>;
   if (error) return <p className="error">{errorLabel}</p>;
-  if (!data) return <p className="muted">{t.loading}</p>;
+  if (!data) return null;
 
   const origin = data.mcp_url.replace(/\/api\/mcp$/, "");
   const curl = curlSample(origin, data.agent_key);

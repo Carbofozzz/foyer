@@ -202,6 +202,32 @@ async function ackIfEngaged(principal: HousePrincipal, agentId: string, actionId
   }
 }
 
+export async function ensureTestAgent(
+  principalId: string,
+  spec: { role: string; name: string },
+) {
+  const existing = await findTestAgentByRole(principalId, spec.role);
+  if (existing) return existing;
+  return (await insertSealedAgent(principalId, { ...spec, isGuardian: true })).agent;
+}
+
+async function findTestAgentByRole(principalId: string, role: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(agents)
+    .where(
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.role, role),
+        eq(agents.isGuardian, true),
+        isNotNull(agents.sealedKey),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
 async function insertSealedAgent(
   principalId: string,
   input: { role: string; name: string; isGuardian: boolean },
@@ -248,19 +274,68 @@ export function connectRolesFor(type: string) {
   return type === "org" ? CONNECT_ROLES.org : CONNECT_ROLES.personal;
 }
 
-export async function issueConnectAgent(principal: HousePrincipal, wanted?: string) {
-  const catalog = connectRolesFor(principal.type);
-  const spec = catalog.find((row) => row.role === wanted) ?? catalog[0];
-  const existing = await findRealAgentByRole(principal.id, spec.role);
+export async function listConnectAgents(principalId: string) {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(agents)
+    .where(
+      and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), isNotNull(agents.sealedKey)),
+    );
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    agent_key: row.sealedKey ? unsealKey(row.sealedKey) : "",
+  }));
+}
+
+export async function issueConnectAgent(principal: HousePrincipal, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) throw new ProtocolError("bad_request", "name is required", 400);
+  const existing = await findRealAgentByName(principal.id, trimmed);
   if (existing?.sealedKey) {
-    return { agent_key: unsealKey(existing.sealedKey), created: false, role: spec.role, name: spec.name };
+    return {
+      id: existing.id,
+      agent_key: unsealKey(existing.sealedKey),
+      created: false,
+      role: existing.role,
+      name: existing.name,
+    };
   }
-  const { agentKey } = await insertSealedAgent(principal.id, {
-    role: spec.role,
-    name: spec.name,
+  const role = roleFromName(trimmed);
+  const { agent, agentKey } = await insertSealedAgent(principal.id, {
+    role,
+    name: trimmed,
     isGuardian: false,
   });
-  return { agent_key: agentKey, created: true, role: spec.role, name: spec.name };
+  return { id: agent.id, agent_key: agentKey, created: true, role, name: trimmed };
+}
+
+function roleFromName(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24);
+  return slug || "agent";
+}
+
+async function findRealAgentByName(principalId: string, name: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(agents)
+    .where(
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.name, name),
+        eq(agents.isGuardian, false),
+        isNotNull(agents.sealedKey),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 async function findGuardian(principalId: string) {

@@ -7,7 +7,7 @@ import type { Messages } from "@/lib/i18n/load";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { ConnectCard } from "@/app/components/connect-card";
 
-type Step = "rules" | "lock" | "connect" | "guardian" | "first";
+type Step = "rules" | "lock" | "connect";
 
 export function CabinetWizard({
   token,
@@ -15,6 +15,7 @@ export function CabinetWizard({
   step,
   wizard,
   connect,
+  tech,
   charter,
   cabinetError,
   constitution,
@@ -25,6 +26,7 @@ export function CabinetWizard({
   step: Step;
   wizard: Messages["wizard"];
   connect: Messages["connect"];
+  tech: Messages["tech"];
   charter: Messages["charter"];
   cabinetError: string;
   constitution: string;
@@ -46,45 +48,14 @@ export function CabinetWizard({
   if (step === "lock") {
     return <LockStep token={token} houseId={houseId} wizard={wizard} cabinetError={cabinetError} />;
   }
-  if (step === "connect") {
-    return (
-      <ConnectCard
-        token={token}
-        houseId={houseId}
-        t={connect}
-        errorLabel={cabinetError}
-        asWizard
-      />
-    );
-  }
-  if (step === "guardian") {
-    return (
-      <ActionStep
-        token={token}
-        houseId={houseId}
-        path="guardian"
-        cabinetError={cabinetError}
-        kicker={wizard.guardianKicker}
-        title={houseType === "org" ? wizard.guardianTitleOrg : wizard.guardianTitle}
-        lead={houseType === "org" ? wizard.guardianLeadOrg : wizard.guardianLead}
-        label={wizard.guardianEnable}
-        pendingLabel={wizard.guardianEnabling}
-        skipLabel={wizard.skipTest}
-      />
-    );
-  }
   return (
-    <ActionStep
+    <ConnectCard
       token={token}
       houseId={houseId}
-      skipLabel={wizard.skipTest}
-      path="first-pass"
-      cabinetError={cabinetError}
-      kicker={wizard.firstKicker}
-      title={houseType === "org" ? wizard.firstTitleOrg : wizard.firstTitle}
-      lead={houseType === "org" ? wizard.firstLeadOrg : wizard.firstLead}
-      label={wizard.firstRun}
-      pendingLabel={wizard.firstRunning}
+      t={connect}
+      tech={tech}
+      errorLabel={cabinetError}
+      asWizard
     />
   );
 }
@@ -276,80 +247,3 @@ function LockStep({
   );
 }
 
-function ActionStep({
-  token,
-  houseId,
-  path,
-  cabinetError,
-  kicker,
-  title,
-  lead,
-  label,
-  pendingLabel,
-  skipLabel,
-}: {
-  token: string;
-  houseId?: string;
-  path: "guardian" | "first-pass";
-  cabinetError: string;
-  kicker: string;
-  title: string;
-  lead: string;
-  label: string;
-  pendingLabel: string;
-  skipLabel: string;
-}) {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
-
-  async function post(url: string) {
-    setPending(true);
-    setError(false);
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: cabinetHeaders(houseId),
-      });
-      if (!response.ok) {
-        setError(true);
-        setPending(false);
-        return;
-      }
-      window.location.reload();
-    } catch {
-      setError(true);
-      setPending(false);
-    }
-  }
-
-  return (
-    <form
-      className="card stack"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void post(`/api/cabinet/${token}/${path}`);
-      }}
-    >
-      <div className="cabinet-panel-head">
-        <h2 className="section-title">{title}</h2>
-        <p className="kicker">{kicker}</p>
-      </div>
-      <p className="hint">{lead}</p>
-      <div className="row">
-        <button type="submit" disabled={pending} aria-busy={pending}>
-          {pending ? pendingLabel : label}
-        </button>
-        <button
-          type="button"
-          className="ghost"
-          disabled={pending}
-          aria-busy={pending}
-          onClick={() => void post(`/api/cabinet/${token}/harness`)}
-        >
-          {skipLabel}
-        </button>
-      </div>
-      {error ? <p className="error">{cabinetError}</p> : null}
-    </form>
-  );
-}

@@ -222,6 +222,7 @@ export function openApiSpec(origin: string) {
               oneOf: [{ $ref: "#/components/schemas/ActionReport" }, { type: "null" }],
               description: "What the agent said it did. Null until it reports.",
             },
+            created_at: { type: "string", format: "date-time" },
             silence_until: { type: "string", format: "date-time" },
             appeal_until: { type: "string", format: "date-time" },
             held_until: {
@@ -347,6 +348,7 @@ export function openApiSpec(origin: string) {
         },
       },
       "/api/tick": {
+        get: operation({ id: "tickGet", summary: "Cron sweep (Vercel Cron sends GET)", auth: "cron" }),
         post: operation({ id: "tick", summary: "Cron sweep for every house", auth: "cron" }),
       },
       "/api/waitlist": {
