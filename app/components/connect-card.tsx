@@ -8,53 +8,46 @@ import type { Messages } from "@/lib/i18n/load";
 
 type ConnectPayload = {
   agent_key: string;
-  role?: string;
-  name?: string;
-  roles?: { role: string; name: string }[];
   mcp_url: string;
   mcp_config: string;
   prompt_lines: string[];
 };
 
-type Runtime = "cursor" | "claude" | "chatgpt" | "openclaw";
-
-const RUNTIMES: Runtime[] = ["cursor", "claude", "chatgpt", "openclaw"];
-
 export function ConnectCard({
   token,
   houseId,
-  houseType,
   t,
   errorLabel,
   asWizard,
   compact,
+  preview = null,
 }: {
   token: string;
   houseId?: string;
-  houseType?: "personal" | "org";
   t: Messages["connect"];
   errorLabel: string;
   asWizard?: boolean;
   compact?: boolean;
+  preview?: ConnectPayload | null;
 }) {
   const router = useRouter();
   const [data, setData] = useState<ConnectPayload | null>(null);
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
-  const [runtime, setRuntime] = useState<Runtime>("cursor");
-  const [role, setRole] = useState(houseType === "org" ? "sales" : "travel");
 
   useEffect(() => {
-    fetch(`/api/cabinet/${token}/connect?role=${encodeURIComponent(role)}`, {
-      headers: cabinetHeaders(houseId),
-    })
+    if (preview) {
+      setData(preview);
+      return;
+    }
+    fetch(`/api/cabinet/${token}/connect`, { headers: cabinetHeaders(houseId) })
       .then((response) => {
         if (!response.ok) throw new Error("fail");
         return response.json() as Promise<{ data: ConnectPayload }>;
       })
       .then((payload) => setData(payload.data))
       .catch(() => setError(true));
-  }, [token, houseId, role]);
+  }, [preview, token, houseId]);
 
   async function finish() {
     setPending(true);
@@ -84,48 +77,20 @@ export function ConnectCard({
       ) : compact ? null : (
         <h2 className="section-title">{t.title}</h2>
       )}
-      <div className="segmented" role="group">
-        {RUNTIMES.map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={id === runtime ? "segment is-active" : "segment"}
-            aria-pressed={id === runtime}
-            onClick={() => setRuntime(id)}
-          >
-            {runtimeLabel(id, t)}
-          </button>
-        ))}
-      </div>
-      <p className="hint">{runtimeLead(runtime, t)}</p>
-      <p>{t.offTools}</p>
-      {data?.roles && data.roles.length > 1 ? (
-        <div className="segmented" role="group">
-          {data.roles.map((item) => (
-            <button
-              key={item.role}
-              type="button"
-              className={item.role === role ? "segment is-active" : "segment"}
-              aria-pressed={item.role === role}
-              onClick={() => setRole(item.role)}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <p className="hint">{t.lead}</p>
+      <p className="hint">{t.offTools}</p>
       {data ? (
         <>
-          <label>
-            {t.configLabel}
-            <textarea readOnly rows={compact ? 5 : 8} value={data.mcp_config} />
-          </label>
-          <CopyButton text={data.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
-          <label>
-            {t.promptLabel}
-            <textarea readOnly rows={3} value={data.prompt_lines.join("\n")} />
-          </label>
-          <CopyButton text={data.prompt_lines.join("\n")} copyLabel={t.copy} copiedLabel={t.copied} />
+          <div>
+            <p className="feed-label">{t.configLabel}</p>
+            <pre className="mono snippet">{data.mcp_config}</pre>
+            <CopyButton text={data.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+          <div>
+            <p className="feed-label">{t.promptLabel}</p>
+            <pre className="mono snippet">{data.prompt_lines.join("\n")}</pre>
+            <CopyButton text={data.prompt_lines.join("\n")} copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
         </>
       ) : error ? (
         <p className="error">{errorLabel}</p>
@@ -144,18 +109,4 @@ export function ConnectCard({
       ) : null}
     </section>
   );
-}
-
-function runtimeLabel(id: Runtime, t: Messages["connect"]) {
-  if (id === "claude") return t.runtimeClaude;
-  if (id === "chatgpt") return t.runtimeChatgpt;
-  if (id === "openclaw") return t.runtimeOpenclaw;
-  return t.runtimeCursor;
-}
-
-function runtimeLead(id: Runtime, t: Messages["connect"]) {
-  if (id === "claude") return t.leadClaude;
-  if (id === "chatgpt") return t.leadChatgpt;
-  if (id === "openclaw") return t.leadOpenclaw;
-  return t.leadCursor;
 }

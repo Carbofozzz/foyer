@@ -1,5 +1,6 @@
 import { requireAgent } from "@/lib/protocol/auth";
 import { ackAction, fileObjection, getAction, inboxFor, proposeAction } from "@/lib/protocol/actions";
+import { reportAction, reportBody } from "@/lib/protocol/report";
 import type { HouseAuth } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { sweep } from "@/lib/protocol/sweep";
@@ -67,6 +68,18 @@ const TOOLS = [
       type: "object",
       required: ["action_id"],
       properties: { action_id: { type: "string" } },
+    },
+  },
+  {
+    name: "report",
+    description: "After you act or skip, report { did: true | false } for that action.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id", "did"],
+      properties: {
+        action_id: { type: "string" },
+        did: { type: "boolean" },
+      },
     },
   },
 ];
@@ -187,6 +200,10 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
   if (name === "get_action") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
     return getAction(auth, actionId);
+  }
+  if (name === "report") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return reportAction(auth, actionId, reportBody(args));
   }
   throw new Error(`Unknown tool: ${name}`);
 }

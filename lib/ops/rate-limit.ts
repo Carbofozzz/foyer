@@ -13,6 +13,7 @@ export const LIMITS = {
   propose: { max: 40, windowSec: 3600 },
   proposeAgent: { max: 20, windowSec: 3600 },
   object: { max: 40, windowSec: 3600 },
+  report: { max: 40, windowSec: 3600 },
   enroll: { max: 20, windowSec: 3600 },
   mcp: { max: 80, windowSec: 3600 },
 } as const satisfies Record<string, RateLimit>;

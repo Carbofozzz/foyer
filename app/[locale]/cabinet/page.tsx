@@ -15,10 +15,10 @@ export default async function CabinetMePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ enroll?: string; house?: string }>;
+  searchParams: Promise<{ enroll?: string; house?: string; tab?: string }>;
 }) {
   const { locale } = await params;
-  const { enroll, house } = await searchParams;
+  const { enroll, house, tab } = await searchParams;
   if (!isLocale(locale)) notFound();
   const request = await incomingRequest();
   const session = readSession(request);
@@ -38,6 +38,7 @@ export default async function CabinetMePage({
       houses={await listHousesFor(session.address)}
       viewerAddress={session.address}
       enroll={enroll}
+      tab={tab}
       t={loadMessages(locale)}
     />
   );

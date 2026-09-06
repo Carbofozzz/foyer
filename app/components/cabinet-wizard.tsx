@@ -51,7 +51,6 @@ export function CabinetWizard({
       <ConnectCard
         token={token}
         houseId={houseId}
-        houseType={houseType}
         t={connect}
         errorLabel={cabinetError}
         asWizard
@@ -70,6 +69,7 @@ export function CabinetWizard({
         lead={houseType === "org" ? wizard.guardianLeadOrg : wizard.guardianLead}
         label={wizard.guardianEnable}
         pendingLabel={wizard.guardianEnabling}
+        skipLabel={wizard.skipTest}
       />
     );
   }
@@ -77,6 +77,7 @@ export function CabinetWizard({
     <ActionStep
       token={token}
       houseId={houseId}
+      skipLabel={wizard.skipTest}
       path="first-pass"
       cabinetError={cabinetError}
       kicker={wizard.firstKicker}
@@ -285,6 +286,7 @@ function ActionStep({
   lead,
   label,
   pendingLabel,
+  skipLabel,
 }: {
   token: string;
   houseId?: string;
@@ -295,16 +297,16 @@ function ActionStep({
   lead: string;
   label: string;
   pendingLabel: string;
+  skipLabel: string;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
 
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function post(url: string) {
     setPending(true);
     setError(false);
     try {
-      const response = await fetch(`/api/cabinet/${token}/${path}`, {
+      const response = await fetch(url, {
         method: "POST",
         headers: cabinetHeaders(houseId),
       });
@@ -321,15 +323,32 @@ function ActionStep({
   }
 
   return (
-    <form className="card stack" onSubmit={onSubmit}>
+    <form
+      className="card stack"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void post(`/api/cabinet/${token}/${path}`);
+      }}
+    >
       <div className="cabinet-panel-head">
         <h2 className="section-title">{title}</h2>
         <p className="kicker">{kicker}</p>
       </div>
       <p className="hint">{lead}</p>
-      <button type="submit" disabled={pending} aria-busy={pending}>
-        {pending ? pendingLabel : label}
-      </button>
+      <div className="row">
+        <button type="submit" disabled={pending} aria-busy={pending}>
+          {pending ? pendingLabel : label}
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          disabled={pending}
+          aria-busy={pending}
+          onClick={() => void post(`/api/cabinet/${token}/harness`)}
+        >
+          {skipLabel}
+        </button>
+      </div>
       {error ? <p className="error">{cabinetError}</p> : null}
     </form>
   );

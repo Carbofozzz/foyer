@@ -59,7 +59,9 @@ A later slice adds `reported`. Until then `executed` in old rows can be read as 
 
 ## Slice 3 — Demo and test
 
-**Now:** [DEMO.md](DEMO.md), first pass, spawn, Replay A–F, `npm run demo`, `/:locale/check` all describe stub execute.
+**Done.** Replay, DEMO, `/check`, and `npm run demo` say a pass means the assistant acts. Test clients report after permit (slice 4).
+
+**Was:** [DEMO.md](DEMO.md), first pass, spawn, Replay A–F, `npm run demo`, `/:locale/check` all describe stub execute.
 
 **Do:** walk each surface and retarget it. Do not delete the harness.
 
@@ -76,6 +78,8 @@ A later slice adds `reported`. Until then `executed` in old rows can be read as 
 ---
 
 ## Slice 4 — Report + door stats
+
+**Done.** `POST /api/actions/:id/report` `{ did }`, MCP `report`, derived door stats on chips.
 
 Without a report, “disobeyed” and “has not bought yet” are the same.
 

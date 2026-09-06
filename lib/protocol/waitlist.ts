@@ -1,3 +1,4 @@
+import { desc } from "drizzle-orm";
 import { waitlist } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { ProtocolError } from "./errors";
@@ -20,4 +21,9 @@ export async function joinWaitlist(email: string, locale: string) {
     .values({ email, locale })
     .onConflictDoNothing({ target: waitlist.email });
   return { ok: true as const };
+}
+
+export async function listWaitlist() {
+  const db = getDb();
+  return db.select().from(waitlist).orderBy(desc(waitlist.createdAt));
 }

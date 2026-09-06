@@ -13,6 +13,7 @@ export function MembersCard({
   houseId,
   selfAddress,
   canInvite,
+  asPanel = false,
   t,
   errorLabel,
 }: {
@@ -20,6 +21,7 @@ export function MembersCard({
   houseId: string;
   selfAddress: string | null;
   canInvite: boolean;
+  asPanel?: boolean;
   t: Messages["cabinet"];
   errorLabel: string;
 }) {
@@ -78,9 +80,8 @@ export function MembersCard({
     setItems(payload.data.items);
   }
 
-  return (
-    <details className="members-card">
-      <summary>{t.members}</summary>
+  const body = (
+    <>
       <p className="hint">{t.membersLead}</p>
       {items ? (
         <ul className="member-list">
@@ -123,6 +124,14 @@ export function MembersCard({
         </form>
       ) : null}
       {error && items ? <p className="error">{errorLabel}</p> : null}
+    </>
+  );
+
+  if (asPanel) return <div className="stack">{body}</div>;
+  return (
+    <details className="members-card">
+      <summary>{t.members}</summary>
+      {body}
     </details>
   );
 }

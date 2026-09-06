@@ -1,4 +1,4 @@
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { decideBudgetTurn } from "@/agents/budget";
 import { decideCalendarTurn } from "@/agents/calendar";
 import { decideLegalTurn } from "@/agents/legal";
@@ -6,9 +6,10 @@ import { CASE_D } from "@/agents/sales";
 import { CASE_C, decideSecurityTurn } from "@/agents/security";
 import { CASE_A, CASE_B } from "@/agents/travel";
 import type { ObjectionDraft } from "@/agents/types";
-import { agents, principals } from "@/lib/db/schema";
+import { actions, agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { ackAction, fileObjection, proposeAction } from "./actions";
+import { maybeReportTestPass } from "./report";
 import type { HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
@@ -60,6 +61,10 @@ export async function enableGuardian(principal: HousePrincipal) {
     if (!first) first = agent;
   }
   if (!first) throw new ProtocolError("internal", "Failed to enable guardian", 500);
+  await getDb()
+    .update(principals)
+    .set({ testClients: true })
+    .where(eq(principals.id, principal.id));
   return { id: first.id, role: first.role, name: first.name, created };
 }
 
@@ -88,17 +93,23 @@ export async function runFirstPass(principal: HousePrincipal) {
     for (const objectorId of row.objectorIds) {
       await ackIfEngaged(house, objectorId, row.id);
     }
+    await maybeReportTestPass(row.id);
   }
+
+  await db
+    .update(principals)
+    .set({ wizardHarnessDone: true, testClients: true })
+    .where(eq(principals.id, principal.id));
 
   return { action_id: ids[0]?.id ?? null, action_ids: ids.map((row) => row.id) };
 }
 
 async function runPersonalCases(principal: HousePrincipal, now: Date) {
-  const travel = await ensureSealed(principal.id, { role: "travel", name: "Travel", isGuardian: false });
+  const travel = await ensureSealed(principal.id, { role: "travel", name: "Travel", isGuardian: true });
   const assistant = await ensureSealed(principal.id, {
     role: "assistant",
     name: "Assistant",
-    isGuardian: false,
+    isGuardian: true,
   });
   const budget = await findAgentByRole(principal.id, "budget");
   const calendar = await findAgentByRole(principal.id, "calendar");
@@ -115,7 +126,7 @@ async function runPersonalCases(principal: HousePrincipal, now: Date) {
 }
 
 async function runOrgCases(principal: HousePrincipal, now: Date) {
-  const sales = await ensureSealed(principal.id, { role: "sales", name: "Sales", isGuardian: false });
+  const sales = await ensureSealed(principal.id, { role: "sales", name: "Sales", isGuardian: true });
   const legal = await findAgentByRole(principal.id, "legal");
   if (!legal) throw new ProtocolError("conflict", "Enable the guardian first", 409);
   return [await runCase(principal, sales, legal, CASE_D, now, decideLegalTurn)];
@@ -143,6 +154,7 @@ async function runCase(
     },
     now,
   );
+  await getDb().update(actions).set({ testPass: true }).where(eq(actions.id, proposed.id));
   const objections = decide({
     constitution: principal.constitution,
     selfId: objector.id,
@@ -239,7 +251,7 @@ export function connectRolesFor(type: string) {
 export async function issueConnectAgent(principal: HousePrincipal, wanted?: string) {
   const catalog = connectRolesFor(principal.type);
   const spec = catalog.find((row) => row.role === wanted) ?? catalog[0];
-  const existing = await findAgentByRole(principal.id, spec.role);
+  const existing = await findRealAgentByRole(principal.id, spec.role);
   if (existing?.sealedKey) {
     return { agent_key: unsealKey(existing.sealedKey), created: false, role: spec.role, name: spec.name };
   }
@@ -257,6 +269,52 @@ async function findGuardian(principalId: string) {
     .select()
     .from(agents)
     .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, true)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function setTestClients(principal: HousePrincipal, on: boolean) {
+  await getDb()
+    .update(principals)
+    .set({ testClients: on })
+    .where(eq(principals.id, principal.id));
+}
+
+export async function skipHarness(principal: HousePrincipal) {
+  await getDb()
+    .update(principals)
+    .set({ wizardHarnessDone: true, testClients: false })
+    .where(eq(principals.id, principal.id));
+}
+
+/** First-pass Travel/Assistant were stored as live. Mark them test if this house has guardians. */
+export async function markHarnessProposers(principalId: string) {
+  const db = getDb();
+  const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principalId));
+  if (!houseAgents.some((agent) => agent.isGuardian)) return;
+  const roles = ["travel", "assistant", "sales"] as const;
+  const ids = [];
+  for (const role of roles) {
+    const same = houseAgents.filter((agent) => agent.role === role);
+    if (same.length === 1 && !same[0].isGuardian) ids.push(same[0].id);
+  }
+  if (ids.length === 0) return;
+  await db.update(agents).set({ isGuardian: true }).where(inArray(agents.id, ids));
+}
+
+async function findRealAgentByRole(principalId: string, role: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(agents)
+    .where(
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.role, role),
+        eq(agents.isGuardian, false),
+        isNotNull(agents.sealedKey),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

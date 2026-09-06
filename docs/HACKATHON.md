@@ -48,7 +48,7 @@ The outline of the **whole** product exists from day 4. Days 5–14 deepen quali
 | Evidence | Text, links, stub attachments in the case packet | Live calendar, receipt, email |
 | Verdict execution | Adapter `spend` / `book` / `message` / `cancel`: log + stub “executed” | Real card, calendar, mail APIs |
 | Ack | Engaged parties ack (or timeout) before the lock lifts | Penalty for ignore |
-| Access | Agent keys + wallet login for the principal (`cab_` only for spawn) | Org members, roles |
+| Access | Agent keys + wallet login for the principal (`/:locale/cabinet/demo` is the shared look-only house) | Org members, roles |
 | Principal appeal | `POST /cases/:id/appeal` → re-trial or manual outcome | Bond, window, cost |
 | Bond for object | House wallet pays GenLayer tx fees; the court IC does not lock or burn GEN | Per-agent wallets, appeal economics |
 | Several roles | Personal: Travel, Budget, Calendar, Security. Org: Sales, Legal, Finance | Arbitrary principal roles |
@@ -243,7 +243,7 @@ If there is only one agent, there will be no dispute. The **product** second par
 
 The built-in Budget / Calendar / Security (Legal / Finance) clients are **test stand-ins** for the first pass and for spawn. They match canned charter phrases with regex. Free-form rules may never fire them. Label them as test in the UI. They are not the product guardian.
 
-A test client is still a protocol client: own key, woken by the tick, not by gateway code inside `POST /actions`. Spawn is a different thing — a throwaway house.
+A test client is still a protocol client: own key, woken by the tick, not by gateway code inside `POST /actions`. The landing demo is a different thing — one shared look-only house.
 
 **“I write agents”** (technician)
 
@@ -298,7 +298,7 @@ At the hackathon a client may be a script or an LLM that reads the constitution 
 
 ### Guest with no runtime
 
-Spawn creates a throwaway house with its own cabinet link and issues real agent keys to the spawned clients — the same doors, just short-lived. Observer → Spawn on one of the conflicts → register/propose/object in the log → verdict in both inboxes → execute stub and an appeal button visible. Next to it — “Connect your agent” with the spec.
+The landing demo is one shared house at `/:locale/cabinet/demo`. Feed and rules only — no treasury, no key, no appeal. Observer → open the demo → read a finished first pass. Next to it — “Connect your agent” with the spec, on a signed-in cabinet.
 
 If testnet is down: Replay of a finished run. New deadlocks escalate until the court returns a verdict. Do not invent a local allow, counter, or remedy.
 
@@ -406,9 +406,9 @@ Checklist:
 - With one own agent, does a dispute still appear (test clients on canned phrases; free-form rules may stay silent)?
 - Does the dispute go through agent calls, not “I am budget” clicks?
 - Are all four outcomes visible on different constitutions or cases, including `allow_b` both as a counter-action and as a pure block?
-- Does a `remedy` verdict execute from `remedy_action`, without a human reading prose?
+- Does a `remedy` verdict name `remedy_action`, and after a pass does the assistant act, without a human reading prose?
 - Does an untouched action still resolve when nobody pokes the app — i.e. does the cron tick close the silence window?
-- Is there execution (at least a stub) and appeal?
+- After a pass, does the test client act (or does the test see it)? Is there still appeal?
 - Is there an on-chain tx? (required for the day-7 MVP; day-4 public v0 may still be offline)
 - Does spawn refuse to pass itself off as the product?
 - Does the public URL keep state after a reload?

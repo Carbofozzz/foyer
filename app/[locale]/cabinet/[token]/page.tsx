@@ -12,10 +12,10 @@ export default async function CabinetTokenPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; token: string }>;
-  searchParams: Promise<{ enroll?: string }>;
+  searchParams: Promise<{ enroll?: string; tab?: string }>;
 }) {
   const { locale, token } = await params;
-  const { enroll } = await searchParams;
+  const { enroll, tab } = await searchParams;
   if (!isLocale(locale)) notFound();
   const principal = await requireCabinet(token, await incomingRequest());
   if (!principal) notFound();
@@ -27,6 +27,7 @@ export default async function CabinetTokenPage({
       memberRole="owner"
       houses={[]}
       enroll={enroll}
+      tab={tab}
       t={loadMessages(locale)}
     />
   );

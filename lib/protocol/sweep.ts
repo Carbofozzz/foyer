@@ -26,7 +26,7 @@ export async function sweep(
   if (!principal) return { advanced: 0 };
 
   let advanced = 0;
-  advanced += await runGuardians(principalId, principal, now);
+  if (principal.testClients) advanced += await runGuardians(principalId, principal, now);
 
   const openRows = await db
     .select()
