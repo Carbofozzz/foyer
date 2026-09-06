@@ -1,7 +1,7 @@
 import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { bearerToken, jsonError, jsonOk } from "@/lib/protocol/http";
-import { sweep } from "@/lib/protocol/sweep";
+import { findHouseNeedingCourt, sweep } from "@/lib/protocol/sweep";
 import { deployEnv } from "@/lib/ops/client";
 import { writeRequestLog } from "@/lib/ops/log";
 import { recordTick } from "@/lib/ops/tick";
@@ -21,14 +21,20 @@ export async function POST(request: Request) {
   try {
     const houses = await db.select({ id: principals.id }).from(principals);
     const now = new Date();
+    const dueId = await findHouseNeedingCourt(now);
     let advanced = 0;
     for (const house of houses) {
-      const result = await sweep(house.id, now);
+      if (house.id === dueId) continue;
+      const result = await sweep(house.id, now, { courts: 0 });
+      advanced += result.advanced;
+    }
+    if (dueId) {
+      const result = await sweep(dueId, now, { courts: 1 });
       advanced += result.advanced;
     }
     await recordTick({ startedAt, houses: houses.length, advanced, ok: true });
     await writeRequestLog(request, "tick", 200, Date.now() - startedAt.getTime()).catch(() => undefined);
-    return jsonOk({ houses: houses.length, advanced, at: now.toISOString() });
+    return jsonOk({ houses: houses.length, advanced, court: dueId, at: now.toISOString() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "tick failed";
     await recordTick({ startedAt, houses: 0, advanced: 0, ok: false, error: message }).catch(() => undefined);

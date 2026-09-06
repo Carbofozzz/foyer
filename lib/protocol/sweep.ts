@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, lte } from "drizzle-orm";
-import { actions, agents, principals } from "@/lib/db/schema";
+import { and, eq, isNotNull, isNull, lte } from "drizzle-orm";
+import { actions, agents, cases, objections, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { decideBudgetTurn } from "@/agents/budget";
 import { decideCalendarTurn } from "@/agents/calendar";
@@ -14,6 +14,7 @@ import { executeAfterAck, executeSilenceAllow } from "./execute";
  * Advances time for one house. Idempotent.
  * Phrase-matching test clients run first so a late tick can still object
  * before silence closes. They are not a product guardian.
+ * Reads pass courts: 0. Only tick opens a court.
  */
 export async function sweep(
   principalId: string,
@@ -32,9 +33,8 @@ export async function sweep(
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
-  // A live judge write takes about a minute, so one sweep opens one court.
-  // The rest stay open and are judged by the next read or tick.
-  let courts = options?.courts ?? 1;
+  // A live judge write takes about a minute. Reads never wait on it.
+  let courts = options?.courts ?? 0;
 
   for (const row of openRows) {
     const bundle = await loadActionBundle(row.id);
@@ -72,6 +72,19 @@ export async function sweep(
   }
 
   return { advanced };
+}
+
+/** House with a deadlock past silence and no case yet. Tick opens one court there. */
+export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
+  const db = getDb();
+  const [row] = await db
+    .select({ principalId: actions.principalId })
+    .from(actions)
+    .innerJoin(objections, eq(objections.actionId, actions.id))
+    .leftJoin(cases, eq(cases.actionId, actions.id))
+    .where(and(eq(actions.status, "open"), lte(actions.silenceUntil, now), isNull(cases.id)))
+    .limit(1);
+  return row?.principalId ?? null;
 }
 
 async function runGuardians(
