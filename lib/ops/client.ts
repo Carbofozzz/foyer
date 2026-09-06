@@ -18,7 +18,7 @@ export function deployEnv(): "production" | "preview" | "development" {
 
 export function cronIntervalSec(): number {
   const raw = Number(process.env.CRON_INTERVAL_SEC);
-  return Number.isFinite(raw) && raw > 0 ? raw : 86_400;
+  return Number.isFinite(raw) && raw > 0 ? raw : 60;
 }
 
 /** Preview and production both require the secret. Local `vercel dev` does not. */
