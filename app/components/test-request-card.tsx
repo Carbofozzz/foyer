@@ -7,6 +7,7 @@ import type { Messages } from "@/lib/i18n/load";
 import { TEST_CAST } from "@/lib/protocol/test-cast";
 
 type Kind = "spend" | "book" | "message" | "cancel";
+type CastRole = (typeof TEST_CAST)[number]["role"];
 
 export function TestRequestCard({
   token,
@@ -25,8 +26,8 @@ export function TestRequestCard({
 }) {
   const router = useRouter();
   const options = useMemo(() => (kinds.includes("cancel") ? kinds : [...kinds, "cancel" as const]), [kinds]);
-  const [proposer, setProposer] = useState(TEST_CAST[0].role);
-  const [objector, setObjector] = useState(TEST_CAST[1].role);
+  const [proposer, setProposer] = useState<CastRole>(TEST_CAST[0].role);
+  const [objector, setObjector] = useState<CastRole>(TEST_CAST[1].role);
   const [kind, setKind] = useState<Kind>(options[0] ?? "spend");
   const [summary, setSummary] = useState("");
   const [reply, setReply] = useState("");
@@ -85,7 +86,7 @@ export function TestRequestCard({
       <p className="hint">{t.testLead}</p>
       <label className="stack">
         <span className="feed-label">{t.testProposer}</span>
-        <select value={proposer} disabled={locked} onChange={(event) => setProposer(event.target.value)}>
+        <select value={proposer} disabled={locked} onChange={(event) => setProposer(event.target.value as CastRole)}>
           {TEST_CAST.map((row) => (
             <option key={row.role} value={row.role} disabled={row.role === objector}>
               {row.name}
@@ -115,7 +116,7 @@ export function TestRequestCard({
       </label>
       <label className="stack">
         <span className="feed-label">{t.testObjector}</span>
-        <select value={objector} disabled={locked} onChange={(event) => setObjector(event.target.value)}>
+        <select value={objector} disabled={locked} onChange={(event) => setObjector(event.target.value as CastRole)}>
           {TEST_CAST.map((row) => (
             <option key={row.role} value={row.role} disabled={row.role === proposer}>
               {row.name}
