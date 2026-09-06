@@ -47,7 +47,11 @@
     "statusOpen": "Bekliyor",
     "statusAck": "Onay bekleniyor",
     "statusHeld": "İtiraz için bekliyor",
-    "statusExecuted": "Bitti",
+    "statusExecuted": "İzinli",
+    "statusPermitted": "İzinli",
+    "statusDenied": "İzin yok",
+    "mayAct": "Bunu kendiniz yapabilirsiniz.",
+    "mustNot": "Bunu yapmayın.",
     "statusEscalated": "Sizi bekliyor",
     "request": "İstek",
     "objection": "İtiraz",
@@ -237,7 +241,7 @@
     "courtTitle": "Mahkeme",
     "courtLead": "Anlaşamazlarsa mahkeme karar verir: evet, hayır, orta yol veya size sormak. Karar yoksa siz karar verirsiniz. İtiraz edebilirsiniz.",
     "flowAgents": "Asistanlar",
-    "flowAction": "Ödeme veya rezervasyon"
+    "flowAction": "Asistan hareket eder"
   },
   "replay": {
     "kicker": "Arşiv",

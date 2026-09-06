@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.14.0",
+      version: "0.15.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -191,7 +191,15 @@ export function openApiSpec(origin: string) {
             payload: { $ref: "#/components/schemas/ActionPayload" },
             status: {
               type: "string",
-              enum: ["open", "awaiting_ack", "executed", "escalated", "cancelled"],
+              enum: ["open", "awaiting_ack", "permitted", "executed", "escalated", "cancelled"],
+            },
+            may_act: {
+              type: "boolean",
+              description: "True when the agent may perform permitted_payload with its own tools.",
+            },
+            permitted_payload: {
+              oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }],
+              description: "What the agent may do. Null on a pure block.",
             },
             silence_until: { type: "string", format: "date-time" },
             appeal_until: { type: "string", format: "date-time" },

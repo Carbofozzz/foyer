@@ -10,9 +10,9 @@ Turn off the assistant’s own payment and calendar tools. If those stay on, it 
 
 Put these three lines in the system prompt (the cabinet copies them for you):
 
-1. Actions into the world only through Foyer tools (propose, object, inbox, ack).
+1. Propose, object, inbox, and ack only through Foyer tools. After inbox says may_act, do permitted_payload with your own tools.
 2. Cite the house constitution in every justification.
-3. Turn off any direct payment, calendar, or mail tools — otherwise you walk around the gateway.
+3. Do not pay, book, or message before may_act is true. A pass is permission, not Foyer doing the act.
 
 The lock is tools and keys, not this prompt.
 

@@ -47,7 +47,11 @@
     "statusOpen": "Wartet",
     "statusAck": "Wartet auf Bestätigung",
     "statusHeld": "Wartet auf Berufung",
-    "statusExecuted": "Erledigt",
+    "statusExecuted": "Erlaubt",
+    "statusPermitted": "Erlaubt",
+    "statusDenied": "Nicht erlaubt",
+    "mayAct": "Das dürfen Sie selbst tun.",
+    "mustNot": "Das dürfen Sie nicht tun.",
     "statusEscalated": "Braucht Sie",
     "request": "Antrag",
     "objection": "Einspruch",
@@ -237,7 +241,7 @@
     "courtTitle": "Gericht",
     "courtLead": "Uneinig — das Gericht entscheidet: ja, nein, Kompromiss oder Sie fragen. Keine Entscheidung — dann Sie. Berufung ist möglich.",
     "flowAgents": "Assistenten",
-    "flowAction": "Zahlung oder Buchung"
+    "flowAction": "Der Assistent handelt"
   },
   "replay": {
     "kicker": "Archiv",

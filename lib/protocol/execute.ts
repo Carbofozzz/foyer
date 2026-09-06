@@ -1,20 +1,20 @@
 import { eq } from "drizzle-orm";
-import { adapterOf, apply } from "@/lib/adapters";
-import { actions, executions } from "@/lib/db/schema";
+import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { mintToken } from "./keys";
-import type { ActionKind, ActionPayload, Outcome } from "./types";
+import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type Outcome } from "./types";
 import { ProtocolError } from "./errors";
 import { actionPayload, loadActionBundle, type ActionRow } from "./bundle";
 import { asPayload } from "./parse";
 
 export async function executeSilenceAllow(action: ActionRow): Promise<void> {
-  await writeExecution(action, action.kind as ActionKind, actionPayload(action));
+  if (action.status === "permitted" || action.status === "executed") return;
+  await grantPermit(action.id, actionPayload(action));
 }
 
 export async function executeAfterAck(actionId: string): Promise<void> {
   const bundle = await loadActionBundle(actionId);
-  if (!bundle || bundle.action.executedAt) return;
+  if (!bundle) return;
+  if (bundle.action.status === "permitted" || bundle.action.status === "executed") return;
   if (bundle.action.status === "escalated") return;
 
   const verdict = bundle.verdict;
@@ -40,45 +40,20 @@ export async function executeAfterAck(actionId: string): Promise<void> {
     chosen = asPayload(verdict.remedyAction);
   }
 
-  if (!chosen) {
-    const db = getDb();
-    await db
-      .update(actions)
-      .set({ status: "executed", executedAt: new Date() })
-      .where(eq(actions.id, actionId));
-    return;
+  if (chosen) {
+    const kind = chosen.kind as ActionKind;
+    if (!KIND_REVERSIBLE[kind] && bundle.action.appealUntil && bundle.action.appealUntil > new Date()) {
+      return;
+    }
   }
 
-  if (!adapterOf(chosen.kind).reversible && bundle.action.appealUntil && bundle.action.appealUntil > new Date()) {
-    return;
-  }
-
-  await writeExecution(bundle.action, chosen.kind, chosen);
+  await grantPermit(actionId, chosen);
 }
 
-async function writeExecution(action: ActionRow, kind: ActionKind, payload: ActionPayload): Promise<void> {
-  if (action.executedAt) return;
+async function grantPermit(actionId: string, payload: ActionPayload | null): Promise<void> {
   const db = getDb();
-  const existing = await db.select().from(executions).where(eq(executions.actionId, action.id)).limit(1);
-  if (existing.length > 0) {
-    await db
-      .update(actions)
-      .set({ status: "executed", executedAt: existing[0].createdAt })
-      .where(eq(actions.id, action.id));
-    return;
-  }
-  const result = await apply(kind, payload, {
-    principalId: action.principalId,
-    actionId: action.id,
-  });
-  await db.insert(executions).values({
-    id: mintToken("exe"),
-    actionId: action.id,
-    kind,
-    result,
-  });
   await db
     .update(actions)
-    .set({ status: "executed", executedAt: new Date() })
-    .where(eq(actions.id, action.id));
+    .set({ status: "permitted", permittedPayload: payload })
+    .where(eq(actions.id, actionId));
 }

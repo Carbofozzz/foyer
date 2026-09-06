@@ -47,7 +47,11 @@
     "statusOpen": "Ждём",
     "statusAck": "Ждём подтверждение",
     "statusHeld": "Ждём апелляцию",
-    "statusExecuted": "Готово",
+    "statusExecuted": "Можно",
+    "statusPermitted": "Можно",
+    "statusDenied": "Нельзя",
+    "mayAct": "Можно сделать самим.",
+    "mustNot": "Этого делать нельзя.",
     "statusEscalated": "Нужно ваше решение",
     "request": "Заявка",
     "objection": "Возражение",
@@ -237,7 +241,7 @@
     "courtTitle": "Суд",
     "courtLead": "Не сошлись — решает суд: можно, нельзя, компромисс или спросить вас. Не решилось — тоже вам. Решение можно обжаловать.",
     "flowAgents": "Помощники",
-    "flowAction": "Платёж или бронь"
+    "flowAction": "Ассистент действует"
   },
   "replay": {
     "kicker": "Архив",

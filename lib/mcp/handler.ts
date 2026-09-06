@@ -62,7 +62,7 @@ const TOOLS = [
   },
   {
     name: "get_action",
-    description: "Get one action’s lock, court, and execution status.",
+    description: "Get one action’s lock, court, and whether you may_act with permitted_payload.",
     inputSchema: {
       type: "object",
       required: ["action_id"],
