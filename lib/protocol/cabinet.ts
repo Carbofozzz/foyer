@@ -40,5 +40,8 @@ export async function saveLocks(principal: HousePrincipal, kinds: unknown) {
 
 export async function markConnectDone(principal: HousePrincipal) {
   const db = getDb();
-  await db.update(principals).set({ wizardConnectDone: true }).where(eq(principals.id, principal.id));
+  await db
+    .update(principals)
+    .set({ wizardConnectDone: true, wizardHarnessDone: true })
+    .where(eq(principals.id, principal.id));
 }

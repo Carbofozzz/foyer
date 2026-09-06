@@ -575,8 +575,24 @@ textarea {
   --tone: var(--muted);
 }
 
-.feed-item > .pill {
+.feed-item > .pill,
+.feed-head {
   margin-bottom: 0.55rem;
+}
+
+.feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.feed-at {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-left: auto;
 }
 
 .charter + .feed {
@@ -679,6 +695,10 @@ button[aria-busy="true"] {
 
 .error {
   color: #8a2b2b;
+}
+
+.ok {
+  color: var(--ok);
 }
 
 .locale-switch {
@@ -1014,6 +1034,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-treasury:checked) [data-cabinet-pane="treasury"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
+.cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
 .cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
   display: block;
 }
@@ -1022,6 +1043,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-treasury:checked) label[for="cabinet-tab-treasury"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
+.cabinet-panel:has(#cabinet-tab-test:checked) label[for="cabinet-tab-test"],
 .cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
   background: var(--card);
   color: var(--ink);
@@ -1041,11 +1063,55 @@ label.segment {
   margin-top: 0.75rem;
 }
 
+.feed-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.feed-toolbar .quiet {
+  border: 0;
+  background: none;
+  padding: 0.1rem 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.feed-toolbar .quiet:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.feed-toolbar .quiet:disabled {
+  opacity: 0.55;
+}
+
+.test-request-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .test-request-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.test-path {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
 .agent-chips-block {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.25rem;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
   min-width: 0;
   margin-bottom: 0.75rem;
 }
@@ -1060,6 +1126,26 @@ label.segment {
   padding: 0;
 }
 
+.connect-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.connect-add input {
+  flex: 1 1 12rem;
+}
+
+.agent-chips button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 .agent-chips li {
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1068,6 +1154,7 @@ label.segment {
   background: var(--card);
 }
 
+.agent-chips button.agent-live,
 .agent-chips li.agent-live {
   border-color: #3d6b3d;
   color: #2f552f;

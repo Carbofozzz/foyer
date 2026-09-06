@@ -8,7 +8,16 @@ import { recordTick } from "@/lib/ops/tick";
 
 export const maxDuration = 120;
 
+/** Vercel Cron sends GET. POST stays for a manual sweep. */
+export async function GET(request: Request) {
+  return runTick(request);
+}
+
 export async function POST(request: Request) {
+  return runTick(request);
+}
+
+async function runTick(request: Request) {
   const secret = process.env.CRON_SECRET;
   const token = bearerToken(request);
   const local = deployEnv() === "development";

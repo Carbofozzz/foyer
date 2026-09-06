@@ -14,7 +14,7 @@ Bonds, appeal prices, per-agent wallets, and adapters that pay or book **for** a
 
 **Do:**
 
-1. `sweep(principalId, now, { courts })` — reads and cabinet always pass `{ courts: 0 }`. They still close silence / ack / appeal windows and wake test clients. They never wait on GenLayer. Feed shows `inCourt` as soon as the window closed with objections.
+1. `sweep(principalId, now, { courts })` — reads and cabinet always pass `{ courts: 0 }`. They still close silence / ack / appeal windows. They never wait on GenLayer. Feed shows `inCourt` as soon as the window closed with objections.
 2. `openCourt` / `stepHouseCourt` only from tick. Submit the judge tx, save the hash on the case, return. Later ticks poll GenLayer (`FINALIZED` + `FINISHED_WITH_RETURN` → IC JSON; `FINALIZED` + `FINISHED_WITH_ERROR` → retry). Finalization can take ~30 minutes. Do not wait in one request. Do not invent “no consensus”. After several finalized errors, escalate to the principal.
 3. Tick must not judge every house in one process. Pick work that is due (open action, silence passed, has objections, no case yet). Handle one house — or a small bound — then return. Remaining houses wait for the next minute. Do not add a global “N courts per platform” quota.
 4. Index `actions (principal_id, status, silence_until)` if a house sweep still scans too much.
@@ -59,7 +59,7 @@ A later slice adds `reported`. Until then `executed` in old rows can be read as 
 
 ## Slice 3 — Demo and test
 
-**Done.** Demo, DEMO.md, and `npm run demo` say a pass means the assistant acts. Test clients report after permit (slice 4).
+**Done.** Demo, DEMO.md, and `npm run demo` say a pass means the assistant acts. Cabinet test requests are user-authored (two test assistants, pass or court). Phrase matchers do not run on sweep.
 
 **Was:** [DEMO.md](DEMO.md), first pass, spawn, Replay A–F, `npm run demo`, `/:locale/check` all describe stub execute.
 

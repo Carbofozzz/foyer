@@ -10,7 +10,6 @@ export function TestClientsToggle({
   on,
   onLabel,
   offLabel,
-  hint,
   errorLabel,
 }: {
   token: string;
@@ -18,7 +17,6 @@ export function TestClientsToggle({
   on: boolean;
   onLabel: string;
   offLabel: string;
-  hint: string;
   errorLabel: string;
 }) {
   const router = useRouter();
@@ -42,9 +40,8 @@ export function TestClientsToggle({
   }
 
   return (
-    <div className="stack">
-      <p className="hint">{hint}</p>
-      <button type="button" className="ghost" disabled={pending} aria-busy={pending} onClick={() => void toggle()}>
+    <div className="feed-toolbar">
+      <button type="button" className="quiet" disabled={pending} aria-busy={pending} onClick={() => void toggle()}>
         {on ? offLabel : onLabel}
       </button>
       {error ? <p className="error">{errorLabel}</p> : null}

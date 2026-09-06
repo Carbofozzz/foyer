@@ -2,7 +2,6 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
-import { TechCard } from "@/app/components/tech-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { PagedList } from "@/app/components/paged-list";
@@ -28,15 +27,7 @@ export function DemoCabinet({
   const currentTab = parseCabinetTab(tab, TABS.map((item) => item.id));
   const connect = demoConnect();
   const constitution = `${t.charter.save} ${t.charter.promisesYes} ${t.charter.securityYes}`;
-  const chips = [
-    { name: t.replay.a.proposer, test: false },
-    { name: t.replay.a.objector, test: true },
-    { name: t.replay.b.objector, test: true },
-    { name: t.replay.c.proposer, test: false },
-    { name: t.replay.c.objector, test: true },
-    { name: t.replay.d.proposer, test: false },
-    { name: t.replay.d.objector, test: true },
-  ];
+  const chips = demoAgentChips(t);
 
   return (
     <main className="cabinet">
@@ -69,9 +60,14 @@ export function DemoCabinet({
             <div className="agent-chips-block">
               <ul className="agent-chips">
                 {chips.map((chip) => (
-                  <li key={chip.name} className={chip.test ? "agent-wait" : "agent-live"}>
+                  <li key={chip.name} className={chip.asked > 0 ? "agent-live" : "agent-wait"}>
                     {chip.name}
-                    {chip.test ? ` · ${t.cabinet.guardian}` : ` · ${t.cabinet.agentLive}`}
+                    {chip.asked > 0 ? (
+                      <span className="agent-door">
+                        {" "}
+                        · {t.cabinet.doorLine.replace("{asked}", String(chip.asked)).replace("{did}", String(chip.did))}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -111,14 +107,11 @@ export function DemoCabinet({
             <ConnectCard
               token={DEMO_TOKEN}
               t={t.connect}
+              tech={t.tech}
               errorLabel={t.cabinet.error}
               compact
-              preview={connect}
+              preview={{ ...connect, name: t.replay.a.proposer }}
             />
-            <details>
-              <summary>{t.connect.advanced}</summary>
-              <TechCard token={DEMO_TOKEN} t={t.tech} errorLabel={t.cabinet.error} preview={connect} />
-            </details>
           </div>
         </div>
       </section>
@@ -170,6 +163,26 @@ function DemoFeedRow({
       </div>
     </li>
   );
+}
+
+function demoAgentChips(t: Messages) {
+  const asked = new Map<string, number>();
+  const did = new Map<string, number>();
+  const names: string[] = [];
+  for (const row of DEMO_CASES) {
+    const story = t.replay[row.id];
+    if (!names.includes(story.proposer)) names.push(story.proposer);
+    if (story.objector && !names.includes(story.objector)) names.push(story.objector);
+    asked.set(story.proposer, (asked.get(story.proposer) ?? 0) + 1);
+    if (row.outcome === "allow_a" || row.outcome === "remedy") {
+      did.set(story.proposer, (did.get(story.proposer) ?? 0) + 1);
+    }
+  }
+  return names.map((name) => ({
+    name,
+    asked: asked.get(name) ?? 0,
+    did: did.get(name) ?? 0,
+  }));
 }
 
 function kindLabel(kind: DemoCase["kind"], cabinet: Messages["cabinet"]) {
