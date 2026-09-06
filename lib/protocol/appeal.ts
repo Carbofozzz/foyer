@@ -1,22 +1,19 @@
 import { eq } from "drizzle-orm";
 import { cases, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { decide } from "@/lib/judge/decide";
-import { ensureHouseCourt } from "@/lib/judge/house-court";
-import { recordCourtTx } from "@/lib/judge/wallet";
 import {
   actionEvidence,
-  actionPayload,
   engagedIds,
   loadActionBundle,
   serializeAction,
   type HousePrincipal,
 } from "./bundle";
+import { submitAppealTx } from "./court";
 import { ProtocolError } from "./errors";
 import { mintToken } from "./keys";
-import { asEvidence, asPayload, isRecord } from "./parse";
+import { asPayload, isRecord } from "./parse";
 import { executeAfterAck } from "./execute";
-import { OUTCOMES, type Judge, type Outcome, type VerdictAnswer } from "./types";
+import { OUTCOMES, type Outcome, type VerdictAnswer } from "./types";
 
 export async function appealCase(
   principal: HousePrincipal,
@@ -43,10 +40,6 @@ export async function appealCase(
     ? (body.outcome as Outcome)
     : null;
 
-  const primary = bundle.objections[0];
-  let answer: VerdictAnswer;
-  let judge: Judge = "offline";
-  let tx: string | null = null;
   if (manual) {
     const remedy =
       manual === "remedy"
@@ -59,29 +52,40 @@ export async function appealCase(
     if (manual === "remedy" && !remedy) {
       throw new ProtocolError("bad_request", "remedy needs a remedy_action", 400);
     }
-    answer = {
+    const answer: VerdictAnswer = {
       outcome: manual,
       remedy_action: remedy,
       reasoning: note || "The principal set the outcome on appeal.",
       objection_grounded: prior.objectionGrounded,
     };
+    await db.insert(verdicts).values({
+      id: mintToken("vrd"),
+      caseId: courtCase.id,
+      outcome: answer.outcome,
+      remedyAction: answer.remedy_action,
+      reasoning: answer.reasoning,
+      objectionGrounded: answer.objection_grounded,
+      judge: "offline",
+      tx: null,
+      appealOf: prior.id,
+      escalateExternal: false,
+    });
+    const after = await loadActionBundle(bundle.action.id);
+    if (!after) throw new ProtocolError("internal", "Failed to load action", 500);
+    const engaged = engagedIds(
+      after.action.proposerId,
+      after.objections.map((item) => item.objectorId),
+    );
+    const acked = new Set(after.acks.map((item) => item.agentId));
+    const timedOut = after.action.ackUntil !== null && after.action.ackUntil <= now;
+    if (engaged.every((id) => acked.has(id)) || timedOut) {
+      await executeAfterAck(after.action.id);
+    }
   } else {
-    const extra = note ? [{ type: "text" as const, value: `Appeal note: ${note}` }] : [];
-    const contractAddress = await ensureHouseCourt(principal);
-    const retrial = await decide(
+    const hash = await submitAppealTx(
       principal,
-      courtCase.id,
-      {
-        constitution: courtCase.constitutionSnapshot,
-        proposed_action: actionPayload(bundle.action),
-        objection: primary
-          ? {
-              justification: primary.justification,
-              counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
-            }
-          : null,
-        evidence: [...actionEvidence(bundle.action), ...(primary ? asEvidence(primary.evidence) : []), ...extra],
-      },
+      courtCase,
+      bundle.action,
       {
         prior_verdict: {
           outcome: prior.outcome as Outcome,
@@ -91,37 +95,9 @@ export async function appealCase(
         },
         appeal_note: note,
       },
-      contractAddress,
+      now,
     );
-    answer = retrial.answer;
-    judge = retrial.judge;
-    tx = retrial.tx;
-  }
-
-  await db.insert(verdicts).values({
-    id: mintToken("vrd"),
-    caseId: courtCase.id,
-    outcome: answer.outcome,
-    remedyAction: answer.remedy_action,
-    reasoning: answer.reasoning,
-    objectionGrounded: answer.objection_grounded,
-    judge,
-    tx,
-    appealOf: prior.id,
-    escalateExternal: false,
-  });
-  await recordCourtTx(principal, tx, principal.courtContract);
-
-  const after = await loadActionBundle(bundle.action.id);
-  if (!after) throw new ProtocolError("internal", "Failed to load action", 500);
-  const engaged = engagedIds(
-    after.action.proposerId,
-    after.objections.map((item) => item.objectorId),
-  );
-  const acked = new Set(after.acks.map((item) => item.agentId));
-  const timedOut = after.action.ackUntil !== null && after.action.ackUntil <= now;
-  if (engaged.every((id) => acked.has(id)) || timedOut) {
-    await executeAfterAck(after.action.id);
+    if (!hash) throw new ProtocolError("unavailable", "Court transaction was not submitted", 503);
   }
 
   const next = await loadActionBundle(bundle.action.id);

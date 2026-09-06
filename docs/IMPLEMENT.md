@@ -15,13 +15,13 @@ Bonds, appeal prices, per-agent wallets, and adapters that pay or book **for** a
 **Do:**
 
 1. `sweep(principalId, now, { courts })` — reads and cabinet always pass `{ courts: 0 }`. They still close silence / ack / appeal windows and wake test clients. They never wait on GenLayer. Feed shows `inCourt` as soon as the window closed with objections.
-2. `openCourt` only from tick (or a dedicated house tick). One live court per invocation of that path, as today, so `maxDuration` holds.
+2. `openCourt` / `stepHouseCourt` only from tick. Submit the judge tx, save the hash on the case, return. Later ticks poll GenLayer (`FINALIZED` + `FINISHED_WITH_RETURN` → IC JSON; `FINALIZED` + `FINISHED_WITH_ERROR` → retry). Finalization can take ~30 minutes. Do not wait in one request. Do not invent “no consensus”. After several finalized errors, escalate to the principal.
 3. Tick must not judge every house in one process. Pick work that is due (open action, silence passed, has objections, no case yet). Handle one house — or a small bound — then return. Remaining houses wait for the next minute. Do not add a global “N courts per platform” quota.
 4. Index `actions (principal_id, status, silence_until)` if a house sweep still scans too much.
 
 **Files:** `lib/protocol/sweep.ts`, callers of `sweep` (protocol reads, cabinet screen, MCP handler), `app/api/tick/route.ts`.
 
-**Check:** open the cabinet while a case is in court — the HTML returns without a one-minute hang. Tick of many houses does not serialize all `openCourt` calls in one body.
+**Check:** open the cabinet while a case is in court — the HTML returns without waiting on GenLayer. The feed stays `inCourt` until a tick sees `FINALIZED`. Tick of many houses does not serialize judge waits in one body.
 
 Test-stage bound (one court per cron minute) is enough for now. Scale-out is [Later](#later--next-sheet) §L1.
 
@@ -59,7 +59,7 @@ A later slice adds `reported`. Until then `executed` in old rows can be read as 
 
 ## Slice 3 — Demo and test
 
-**Done.** Replay, DEMO, `/check`, and `npm run demo` say a pass means the assistant acts. Test clients report after permit (slice 4).
+**Done.** Demo, DEMO.md, and `npm run demo` say a pass means the assistant acts. Test clients report after permit (slice 4).
 
 **Was:** [DEMO.md](DEMO.md), first pass, spawn, Replay A–F, `npm run demo`, `/:locale/check` all describe stub execute.
 

@@ -21,7 +21,7 @@ try {
 }
 if (body.ok !== true) throw new Error(`/api/health not ok: ${health.text.slice(0, 200)}`);
 
-const pages = ["/en", "/en/check", "/en/cabinet/demo", "/en/connect", "/en/status", "/en/legal", "/en/privacy", "/api/openapi"];
+const pages = ["/en", "/en/cabinet/demo", "/en/legal", "/en/privacy", "/api/openapi"];
 for (const path of pages) {
   const page = await get(path);
   if (path === "/en/cabinet/demo") {
@@ -30,12 +30,6 @@ for (const path of pages) {
     }
     if (page.text.includes("Carried out")) {
       throw new Error("/en/cabinet/demo still says Foyer carried it out");
-    }
-  }
-  if (path === "/en/check") {
-    if (page.text.includes("stub")) throw new Error("/en/check still mentions an execute stub");
-    if (!page.text.includes("test client acts")) {
-      throw new Error("/en/check missing pass → agent acts");
     }
   }
   if (path === "/api/openapi") {

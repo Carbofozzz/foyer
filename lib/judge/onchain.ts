@@ -2,16 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createAccount, createClient, isSuccessful } from "genlayer-js";
 import { studioDevnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
+import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 import type { Address, CalldataEncodable, DecodedDeployData, TransactionHash } from "genlayer-js/types";
 import { ACTION_KINDS, OUTCOMES, type ActionPayload, type JudgeInput, type VerdictAnswer } from "@/lib/protocol/types";
 import { isRecord } from "@/lib/protocol/parse";
 import { asHexAddress } from "@/lib/gen/chain";
-
-export type OnchainVerdict = {
-  answer: VerdictAnswer;
-  judge: "onchain";
-  tx: string;
-};
 
 export type JudgeExtra = {
   prior_verdict?: VerdictAnswer | null;
@@ -60,24 +55,78 @@ export async function deployHouseCourt(accountKey: `0x${string}`): Promise<strin
   }
 }
 
-/**
- * Live GenLayer write against this house's contract, paid by the house wallet.
- * Returns null when the wait times out or consensus does not land.
- */
-export async function judgeOnchain(
+/** Submit a judge write and return the hash. Do not wait for finalization. */
+export async function submitJudgeWrite(
   accountKey: `0x${string}`,
   contractAddress: string,
   caseId: string,
   input: JudgeInput,
   extra?: JudgeExtra,
-): Promise<OnchainVerdict | null> {
+): Promise<string | null> {
   const address = asAddress(contractAddress);
   if (!address) return null;
   try {
-    return await withBudget(budgetMs(), () => submitJudge(accountKey, address, caseId, input, extra));
+    return await writeJudge(accountKey, address, caseId, input, extra);
   } catch {
     return null;
   }
+}
+
+export type CourtTxPhase = "pending" | "ready" | "failed";
+
+/** One stored GenLayer lifecycle read. Never invents a verdict. */
+export async function inspectJudgeTx(hash: string): Promise<CourtTxPhase> {
+  if (!hash.startsWith("0x")) return "pending";
+  const chain = resolveChain();
+  if (!chain) return "pending";
+  try {
+    const client = createClient({ chain });
+    const tx = await client.getTransaction({ hash: hash as TransactionHash });
+    return courtTxPhase(tx);
+  } catch {
+    return "pending";
+  }
+}
+
+export async function readJudgeVerdict(
+  contractAddress: string,
+  caseId: string,
+): Promise<VerdictAnswer | null> {
+  const address = asAddress(contractAddress);
+  const chain = resolveChain();
+  if (!address || !chain) return null;
+  try {
+    const client = createClient({ chain });
+    const raw = await client.readContract({
+      address,
+      functionName: "get_verdict",
+      args: [caseId],
+    });
+    return parseAnswer(raw);
+  } catch {
+    return null;
+  }
+}
+
+function courtTxPhase(tx: {
+  status?: TransactionStatus | number;
+  statusName?: TransactionStatus;
+  txExecutionResultName?: ExecutionResult;
+}): CourtTxPhase {
+  const status = tx.statusName ?? (typeof tx.status === "string" ? tx.status : undefined);
+  const result = tx.txExecutionResultName;
+  if (status === TransactionStatus.CANCELED) return "failed";
+  if (status !== TransactionStatus.FINALIZED) return "pending";
+  if (result === ExecutionResult.FINISHED_WITH_RETURN) return "ready";
+  if (
+    result === ExecutionResult.FINISHED_WITH_ERROR ||
+    result === ExecutionResult.NONDET_DISAGREE ||
+    result === ExecutionResult.TIMEOUT ||
+    result === ExecutionResult.DETERMINISTIC_VIOLATION
+  ) {
+    return "failed";
+  }
+  return "pending";
 }
 
 export async function walletBalance(address: string): Promise<bigint | null> {
@@ -155,13 +204,13 @@ async function submitDeploy(accountKey: `0x${string}`): Promise<string | null> {
   return contractAddressFromReceipt(receipt);
 }
 
-async function submitJudge(
+async function writeJudge(
   accountKey: `0x${string}`,
   address: Address,
   caseId: string,
   input: JudgeInput,
   extra?: JudgeExtra,
-): Promise<OnchainVerdict | null> {
+): Promise<string | null> {
   const client = clientFor(accountKey);
   if (!client) return null;
   const write = {
@@ -183,17 +232,7 @@ async function submitJudge(
     fees: { distribution: estimate.distribution, feeValue: estimate.feeValue },
   })) as TransactionHash;
   if (typeof txHash !== "string" || !txHash.startsWith("0x")) return null;
-  const receipt = await client.waitForFinalization({ hash: txHash, ...waitOpts() });
-  if (!isSuccessful(receipt)) return null;
-
-  const raw = await client.readContract({
-    address,
-    functionName: "get_verdict",
-    args: [caseId],
-  });
-  const answer = parseAnswer(raw);
-  if (!answer) return null;
-  return { answer, judge: "onchain", tx: txHash };
+  return txHash;
 }
 
 function contractAddressFromReceipt(receipt: { txDataDecoded?: unknown; data?: unknown }): string | null {

@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, isNull, lte } from "drizzle-orm";
-import { actions, agents, cases, objections, principals } from "@/lib/db/schema";
+import { and, eq, isNotNull, lte } from "drizzle-orm";
+import { actions, agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { decideBudgetTurn } from "@/agents/budget";
 import { decideCalendarTurn } from "@/agents/calendar";
@@ -8,7 +8,7 @@ import { decideLegalTurn } from "@/agents/legal";
 import { decideSecurityTurn } from "@/agents/security";
 import { fileObjection, recordTimeoutAcks } from "./actions";
 import { actionEvidence, actionPayload, engagedIds, loadActionBundle, type HouseAuth } from "./bundle";
-import { openCourt } from "./court";
+import { stepHouseCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 /**
  * Advances time for one house. Idempotent.
@@ -33,21 +33,19 @@ export async function sweep(
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
-  // A live judge write takes about a minute. Reads never wait on it.
-  let courts = options?.courts ?? 0;
+  // Reads never wait on GenLayer. Tick submits or polls one court tx.
+  const courts = options?.courts ?? 0;
 
   for (const row of openRows) {
     const bundle = await loadActionBundle(row.id);
     if (!bundle || bundle.action.status !== "open") continue;
     if (bundle.objections.length === 0) {
       await executeSilenceAllow(bundle.action);
-    } else {
-      if (courts <= 0) continue;
-      courts -= 1;
-      await openCourt(bundle.action, principal, now);
+      advanced += 1;
     }
-    advanced += 1;
   }
+
+  if (courts > 0 && (await stepHouseCourt(principal, now))) advanced += 1;
 
   const pending = await db
     .select()
@@ -74,18 +72,7 @@ export async function sweep(
   return { advanced };
 }
 
-/** House with a deadlock past silence and no case yet. Tick opens one court there. */
-export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
-  const db = getDb();
-  const [row] = await db
-    .select({ principalId: actions.principalId })
-    .from(actions)
-    .innerJoin(objections, eq(objections.actionId, actions.id))
-    .leftJoin(cases, eq(cases.actionId, actions.id))
-    .where(and(eq(actions.status, "open"), lte(actions.silenceUntil, now), isNull(cases.id)))
-    .limit(1);
-  return row?.principalId ?? null;
-}
+export { findHouseNeedingCourt } from "./court";
 
 async function runGuardians(
   principalId: string,

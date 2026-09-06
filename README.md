@@ -21,7 +21,7 @@ Production: **https://foyerapp.dev** (`www` redirects here). Previews and produc
 FOYER_URL=https://foyerapp.dev npm run demo
 ```
 
-Local: `npm run demo` (defaults to `http://127.0.0.1:3001`). Presenter walkthrough: [docs/DEMO.md](docs/DEMO.md). Community list: `/{locale}/check`.
+Local: `npm run demo` (defaults to `http://127.0.0.1:3001`). Presenter walkthrough: [docs/DEMO.md](docs/DEMO.md).
 
 ## Docs
 

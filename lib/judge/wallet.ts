@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { walletTransfers } from "@/lib/db/schema";
+import { actions, cases, verdicts, walletTransfers } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { formatGen, parseGen } from "@/lib/gen/amount";
 import { asHexAddress, ownerKey } from "@/lib/gen/chain";
@@ -18,6 +18,7 @@ export type HouseTransfer = {
   from: string;
   to: string;
   amount: string;
+  case_id: string | null;
   created_at: string;
 };
 
@@ -134,21 +135,54 @@ export async function recordCourtTx(
 
 async function listTransfers(principalId: string): Promise<HouseTransfer[]> {
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(walletTransfers)
-    .where(eq(walletTransfers.principalId, principalId))
-    .orderBy(desc(walletTransfers.createdAt))
-    .limit(50);
-  return rows.map((row) => ({
-    id: row.id,
-    kind: row.kind as TransferKind,
-    tx: row.tx,
-    from: row.fromAddress,
-    to: row.toAddress,
-    amount: formatGen(BigInt(row.amountWei)),
-    created_at: row.createdAt.toISOString(),
-  }));
+  const [rows, courtRows] = await Promise.all([
+    db
+      .select()
+      .from(walletTransfers)
+      .where(eq(walletTransfers.principalId, principalId))
+      .orderBy(desc(walletTransfers.createdAt))
+      .limit(80),
+    db
+      .select({
+        caseId: cases.id,
+        actionId: cases.actionId,
+        createdAt: cases.createdAt,
+        caseTx: cases.tx,
+        verdictTx: verdicts.tx,
+      })
+      .from(cases)
+      .innerJoin(actions, eq(cases.actionId, actions.id))
+      .leftJoin(verdicts, eq(verdicts.caseId, cases.id))
+      .where(eq(actions.principalId, principalId)),
+  ]);
+  const firstAt = new Map<string, { at: number; id: string }>();
+  for (const row of courtRows) {
+    const at = row.createdAt.getTime();
+    const prev = firstAt.get(row.actionId);
+    if (!prev || at < prev.at || (at === prev.at && row.caseId < prev.id)) {
+      firstAt.set(row.actionId, { at, id: row.caseId });
+    }
+  }
+  const keep = new Set([...firstAt.values()].map((row) => row.id));
+  const caseByTx = new Map<string, string>();
+  for (const row of courtRows) {
+    if (!keep.has(row.caseId)) continue;
+    if (row.caseTx) caseByTx.set(row.caseTx, row.caseId);
+    if (row.verdictTx) caseByTx.set(row.verdictTx, row.caseId);
+  }
+  return rows
+    .filter((row) => row.kind !== "court" || caseByTx.has(row.tx))
+    .slice(0, 50)
+    .map((row) => ({
+      id: row.id,
+      kind: row.kind as TransferKind,
+      tx: row.tx,
+      from: row.fromAddress,
+      to: row.toAddress,
+      amount: formatGen(BigInt(row.amountWei)),
+      case_id: row.kind === "court" ? caseByTx.get(row.tx) ?? null : null,
+      created_at: row.createdAt.toISOString(),
+    }));
 }
 
 async function insertTransfer(row: {

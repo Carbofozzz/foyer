@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { acks, actionReports, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type EvidenceItem, type Outcome } from "./types";
@@ -20,7 +20,7 @@ export async function loadActionBundle(actionId: string) {
   if (!action) return null;
   const [filed, caseRows, ackRows, execRows, reportRows] = await Promise.all([
     db.select().from(objections).where(eq(objections.actionId, actionId)),
-    db.select().from(cases).where(eq(cases.actionId, actionId)),
+    db.select().from(cases).where(eq(cases.actionId, actionId)).orderBy(asc(cases.createdAt), asc(cases.id)).limit(1),
     db.select().from(acks).where(eq(acks.actionId, actionId)),
     db.select().from(executions).where(eq(executions.actionId, actionId)),
     db.select().from(actionReports).where(eq(actionReports.actionId, actionId)).limit(1),
@@ -124,6 +124,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
       ? {
           id: bundle.courtCase.id,
           status: bundle.courtCase.status,
+          tx: bundle.courtCase.tx,
         }
       : null,
     verdict: verdict

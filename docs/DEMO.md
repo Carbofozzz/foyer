@@ -18,19 +18,19 @@ Public URL: **https://foyerapp.dev**. Local stand-in: `http://127.0.0.1:3001`. S
 
 ## 3. Checklist
 
-Walk `/{locale}/check`. §9 of [HACKATHON.md](HACKATHON.md) stays green:
+§9 of [HACKATHON.md](HACKATHON.md) stays green:
 
 | §9 | Where |
 |---|---|
-| Connect without OpenAPI | Cabinet MCP tabs + `/connect` |
+| Connect without OpenAPI | Cabinet MCP + [CONNECT.md](CONNECT.md) |
 | Test-client dispute | Wizard “start the test clients”, then first pass. Real guardian = second connected assistant |
 | Agent calls, not UI clicks | Feed rows come from `propose` / `object` |
 | Four outcomes, both `allow_b` readings | Demo cabinet feed; live first pass hits B/C or D |
 | `remedy` names `remedy_action`; agent acts | Demo feed; inbox `may_act` + `report` |
-| Untouched action still closes | `sweep()` on cron `POST /tick` and on every read; `/{locale}/status` |
+| Untouched action still closes | `sweep()` on cron `POST /tick` and on every read; `GET /api/health` |
 | Pass + report + appeal | After a pass the test client reports; cabinet appeal; `spend` waits for the appeal window |
-| On-chain tx | Live cabinet when consensus lands; optional `NEXT_PUBLIC_REPLAY_TX` |
-| Demo ≠ product | Landing demo card; shared `/cabinet/demo`; spawn banner |
+| On-chain tx | Live cabinet when the GenLayer tx finalizes |
+| Demo ≠ product | Landing demo card; shared `/cabinet/demo` |
 | State after reload | Neon, not process memory |
 | Other houses stay dark | Agent key or the owner’s wallet session |
 

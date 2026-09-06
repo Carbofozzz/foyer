@@ -332,26 +332,6 @@
     "copy": "Kopieren",
     "copied": "Kopiert"
   },
-  "check": {
-    "kicker": "Gemeinschaft",
-    "title": "So testen",
-    "lead": "Diese Liste auf der öffentlichen URL durchgehen. Das Produkt ist das Kabinett, nicht das Harness.",
-    "open": "Community-Checkliste",
-    "home": "Zurück zum Start",
-    "items": [
-      "Ohne OpenAPI verbindet jemand einen Assistenten in wenigen Copy-Pastes.",
-      "Mit nur einem eigenen Assistenten erscheint trotzdem ein Streit (Test-Wächter; nur feste Phrasen).",
-      "Der Streit läuft über Agent-Aufrufe, nicht über Klicks „ich bin Budget“.",
-      "Alle vier Ausgänge sind sichtbar, allow_b als Gegenvorschlag und als reiner Block.",
-      "Ein Remedy-Urteil nennt remedy_action; nach dem Pass handelt der Assistent, ohne dass ein Mensch Prosa liest.",
-      "Eine unberührte Anfrage löst sich trotzdem, wenn niemand die App anfasst (Tick).",
-      "Nach einem Pass handelt der Test-Client (oder der Test sieht es). Berufung bleibt.",
-      "Ein lebendes Kabinett kann eine On-Chain-Tx zeigen, wenn Konsens landet.",
-      "Das Harness gibt sich nicht als Produkt aus.",
-      "Die öffentliche URL behält den Stand nach dem Neuladen.",
-      "Ein fremdes Kabinett bleibt unsichtbar ohne Agent-Schlüssel oder das Wallet des Besitzers."
-    ]
-  },
   "protocol": {
     "title": "Für Entwickler",
     "lead": "Jeder Assistent bekommt einen eigenen Schlüssel und spricht mit Foyer nur darüber."
@@ -366,55 +346,24 @@
     "invalid": "Das sieht nicht nach einer E-Mail aus.",
     "error": "Das hat nicht geklappt. Bitte erneut versuchen."
   },
-  "status": {
-    "kicker": "Status",
-    "title": "Dienststatus",
-    "ok": "Die Datenbank antwortet.",
-    "down": "Die Datenbank ist nicht erreichbar.",
-    "stale": "Der geplante Tick ist überfällig.",
-    "tick": "Letzter Tick",
-    "never": "Noch kein Tick gespeichert.",
-    "env": "Dieses Deploy",
-    "db": "Datenbank",
-    "cron": "Zeitplan",
-    "cronHere": "Der Cron läuft auf diesem Deploy.",
-    "cronElsewhere": "Der Cron läuft in Production. Dieses Deploy nutzt denselben Speicher.",
-    "writes": "{n} öffentliche Schreibzugriffe in der letzten Stunde, {limited} begrenzt.",
-    "open": "Status",
-    "home": "Zurück zum Start",
-    "health": "Maschinenstatus"
-  },
-  "connectDoc": {
-    "kicker": "Verbinden",
-    "title": "Runtime verbinden",
-    "lead": "Ihr Assistent spricht mit Foyer über einen Agent-Schlüssel. Den MCP-Block aus dem Kabinett einfügen. Das Harness ist nicht dieser Weg.",
-    "product": "Das ist der Produktweg: Cursor, Claude Desktop, ChatGPT oder OpenClaw. Ein echter Wächter ist ein zweiter Assistent, den Sie ebenso verbinden. Die Test-Clients im Assistenten finden nur feste Phrasen.",
-    "off": "Jede Handlung nach außen beginnt als Antrag hier. Nach der Freigabe führt der Assistent sie mit seinen eigenen Tools aus und meldet.",
-    "prompt": "Die drei Zeilen aus dem Kabinett in den Systemprompt. Die Sperre sind die Tools, nicht der Text.",
-    "cursor": "Cursor → Settings → MCP. Block einfügen. Agent neu starten, wenn er schon lief.",
-    "claude": "Denselben Block in die MCP-Einstellungen von Claude Desktop.",
-    "chatgpt": "Einen HTTP-MCP-Server hinzufügen. URL und Bearer stehen im Block.",
-    "openclaw": "Denselben Block in die MCP-Einstellungen von OpenClaw.",
-    "http": "Eigenen Client? Den Tab HTTP / OpenAPI im Kabinett. Derselbe Schlüssel. GET /api/openapi.",
-    "spawn": "Kein Runtime? Auf der Startseite liegt eine gemeinsame Demo. Das ist nicht Ihr Kabinett.",
-    "open": "Runtime verbinden",
-    "home": "Zurück zum Start"
+  "footer": {
+    "copy": "© 2026 Foyer",
+    "powered": "Betrieben mit",
+    "links": "Rechtliches"
   },
   "legal": {
     "kicker": "Rechtliches",
     "title": "Rechtlicher Hinweis",
-    "lead": "Foyer ist ein öffentlicher Test. Das ist keine Firmenangabe und keine Rechtsberatung.",
-    "body": "Der Dienst steht so bereit, während wir das Protokoll prüfen. Legen Sie noch kein echtes Geld und keine Produktionsagenten hinein.",
+    "lead": "Foyer ist ein öffentlicher Test. Keine Firma, keine Rechtsberatung, keine Bank.",
+    "body": "Assistenten einer Person oder Firma teilen eine Kasse und einen Namen, nicht ein Ziel. Sie fragen über Foyer. Bei einer Pattsituation liest GenLayer Ihre Regeln: ja, nein, Kompromiss oder Sie. Die Kasse hält Test-GEN für Gerichtsgebühren. Kein echtes Geld, keine Produktionsagenten.",
     "contact": "Fragen: hinterlassen Sie auf der Startseite eine E-Mail.",
-    "open": "Rechtliches",
-    "home": "Zurück zum Start"
+    "open": "Rechtliches"
   },
   "privacy": {
     "kicker": "Datenschutz",
-    "title": "Datenschutz",
-    "lead": "Wir speichern so wenig wie möglich.",
-    "body": "Wallet-Adresse, wenn Sie sich anmelden. E-Mail, wenn Sie auf die Liste gehen. Gehashte IP bei öffentlichen Schreibzugriffen, für das Limit, ohne Anfragetext. Agentenschlüssel bleiben in Ihrem Runtime.",
-    "open": "Datenschutz",
-    "home": "Zurück zum Start"
+    "title": "Was wir speichern",
+    "lead": "Nur das, ohne das das Haus nicht läuft.",
+    "body": "Wallet-Adresse beim Anmelden — das ist das Konto. E-Mail, wenn Sie auf die Liste gehen. Gehashte IP bei öffentlichen Schreibzugriffen, für das Limit, ohne Anfragetext. Agentenschlüssel bleiben in Ihrem Runtime; wir speichern einen Hash. Regeln, Fälle und Überweisungen liegen in unserer Datenbank Ihres Hauses. Gerichtstransaktionen gehen zu GenLayer.",
+    "open": "Datenschutz"
   }
 }

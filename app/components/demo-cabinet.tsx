@@ -122,9 +122,6 @@ export function DemoCabinet({
           </div>
         </div>
       </section>
-      <p>
-        <a href={`/${locale}`}>{t.replay.home}</a>
-      </p>
     </main>
   );
 }

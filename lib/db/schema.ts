@@ -97,15 +97,21 @@ export const objections = pgTable(
   (table) => [uniqueIndex("objections_action_objector").on(table.actionId, table.objectorId)],
 );
 
-export const cases = pgTable("cases", {
-  id: text("id").primaryKey(),
-  actionId: text("action_id")
-    .notNull()
-    .references(() => actions.id),
-  constitutionSnapshot: text("constitution_snapshot").notNull(),
-  status: text("status").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const cases = pgTable(
+  "cases",
+  {
+    id: text("id").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    constitutionSnapshot: text("constitution_snapshot").notNull(),
+    status: text("status").notNull(),
+    tx: text("tx"),
+    txErrors: integer("tx_errors").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("cases_action_id").on(table.actionId)],
+);
 
 export const verdicts = pgTable("verdicts", {
   id: text("id").primaryKey(),
