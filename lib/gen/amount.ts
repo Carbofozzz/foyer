@@ -12,6 +12,25 @@ export function parseGen(input: string): bigint {
   return wei;
 }
 
+/**
+ * Display only: cut a GEN string to `decimals` places without rounding up,
+ * keeping enough digits that dust never shows as a flat zero.
+ */
+export function shortGen(value: string, decimals = 4): string {
+  const raw = value.trim();
+  const dot = raw.indexOf(".");
+  if (dot < 0) return raw;
+  const whole = raw.slice(0, dot);
+  const frac = raw.slice(dot + 1);
+  let keep = decimals;
+  if (whole === "0") {
+    const firstDigit = frac.search(/[1-9]/);
+    if (firstDigit >= 0) keep = Math.max(decimals, firstDigit + 2);
+  }
+  const cut = frac.slice(0, keep).replace(/0+$/, "");
+  return cut ? `${whole}.${cut}` : whole;
+}
+
 export function formatGen(wei: bigint): string {
   if (wei < BigInt(0)) return "0";
   const base = BigInt(10) ** BigInt(GEN_DECIMALS);

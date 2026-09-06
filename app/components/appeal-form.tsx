@@ -64,7 +64,7 @@ export function AppealForm({
           <option value="escalate">{t.escalate}</option>
         </select>
       </label>
-      <button type="submit" disabled={pending}>
+      <button type="submit" disabled={pending} aria-busy={pending}>
         {pending ? t.submitting : t.submit}
       </button>
       {error ? <p className="error">{errorLabel}</p> : null}

@@ -16,6 +16,7 @@ import { sealKey, unsealKey } from "./seal";
 import { sweep } from "./sweep";
 import type { ActionPayload, EvidenceItem } from "./types";
 
+/** Phrase-matching test clients for first pass / spawn. Not a product guardian. */
 type SealedAgent = typeof agents.$inferSelect;
 
 type CaseDraft = {

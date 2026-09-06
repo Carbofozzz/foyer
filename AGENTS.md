@@ -23,7 +23,7 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- **Guardian** stays in the house after onboarding and is woken by the tick with its own key. **Spawn** is a temporary harness for guests with no runtime. Do not mix them.
+- A **product guardian** is another connected assistant that reads the constitution in its own model. Phrase-matching clients in `agents/` are **test-only** (first pass, spawn) — label them as test; free-form rules may never fire them. **Spawn** is a throwaway house. Do not mix the three.
 - Hackathon adapters are stubs with a stable `adapters[kind].apply` interface (`spend` | `book` | `message` | `cancel`). Each kind declares `reversible`; irreversible executions wait for the appeal window.
 - Outline of the whole product on the **day-4 public Vercel URL**. Day 7 is MVP. Day 14 is startup-ready. After that: depth, not new entities.
 
@@ -32,10 +32,10 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 ```
 app/          Next.js App Router — observer UI + HTTP/MCP route handlers (Vercel)
 contracts/    Python Intelligent Contracts (GenLayer testnet, not on Vercel)
-agents/       reference protocol clients (Travel, Budget, Calendar, Security, …)
+agents/       reference / test protocol clients (Travel, Budget, Calendar, Security, …)
 ```
 
-Guardian and spawn are protocol clients with their own keys, invoked by a request or a tick. State: Postgres.
+Test clients and spawn are protocol clients with their own keys, invoked by a request or a tick. A product guardian is a connected assistant. State: Postgres.
 
 Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /actions/:id/objections`, `GET /inbox`, `POST /actions/:id/ack`, `GET /actions/:id`, `POST /cases/:id/appeal`, plus `POST /tick` for the scheduler.
 
@@ -87,3 +87,9 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-05: Day 13 — public propose is capped (16 kb body, short justification/evidence, no nested payload extras, 24 open actions per house, 20 proposes/hour per agent on top of the IP limit). Legal and privacy stubs at `/:locale/legal` and `/:locale/privacy`. Cabinet stacks and wraps on a narrow screen. Leftover English kickers in `de` (`Gemeinschaft`, `Zeitplan`).
 - 2026-09-05: Day 14 — startup-ready freeze. Presenter script `docs/DEMO.md` plus `npm run demo` (health + public pages). Replay adds silence `allow_a` (E) and contradictory-charter `escalate` (F) so all four outcomes are on the archive. Production URL is `https://foyerapp.dev`. OpenAPI `0.14.0`.
 - 2026-09-06: Vercel Pro — cron `POST /api/tick` every minute (`* * * * *`). `CRON_INTERVAL_SEC` default is 60 so `/status` marks a missed minute as `stale`.
+- 2026-09-06: Visual pass — two faces (`lib/i18n/font.ts` exports `serif` for display text and `sans`/Inter for UI, both as CSS variables on `<html>`); design tokens in `app/globals.css` (`--radius`, `--shadow-card`, `--shadow-raised`, `--ring`, `--hairline`, `--ease`); rounded cards and panels with soft shadows, hover/active/`:focus-visible` states on buttons and fields, pill agent chips, tabular numerals for amounts, `prefers-reduced-motion`. Pending buttons carry `aria-busy` instead of relying on `cursor: wait`. No markup or copy changes.
+- 2026-09-06: Status pills — `app/components/status-pill.tsx` (`StatusPill` plus `statusTone` / `outcomeTone`) colours action state and the four outcomes in the cabinet feed and the replay archive. Tone tokens `--ok` / `--warn` / `--info` / `--danger`. Four short outcome labels (`cabinet.outcomeAllowA` / `outcomeAllowB` / `outcomeRemedy` / `outcomeEscalate`) added to all five catalogs; the long decision sentences are unchanged.
+- 2026-09-06: Landing flow — `app/components/flow-diagram.tsx` sits above the three outline cards and walks one request through four nodes (assistants → gateway → court → payment/booking), with `cabinet.request` / `objection` / `decision` as wire labels, the four outcome pills inside the court node, and a CSS-only travelling pulse (no client JS, stacks vertically under 800 px). Two new keys `outline.flowAgents` / `outline.flowAction` in all five catalogs. `ProductOutline` now also takes `cabinet`.
+- 2026-09-06: Cabinet chrome — runtime and role tabs in `ConnectCard` are a segmented control (`.segmented` / `.segment.is-active`, `aria-pressed`) instead of primary/ghost buttons; `.runtime-tabs` is gone. Cabinet `<details>` render as a settings list (full-width row, rotating chevron, hover, dividers under `.cabinet-meta`). Panel headers get a hairline, the feed keeps a `min-height` so open settings cannot squeeze it, and ghost buttons inside a `.stack` hug their label. `shortGen()` in `lib/gen/amount.ts` trims the displayed balance and transfer amounts to four decimals without rounding up (full value in `title`); dust never renders as a flat zero. Copy buttons flash `is-copied`.
+- 2026-09-06: Cabinet overflow — the settings rows (`.cabinet-meta`, and the key export in the treasury) moved inside `.cabinet-scroll`, so an expanded section scrolls with the feed instead of spilling past the panel; `.cabinet-panel` is `overflow: hidden` as a backstop.
+- 2026-09-06: Phrase-matching Budget / Calendar / Security / Legal / Finance clients are **test-only** (first pass, spawn). A product guardian is a second connected assistant that reads the constitution. Wizard, chips, Connect, Demo, and HACKATHON say so; free-form rules may never match.

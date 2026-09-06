@@ -84,12 +84,13 @@ export function ConnectCard({
       ) : compact ? null : (
         <h2 className="section-title">{t.title}</h2>
       )}
-      <div className="runtime-tabs">
+      <div className="segmented" role="group">
         {RUNTIMES.map((id) => (
           <button
             key={id}
             type="button"
-            className={id === runtime ? "primary" : "ghost"}
+            className={id === runtime ? "segment is-active" : "segment"}
+            aria-pressed={id === runtime}
             onClick={() => setRuntime(id)}
           >
             {runtimeLabel(id, t)}
@@ -99,12 +100,13 @@ export function ConnectCard({
       <p className="hint">{runtimeLead(runtime, t)}</p>
       <p>{t.offTools}</p>
       {data?.roles && data.roles.length > 1 ? (
-        <div className="runtime-tabs">
+        <div className="segmented" role="group">
           {data.roles.map((item) => (
             <button
               key={item.role}
               type="button"
-              className={item.role === role ? "primary" : "ghost"}
+              className={item.role === role ? "segment is-active" : "segment"}
+              aria-pressed={item.role === role}
               onClick={() => setRole(item.role)}
             >
               {item.name}
@@ -132,10 +134,10 @@ export function ConnectCard({
       )}
       {asWizard ? (
         <div className="row">
-          <button type="button" className="primary" disabled={pending || !data} onClick={finish}>
+          <button type="button" className="primary" disabled={pending || !data} aria-busy={pending} onClick={finish}>
             {pending ? t.loading : t.added}
           </button>
-          <button type="button" className="ghost" disabled={pending} onClick={finish}>
+          <button type="button" className="ghost" disabled={pending} aria-busy={pending} onClick={finish}>
             {t.skip}
           </button>
         </div>

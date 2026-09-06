@@ -4,12 +4,13 @@ import type { ObjectionDraft, OpenInboxItem } from "./types";
 export type { ObjectionDraft, OpenInboxItem };
 
 /**
- * Budget speaks for a charter that prefers the cheaper option. A charter that
- * lets comfort win over price leaves the proposal alone.
+ * Test-only phrase gate. Budget speaks for a charter that prefers the cheaper
+ * option. A charter that lets comfort win, or free-form text without these
+ * phrases, leaves the proposal alone.
  */
 const GRANT = /save money|cheaper|ahorra|más barato|spar geld|günstigere|tasarruf|ucuz|эконом|дешевле/i;
 
-/** Budget guardian: a real protocol client. Sweep wakes it; it decides whether to object. */
+/** Test-only Budget client: canned charter phrases. Not a product guardian. */
 export function decideBudgetTurn(input: {
   constitution: string;
   selfId: string;

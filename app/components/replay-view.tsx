@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
 import { REPLAY_CASES, replayTxHref } from "@/lib/replay/archive";
+import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 
 export function ReplayView({
   locale,
@@ -26,7 +27,7 @@ export function ReplayView({
           <p className="charter">{row.constitution}</p>
           <ul className="feed">
             <li className="feed-item">
-              <p className="muted">{cabinet.statusExecuted}</p>
+              <StatusPill tone={statusTone("executed")}>{cabinet.statusExecuted}</StatusPill>
               <div className="feed-block">
                 <p className="feed-label">{cabinet.request}</p>
                 <p>
@@ -43,7 +44,12 @@ export function ReplayView({
                 </div>
               ) : null}
               <div className="feed-block">
-                <p className="feed-label">{cabinet.decision}</p>
+                <div className="feed-label-row">
+                  <p className="feed-label">{cabinet.decision}</p>
+                  <StatusPill tone={outcomeTone(row.outcome)}>
+                    {outcomeLabel(row.outcome, cabinet)}
+                  </StatusPill>
+                </div>
                 <p>{decisionCopy(row.outcome, row.decided, cabinet)}</p>
                 {row.judge === "onchain" && row.tx ? (
                   <p className="hint">
@@ -69,6 +75,16 @@ function kindLabel(kind: "book" | "message" | "spend", cabinet: Messages["cabine
   if (kind === "book") return cabinet.kindBook;
   if (kind === "spend") return cabinet.kindSpend;
   return cabinet.kindMessage;
+}
+
+function outcomeLabel(
+  outcome: "allow_a" | "allow_b" | "remedy" | "escalate",
+  cabinet: Messages["cabinet"],
+) {
+  if (outcome === "allow_a") return cabinet.outcomeAllowA;
+  if (outcome === "allow_b") return cabinet.outcomeAllowB;
+  if (outcome === "remedy") return cabinet.outcomeRemedy;
+  return cabinet.outcomeEscalate;
 }
 
 function decisionCopy(

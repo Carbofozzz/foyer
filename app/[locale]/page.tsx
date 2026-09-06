@@ -23,7 +23,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <p className="price-line">
         <strong>{t.home.priceKicker}</strong> {t.home.priceLead}
       </p>
-      <ProductOutline outline={t.outline} protocol={t.protocol} />
+      <ProductOutline outline={t.outline} protocol={t.protocol} cabinet={t.cabinet} />
       <SpawnButton locale={locale} t={t.spawn} />
       <WaitlistForm locale={locale} t={t.waitlist} />
       <p>

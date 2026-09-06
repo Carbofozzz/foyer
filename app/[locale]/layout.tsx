@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
-import { serif } from "@/lib/i18n/font";
+import { sans, serif } from "@/lib/i18n/font";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { WalletProviders } from "@/app/components/wallet-providers";
 
@@ -28,7 +28,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const t = loadMessages(locale);
 
   return (
-    <html lang={locale} className={serif.className}>
+    <html lang={locale} className={`${serif.variable} ${sans.variable}`}>
       <body>
         <WalletProviders locale={locale}>
           <div className="app-shell">

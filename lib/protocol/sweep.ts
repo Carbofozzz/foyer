@@ -12,7 +12,8 @@ import { openCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 /**
  * Advances time for one house. Idempotent.
- * Guardian runs first so a late tick can still object before silence closes.
+ * Phrase-matching test clients run first so a late tick can still object
+ * before silence closes. They are not a product guardian.
  */
 export async function sweep(
   principalId: string,

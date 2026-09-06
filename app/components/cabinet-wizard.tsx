@@ -200,7 +200,7 @@ function RulesStep({
           rows={5}
         />
       </label>
-      <button type="submit" disabled={pending}>
+      <button type="submit" disabled={pending} aria-busy={pending}>
         {pending ? wizard.saving : wizard.next}
       </button>
       {error ? <p className="error">{cabinetError}</p> : null}
@@ -267,7 +267,7 @@ function LockStep({
         <input type="checkbox" checked={message} onChange={(event) => setMessage(event.target.checked)} />
         {wizard.lockMessage}
       </label>
-      <button type="submit" disabled={pending}>
+      <button type="submit" disabled={pending} aria-busy={pending}>
         {pending ? wizard.saving : wizard.next}
       </button>
       {error ? <p className="error">{cabinetError}</p> : null}
@@ -327,7 +327,7 @@ function ActionStep({
         <p className="kicker">{kicker}</p>
       </div>
       <p className="hint">{lead}</p>
-      <button type="submit" disabled={pending}>
+      <button type="submit" disabled={pending} aria-busy={pending}>
         {pending ? pendingLabel : label}
       </button>
       {error ? <p className="error">{cabinetError}</p> : null}

@@ -56,6 +56,6 @@ FOYER_URL=… FOYER_AGENT_KEY=agk_… npm run http:client -- --propose
 
 ## After it connects
 
-The cabinet shows the assistant as live once it has called in. Enable a guardian if you have only one assistant of your own — otherwise there is no one to object.
+The cabinet shows the assistant as live once it has called in. A real guardian is a **second assistant you connect** the same way. It reads the house rules in its own model. The wizard’s “test clients” only match canned phrases — free-form rules may never trigger them.
 
 A guest with no runtime should use the landing harness or Replay, not this doc.

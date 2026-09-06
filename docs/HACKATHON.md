@@ -56,7 +56,7 @@ The outline of the **whole** product exists from day 4. Days 5–14 deepen quali
 | MCP | Tools = the same protocol methods | Catalog, foreign clients |
 | External agent | Spec + sandbox + one live third-party client (script / GPT tools / any HTTP) | OpenClaw, A2A discovery |
 | Observer | Gateway mirror: agents, inbox, cases, verdicts, execution, appeals | Principal cabinet |
-| Onboarding | Wizard: charter from questions, one-click guardian, connect your agent by runtime | Card/calendar OAuth, guardian store |
+| Onboarding | Wizard: charter from questions, connect your agent, optional **test** clients (phrase match) | Card/calendar OAuth; a second connected assistant as the real guardian |
 | UI locale | `en`, `es`, `de`, `tr`, `ru` catalogs; no hardcoded copy; language switcher. `en` / `ru` written, the rest drafted day 1 and reviewed day 9 | More locales, RTL |
 | On-chain | At least some cases on GenLayer, tx on the verdict | Mainnet, bridge to an external Internet Court |
 
@@ -112,12 +112,12 @@ Client implementations (`external`, `test`, `human-adapter`) are runtime metadat
 
 Serverless has nobody to sit and watch a countdown. Two triggers, one code path:
 
-- **Cron sweep.** A scheduled route (`POST /tick`, Vercel Cron, ~every minute) closes silence windows, expires ack timeouts, closes appeal windows, and gives the guardian its turn to read the inbox and object.
+- **Cron sweep.** A scheduled route (`POST /tick`, Vercel Cron, ~every minute) closes silence windows, expires ack timeouts, closes appeal windows, and gives house clients their turn. In this repo those clients are phrase-matching **test** stand-ins. A real guardian is a connected assistant that reads the constitution in its own model.
 - **Lazy sweep on read.** Any protocol call first advances the clock for the house it touches. So a demo does not wait for the next cron minute, and a cold project still behaves correctly.
 
 Both call the same `sweep(principal, now)`. It must be idempotent: two ticks in the same second change nothing twice.
 
-The **guardian is a normal protocol client**, not gateway code. The tick invokes it the way a cron invokes any client: it reads `GET /inbox` with its own agent key and decides whether to `POST /actions/:id/objections`. The gateway never writes an objection on anyone’s behalf — otherwise “silence = consent” would be a lie and the client-is-always-an-agent invariant would break.
+The **guardian is a normal protocol client**, not gateway code. In the product that client is an assistant that reads the constitution. The tick invokes it the way a cron invokes any client: it reads `GET /inbox` with its own agent key and decides whether to `POST /actions/:id/objections`. Phrase-matching test clients in this repo are only for demo and first pass. The gateway never writes an objection on anyone’s behalf — otherwise “silence = consent” would be a lie and the client-is-always-an-agent invariant would break.
 
 ### Who is talking (auth)
 
@@ -222,8 +222,8 @@ All user-visible copy (labels, buttons, wizard questions, empty states, toasts, 
 1. **House.** Sign in with your wallet. That opens the house (one wallet, one house). The house gets its own GenLayer treasury; that key pays court fees. The signed-in wallet tops it up.
 2. **Constitution, not a blank page.** 5 questions (spend limit, price vs comfort, external promises, whether security can veto mail, when to call the human). Answers assemble into constitution text. It can be edited. Agents later read that text, not the questionnaire.
 3. **What we lock.** Kind checkboxes: spend, book, messages. At the hackathon — a sandbox (stub). The principal understands: “the agents’ world is only this.”
-4. **Who stands at the door.** See below: your own agent and/or a built-in guardian.
-5. **First pass.** Not “you’re all set.” The principal either asks their agent to act, or hits “test the guardian.” A propose appears in the feed, maybe an object and a verdict. Onboarding closes when the inbox is not empty.
+4. **Who stands at the door.** Your own agent, and optionally another connected assistant as the real guardian. The wizard can also start **test** clients that match canned phrases — label them as test.
+5. **First pass.** Not “you’re all set.” The principal either asks their agent to act, or runs the test cases. A propose appears in the feed, maybe an object and a verdict — only if the charter still contains the phrases the test clients match. Onboarding closes when the inbox is not empty.
 
 Until step 5 happens — the screen shows one next step, not an architecture diagram.
 
@@ -239,9 +239,11 @@ Until step 5 happens — the screen shows one next step, not an architecture dia
   4. Hit “I added it” — the gateway waits for the first `register` or first tool-call and shows “Travel connected.”
 - The human gets an **agent key** (token), already written into the copyable config. They do not assemble JSON by hand.
 
-If there is only one agent, there will be no dispute. So on the same step, without jargon: **“Enable a guardian.”** Budget or Security — our reference client that the principal **turns on in their house**. This is not a demo mock and not spawn for the jury. It is the first product “second agent out of the box”: on every tick it reads its inbox with its own agent key and objects when the constitution says so. A person with one travel bot immediately gets a collision.
+If there is only one agent, there will be no dispute. The **product** second party is another assistant the principal connects — same MCP door. That assistant reads the constitution in its own model and objects, or stays silent.
 
-The guardian is woken by the tick (§3), not by gateway code inside `POST /actions`. It has a key, it has a role, it can be wrong and pay bond — like any other agent.
+The built-in Budget / Calendar / Security (Legal / Finance) clients are **test stand-ins** for the first pass and for spawn. They match canned charter phrases with regex. Free-form rules may never fire them. Label them as test in the UI. They are not the product guardian.
+
+A test client is still a protocol client: own key, woken by the tick, not by gateway code inside `POST /actions`. Spawn is a different thing — a throwaway house.
 
 **“I write agents”** (technician)
 
@@ -255,7 +257,7 @@ In one sitting the principal:
 
 - sees their constitution;
 - sees their agent green **or** understands which config never arrived;
-- sees the guardian enabled (if they have no second agent of their own);
+- sees either a second connected assistant or the **test** clients labeled as such;
 - sees one live case or at least one `propose` in the feed.
 
 Not success: “read the spec in /docs.”
@@ -265,10 +267,10 @@ Not success: “read the spec in /docs.”
 | | Onboarding | Spawn |
 |---|---|---|
 | Who | A principal who will use the gateway | A guest / judge with no agent at all |
-| What it starts | Permanent agents in the house: theirs and/or a guardian | Temporary clients for one run |
+| What it starts | Permanent agents in the house: theirs, plus optional test clients | Temporary clients for one run |
 | Why | Keep living with the door | Poke the protocol and leave |
 
-The guardian stays in the house after onboarding. Spawn dies after the demo.
+A connected assistant stays. Test clients stay too, but they are not the product guardian. Spawn dies after the demo.
 
 ---
 
@@ -308,7 +310,7 @@ Not “first two scripts, the rest on day 14.” The scaffold of every row in th
 
 ### Day 4 — public v0 (whole system, rough)
 
-Shipped on Vercel. All main protocol calls live behind agent keys. Four court outcomes (offline judge is allowed) with `remedy_action`. Silence → allow, closed by the tick. Ack from engaged parties. Execute stub. Appeal. Bond with `objection_grounded`. Observer. MCP transport plus a copyable config for **one** chat runtime. Onboarding wizard: constitution questions, cabinet link, “enable guardian.” Personal principal. Spawn as a harness. i18n catalogs `en` / `es` / `de` / `tr` / `ru` and a language switcher. Case A runs through agents. A stranger can finish the wizard and see a non-empty inbox — and cannot see anyone else’s house.
+Shipped on Vercel. All main protocol calls live behind agent keys. Four court outcomes (offline judge is allowed) with `remedy_action`. Silence → allow, closed by the tick. Ack from engaged parties. Execute stub. Appeal. Bond with `objection_grounded`. Observer. MCP transport plus a copyable config for **one** chat runtime. Onboarding wizard: constitution questions, cabinet link, optional phrase-matching test clients (labeled as test). Personal principal. Spawn as a harness. i18n catalogs `en` / `es` / `de` / `tr` / `ru` and a language switcher. Case A runs through agents. A stranger can finish the wizard and see a non-empty inbox — and cannot see anyone else’s house.
 
 ### Day 7 — hackathon MVP
 
@@ -392,14 +394,14 @@ Do not cut days 1–3 down to “two curls without a court.” Do not leave onbo
 
 ## 9. How the community tests
 
-**Main path:** open **https://foyerapp.dev**. Walk the wizard. A person with one chat agent: paste the config, enable the guardian, see a case. A technician: API tab, the same house.
+**Main path:** open **https://foyerapp.dev**. Walk the wizard. A person with one chat agent: paste the config, start the **test** clients (say they only match canned phrases), see a case. A real guardian is a second connected assistant. A technician: API tab, the same house.
 
 **Extra:** Spawn / Replay if there is no agent at all.
 
 Checklist:
 
 - Can a person without OpenAPI connect an agent in a few copy-pastes?
-- With one own agent, does a dispute still appear (guardian)?
+- With one own agent, does a dispute still appear (test clients on canned phrases; free-form rules may stay silent)?
 - Does the dispute go through agent calls, not “I am budget” clicks?
 - Are all four outcomes visible on different constitutions or cases, including `allow_b` both as a counter-action and as a pure block?
 - Does a `remedy` verdict execute from `remedy_action`, without a human reading prose?
@@ -420,7 +422,7 @@ Checklist:
 - Timers: **Vercel Cron** → `POST /tick`, plus the same `sweep()` on every read. No daemons, no `setTimeout` that a cold start would forget.
 - Contract: Python Intelligent Contract on GenLayer testnet (not on Vercel). Deploy key lives in Vercel env, never in git.
 - Kind adapters: modules with stubs, one interface for all, each declaring `reversible`; one kind may be almost-real by day 14.
-- Reference agents / guardian / spawn: protocol clients with their own agent keys, invoked by a request or a tick.
+- Reference / test clients and spawn: protocol clients with their own agent keys, invoked by a request or a tick. A product guardian is a connected assistant, not the regex clients in `agents/`.
 - Locales: `en`, `es`, `de`, `tr`, `ru`.
 
 ---
@@ -435,7 +437,7 @@ Checklist:
 | Empty skeleton, “buttons exist” | Each function changes an agent inbox or a lock |
 | Website instead of protocol | A case cannot be created from the UI around the API |
 | Onboarding = documentation | Wizard with Copy and “I added it”; success = non-empty inbox |
-| One agent and silence forever | Guardian enabled in the wizard by default |
+| One agent and silence forever | Connect a second assistant, or start **test** clients (and label them; they only match canned phrases) |
 | Community with no runtime | Spawn/Replay, not instead of onboarding |
 | Testnet is down | Replay of a finished run; new deadlocks `escalate` until the court returns |
 | Confused with escrow | Words verdict / evidence / constitution / execute / appeal |
@@ -450,6 +452,6 @@ Checklist:
 
 ## 12. Track wording
 
-*Onchain Justice: an agent-native court inside one principal. Agents propose, object and ack through one protocol. GenLayer reads the constitution and evidence and returns allow, remedy or escalate. The gateway executes and the human may appeal. Onboarding is a wizard: constitution from questions, one-click guardian, paste-ready MCP for the agent you already have. Test-agent spawn is only a harness for people with no runtime at all.*
+*Onchain Justice: an agent-native court inside one principal. Agents propose, object and ack through one protocol. GenLayer reads the constitution and evidence and returns allow, remedy or escalate. The gateway executes and the human may appeal. Onboarding is a wizard: constitution from questions, paste-ready MCP for the agent you already have, optional phrase-matching test clients. A real guardian is a second connected assistant. Test-agent spawn is only a harness for people with no runtime at all.*
 
 Why not Commerce: there is no deal with a stranger. Why not Governance: a principal’s constitution is executed, not a community vote.
