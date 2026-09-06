@@ -6,13 +6,13 @@ Spawn on the landing is a **harness** for people with no runtime. It opens a thr
 
 ## Before you paste
 
-Turn off the assistant’s own payment and calendar tools. If those stay on, it walks around the gateway.
+Any action into the world starts as a request here. After a pass the assistant does it with its own tools and reports.
 
 Put these three lines in the system prompt (the cabinet copies them for you):
 
-1. Propose, object, inbox, and ack only through Foyer tools. After inbox says may_act, do permitted_payload with your own tools.
-2. Cite the house constitution in every justification.
-3. Do not pay, book, or message before may_act is true. A pass is permission, not Foyer doing the act.
+1. Propose, object, read inbox, ack, and report only through Foyer tools.
+2. When inbox says may_act, do permitted_payload with your own tools, then report { did: true }. If you skip, report { did: false }.
+3. Cite the house constitution in every justification. Do not pay, book, or message before may_act. A pass is permission — Foyer does not do the act.
 
 The lock is tools and keys, not this prompt.
 

@@ -6,6 +6,8 @@ import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
 import { accessFor, canManage, canOperate } from "./members";
 import { readSession } from "./session";
+import type { HousePrincipal } from "./bundle";
+import { DEMO_TOKEN } from "./spawn";
 import type { MemberRole } from "./types";
 
 export async function requireAgent(request: Request) {
@@ -70,12 +72,13 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     if (wanted) {
       const access = await accessFor(session.address, wanted);
       if (!access) return null;
-      return { principal: access.principal, role: access.role, token: "me" as const };
+      return asCabinet(access.principal, access.role, "me");
     }
     const principal = await findHouseByOwner(session.address);
     if (!principal) return null;
-    return { principal, role: "owner" as const, token: "me" as const };
+    return asCabinet(principal, "owner", "me");
   }
+  if (token === DEMO_TOKEN) return null;
   if (!token.startsWith("cab_")) return null;
   const db = getDb();
   const [principal] = await db
@@ -83,7 +86,12 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     .from(principals)
     .where(eq(principals.cabinetTokenHash, hashSecret(token)))
     .limit(1);
-  return principal ? { principal, role: "owner" as MemberRole, token } : null;
+  return principal ? asCabinet(principal, "owner", token) : null;
+}
+
+function asCabinet(principal: HousePrincipal, role: MemberRole, token: string) {
+  if (principal.isSpawn) return { principal, role: "observer" as const, token };
+  return { principal, role, token };
 }
 
 export async function requireCabinetRequest(request: Request) {
@@ -91,6 +99,11 @@ export async function requireCabinetRequest(request: Request) {
   if (token === "me" || !token) {
     const opened = await openCabinet("me", request);
     if (!opened) return { error: jsonError("unauthorized", "Sign in required", 401) };
+    return opened;
+  }
+  if (token === DEMO_TOKEN) {
+    const opened = await openCabinet(DEMO_TOKEN, request);
+    if (!opened) return { error: jsonError("not_found", "Unknown house", 404) };
     return opened;
   }
   if (!token.startsWith("cab_")) {

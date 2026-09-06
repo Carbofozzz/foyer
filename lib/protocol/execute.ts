@@ -5,6 +5,7 @@ import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type Outcome } fr
 import { ProtocolError } from "./errors";
 import { actionPayload, loadActionBundle, type ActionRow } from "./bundle";
 import { asPayload } from "./parse";
+import { maybeReportTestPass } from "./report";
 
 export async function executeSilenceAllow(action: ActionRow): Promise<void> {
   if (action.status === "permitted" || action.status === "executed") return;
@@ -56,4 +57,5 @@ async function grantPermit(actionId: string, payload: ActionPayload | null): Pro
     .update(actions)
     .set({ status: "permitted", permittedPayload: payload })
     .where(eq(actions.id, actionId));
+  await maybeReportTestPass(actionId);
 }

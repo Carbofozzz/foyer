@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { acks, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
+import { acks, actionReports, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type EvidenceItem, type Outcome } from "./types";
 import { asEvidence, asPayload } from "./parse";
@@ -18,11 +18,12 @@ export async function loadActionBundle(actionId: string) {
   const db = getDb();
   const [action] = await db.select().from(actions).where(eq(actions.id, actionId)).limit(1);
   if (!action) return null;
-  const [filed, caseRows, ackRows, execRows] = await Promise.all([
+  const [filed, caseRows, ackRows, execRows, reportRows] = await Promise.all([
     db.select().from(objections).where(eq(objections.actionId, actionId)),
     db.select().from(cases).where(eq(cases.actionId, actionId)),
     db.select().from(acks).where(eq(acks.actionId, actionId)),
     db.select().from(executions).where(eq(executions.actionId, actionId)),
+    db.select().from(actionReports).where(eq(actionReports.actionId, actionId)).limit(1),
   ]);
   const courtCase = caseRows[0] ?? null;
   const verdictList = courtCase
@@ -39,6 +40,7 @@ export async function loadActionBundle(actionId: string) {
     verdict: verdictList[0] ?? null,
     acks: ackRows,
     executions: execRows,
+    report: reportRows[0] ?? null,
   };
 }
 
@@ -101,6 +103,14 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
     may_act: mayAct,
     permitted_payload: permitted,
+    report: bundle.report
+      ? {
+          did: bundle.report.did,
+          result: reportResult(bundle.report.did, mayAct),
+          at: bundle.report.createdAt.toISOString(),
+        }
+      : null,
+    test_pass: bundle.action.testPass,
     proposer_id: bundle.action.proposerId,
     objections: bundle.objections.map((row) => ({
       id: row.id,
@@ -154,6 +164,13 @@ function permittedPayloadOf(
   } catch {
     return null;
   }
+}
+
+function reportResult(did: boolean, mayAct: boolean): "did" | "skipped" | "broke" {
+  if (did && mayAct) return "did";
+  if (!did && mayAct) return "skipped";
+  if (did && !mayAct) return "broke";
+  return "skipped";
 }
 
 function isObj(value: unknown): value is Record<string, unknown> {

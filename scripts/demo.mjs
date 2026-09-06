@@ -21,17 +21,38 @@ try {
 }
 if (body.ok !== true) throw new Error(`/api/health not ok: ${health.text.slice(0, 200)}`);
 
-const pages = ["/en", "/en/check", "/en/replay", "/en/connect", "/en/status", "/en/legal", "/en/privacy", "/api/openapi"];
+const pages = ["/en", "/en/check", "/en/cabinet/demo", "/en/connect", "/en/status", "/en/legal", "/en/privacy", "/api/openapi"];
 for (const path of pages) {
   const page = await get(path);
-  if (path === "/en/replay") {
-    for (const id of ["Case A", "Case E", "Case F"]) {
-      if (!page.text.includes(id)) throw new Error(`/en/replay missing ${id}`);
+  if (path === "/en/cabinet/demo") {
+    for (const label of ["Activity", "Treasury", "Rules", "Then a transaction."]) {
+      if (!page.text.includes(label)) throw new Error(`/en/cabinet/demo missing ${label}`);
+    }
+    if (page.text.includes("Carried out")) {
+      throw new Error("/en/cabinet/demo still says Foyer carried it out");
+    }
+  }
+  if (path === "/en/check") {
+    if (page.text.includes("stub")) throw new Error("/en/check still mentions an execute stub");
+    if (!page.text.includes("test client acts")) {
+      throw new Error("/en/check missing pass → agent acts");
     }
   }
   if (path === "/api/openapi") {
     const spec = JSON.parse(page.text);
     if (spec.info?.title !== "Foyer") throw new Error("OpenAPI is not this Foyer");
+    if (!spec.paths?.["/api/actions/{id}/report"]) {
+      throw new Error("OpenAPI missing POST /api/actions/{id}/report");
+    }
+    const action = spec.components?.schemas?.Action?.properties ?? {};
+    if (!action.may_act) throw new Error("OpenAPI Action missing may_act");
+    if (action.charged || action.spend_receipt) {
+      throw new Error("OpenAPI Action still looks like a treasury debit");
+    }
+    const payload = spec.components?.schemas?.ActionPayload?.description ?? "";
+    if (/gateway would execute/i.test(payload)) {
+      throw new Error("OpenAPI ActionPayload still says the gateway executes");
+    }
   }
   console.log("ok", path, page.status);
 }

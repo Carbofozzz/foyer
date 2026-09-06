@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.15.0",
+      version: "0.16.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -95,7 +95,7 @@ export function openApiSpec(origin: string) {
         },
         ActionPayload: {
           type: "object",
-          description: "What the gateway would execute through an adapter.",
+          description: "What the agent may perform after a pass. Foyer does not pay or book.",
           properties: {
             kind: { type: "string", enum: [...ACTION_KINDS] },
             summary: { type: "string", maxLength: 500 },
@@ -159,6 +159,23 @@ export function openApiSpec(origin: string) {
           },
           required: ["justification"],
         },
+        ReportRequest: {
+          type: "object",
+          description: "The agent says whether it performed the permitted payload.",
+          properties: {
+            did: { type: "boolean" },
+          },
+          required: ["did"],
+        },
+        ActionReport: {
+          type: "object",
+          properties: {
+            did: { type: "boolean" },
+            result: { type: "string", enum: ["did", "skipped", "broke"] },
+            at: { type: "string", format: "date-time" },
+          },
+          required: ["did", "result"],
+        },
         AppealRequest: {
           type: "object",
           description: "Re-judge from the constitution snapshot, or set the outcome yourself.",
@@ -200,6 +217,10 @@ export function openApiSpec(origin: string) {
             permitted_payload: {
               oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }],
               description: "What the agent may do. Null on a pure block.",
+            },
+            report: {
+              oneOf: [{ $ref: "#/components/schemas/ActionReport" }, { type: "null" }],
+              description: "What the agent said it did. Null until it reports.",
             },
             silence_until: { type: "string", format: "date-time" },
             appeal_until: { type: "string", format: "date-time" },
@@ -278,6 +299,16 @@ export function openApiSpec(origin: string) {
         parameters: [ID_PARAM],
         get: operation({ id: "getAction", summary: "Read one action with its verdict", auth: "agent", ok: "Action" }),
       },
+      "/api/actions/{id}/report": {
+        parameters: [ID_PARAM],
+        post: operation({
+          id: "reportAction",
+          summary: "Agent reports whether it performed the permitted payload",
+          auth: "agent",
+          body: "ReportRequest",
+          ok: "Action",
+        }),
+      },
       "/api/cases/{id}/appeal": {
         parameters: [ID_PARAM],
         post: operation({
@@ -319,6 +350,11 @@ export function openApiSpec(origin: string) {
         post: operation({ id: "tick", summary: "Cron sweep for every house", auth: "cron" }),
       },
       "/api/waitlist": {
+        get: operation({
+          id: "listWaitlist",
+          summary: "List waitlist emails (cron secret)",
+          auth: "cron",
+        }),
         post: operation({
           id: "joinWaitlist",
           summary: "Join the public-test waitlist; the same email twice is a no-op",

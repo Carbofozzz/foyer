@@ -17,6 +17,8 @@ export const principals = pgTable("principals", {
   wizardRulesDone: boolean("wizard_rules_done").notNull().default(false),
   wizardLockDone: boolean("wizard_lock_done").notNull().default(false),
   wizardConnectDone: boolean("wizard_connect_done").notNull().default(false),
+  wizardHarnessDone: boolean("wizard_harness_done").notNull().default(false),
+  testClients: boolean("test_clients").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
   walletAddress: text("wallet_address"),
@@ -70,6 +72,7 @@ export const actions = pgTable(
     appealUntil: timestamp("appeal_until", { withTimezone: true }),
     executedAt: timestamp("executed_at", { withTimezone: true }),
     permittedPayload: jsonb("permitted_payload"),
+    testPass: boolean("test_pass").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("actions_principal_status_silence").on(table.principalId, table.status, table.silenceUntil)],
@@ -183,6 +186,18 @@ export const waitlist = pgTable("waitlist", {
 });
 
 /** Almost-real spend adapter receipts. Not a bank wire. */
+/** One report per action: the agent says whether it performed the permitted payload. */
+export const actionReports = pgTable("action_reports", {
+  actionId: text("action_id")
+    .primaryKey()
+    .references(() => actions.id),
+  agentId: text("agent_id")
+    .notNull()
+    .references(() => agents.id),
+  did: boolean("did").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const spendReceipts = pgTable("spend_receipts", {
   id: text("id").primaryKey(),
   principalId: text("principal_id")

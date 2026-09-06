@@ -23,16 +23,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <p className="price-line">
         <strong>{t.home.priceKicker}</strong> {t.home.priceLead}
       </p>
-      <ProductOutline outline={t.outline} protocol={t.protocol} cabinet={t.cabinet} />
+      <ProductOutline outline={t.outline} cabinet={t.cabinet} />
       <SpawnButton locale={locale} t={t.spawn} />
       <WaitlistForm locale={locale} t={t.waitlist} />
-      <p>
-        <a href={`/${locale}/connect`}>{t.connectDoc.open}</a>
-        {" · "}
-        <a href={`/${locale}/check`}>{t.check.open}</a>
-        {" · "}
-        <a href={`/${locale}/status`}>{t.status.open}</a>
-      </p>
     </main>
   );
 }

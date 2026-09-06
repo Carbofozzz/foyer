@@ -1,9 +1,24 @@
-import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
+import { bearerToken, jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { isRecord } from "@/lib/protocol/parse";
-import { joinWaitlist, parseWaitlistEmail } from "@/lib/protocol/waitlist";
+import { joinWaitlist, listWaitlist, parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { isLocale } from "@/lib/i18n/config";
+import { deployEnv } from "@/lib/ops/client";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
+
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  const token = bearerToken(request);
+  const local = deployEnv() === "development";
+  if (!local && (!secret || token !== secret)) {
+    return jsonError("unauthorized", "Cron secret required", 401);
+  }
+  try {
+    return jsonOk({ items: await listWaitlist() });
+  } catch (error) {
+    return protocolFail(error);
+  }
+}
 
 export async function POST(request: Request) {
   return guardPublicWrite(request, "waitlist", LIMITS.waitlist, () => postWaitlist(request));

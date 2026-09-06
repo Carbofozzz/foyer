@@ -23,7 +23,7 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- A **product guardian** is another connected assistant that reads the constitution in its own model. Phrase-matching clients in `agents/` are **test-only** (first pass, spawn) — label them as test; free-form rules may never fire them. **Spawn** is a throwaway house. Do not mix the three.
+- A **product guardian** is another connected assistant that reads the constitution in its own model. Phrase-matching clients in `agents/` are **test-only** (first pass, spawn) — label them as test; free-form rules may never fire them. **Demo** is one shared look-only house at `/:locale/cabinet/demo`. Do not mix the three.
 - Hackathon adapters are stubs with a stable `adapters[kind].apply` interface (`spend` | `book` | `message` | `cancel`). Each kind declares `reversible`; irreversible executions wait for the appeal window.
 - Outline of the whole product on the **day-4 public Vercel URL**. Day 7 is MVP. Day 14 is startup-ready. After that: depth, not new entities.
 
@@ -96,3 +96,14 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-06: Implementation guide for post-day-14 depth: [`docs/IMPLEMENT.md`](docs/IMPLEMENT.md). Gateway permits; the agent acts. No court duty. Demo/test and door stats are in that file.
 - 2026-09-06: Slice 1 — `sweep()` default `courts: 0`. Cabinet and protocol reads never call `openCourt`. Tick closes windows on every house, then opens at most one court (`findHouseNeedingCourt`). Index `actions(principal_id, status, silence_until)`.
 - 2026-09-06: Slice 2 — a pass is `permitted` plus `may_act` / `permitted_payload`. Gateway does not call adapters. Silence and post-ack set permission only; irreversible kinds still wait the appeal window. OpenAPI `0.15.0`.
+- 2026-09-06: Slice 3 — demo, Replay, `/check`, and `npm run demo` retarget to “pass → the agent acts”. No execute stub in the checklist.
+- 2026-09-06: Slice 4 — `POST /api/actions/:id/report` `{ did }` and MCP `report`. Door stats on cabinet chips (derived). First-pass / spawn test clients report after permit. OpenAPI `0.16.0`.
+- 2026-09-06: Cabinet is one column with tabs (activity, treasury, history, rules, connect, HTTP, people). Transfer and activity lists paginate. The treasury no longer sits beside the feed.
+- 2026-09-06: Connect card drops runtime and role tabs. One MCP block and the three prompt lines — the snippet does not change by Cursor/Claude or Travel/Sales.
+- 2026-09-06: Connect copy matches permit-then-act: Foyer does not pay or book. Snippets render in full (`pre.snippet`), not cropped textareas.
+- 2026-09-06: Cabinet HTTP is not a tab. It sits under Connect as “HTTP and your own client”. `?tab=tech` opens Connect.
+- 2026-09-06: Rules tab is editable for the owner (`POST /api/cabinet/:token/constitution`). Observers still only read.
+- 2026-09-06: Cabinet treasury and transfer history are one tab. `?tab=history` opens Treasury.
+- 2026-09-06: Landing drops the developer route list and the connect/check/status footer. Spawn copy is a demo. Waitlist emails list via `GET /api/waitlist` (cron secret).
+- 2026-09-06: Demo is a static page (`/:locale/cabinet/demo`). No house, no first pass. Feed is the six archive cases. Same tabs as a live cabinet, mock treasury/connect, buttons do nothing. `/:locale/replay` redirects there.
+- 2026-09-06: Live cabinet hides test clients by default (`test_clients`). Phrase-matchers and first-pass Travel/Assistant are `is_guardian`. Toggle on the feed. Wizard can skip the harness. Connect issues a real key, not the test Travel.

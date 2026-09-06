@@ -41,14 +41,7 @@ body {
   background-attachment: fixed;
 }
 
-h1,
-h2,
-h3,
-.lead,
-.charter,
-.section-title,
-.wallet-balance,
-.feed-item p {
+h1 {
   font-family: var(--display);
 }
 
@@ -733,9 +726,8 @@ pre {
 }
 
 .cabinet {
-  display: grid;
-  grid-template-columns: minmax(20rem, 1fr) minmax(24rem, 1.15fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   min-height: calc(100dvh - 7.25rem);
 }
@@ -773,9 +765,48 @@ pre {
   flex-direction: column;
   gap: 0.7rem;
   min-height: 0;
-  max-height: calc(100dvh - 8.5rem);
-  /* Everything that grows lives in .cabinet-scroll; nothing may spill out. */
+  flex: 1;
+  /* Lists paginate; the panel still clips so tabs stay put. */
   overflow: hidden;
+  font-family: var(--ui);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.cabinet-panel p,
+.cabinet-panel .charter,
+.cabinet-panel .wallet-balance,
+.cabinet-panel .feed-item p,
+.cabinet-panel .section-title,
+.cabinet-panel .lead,
+.cabinet-panel label,
+.cabinet-panel .tx-list {
+  font-family: var(--ui);
+}
+
+.cabinet-panel .charter {
+  font-size: inherit;
+  line-height: 1.55;
+}
+
+.cabinet-panel .charter-edit {
+  min-height: 16rem;
+  width: 100%;
+  resize: vertical;
+  font-family: var(--ui);
+  line-height: 1.55;
+}
+
+.cabinet-panel .hint,
+.cabinet-panel .empty,
+.cabinet-panel .muted {
+  font-size: 0.9rem;
+}
+
+.cabinet-panel .mono,
+.cabinet-panel .snippet,
+.cabinet-panel pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .cabinet-panel > .card {
@@ -802,9 +833,10 @@ pre {
 
 .cabinet-scroll {
   overflow: auto;
-  /* Keep the feed readable when the settings rows below are expanded. */
+  /* Inset from the tab bar’s rounded ends, plus air under the tabs. */
   min-height: 11rem;
   flex: 1;
+  padding: 0.9rem 0.85rem 0.35rem;
 }
 
 .wallet-balance {
@@ -839,13 +871,16 @@ button.wallet-balance:disabled {
 .wallet-id {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.45rem;
   min-width: 0;
 }
 
 .wallet-id .mono {
   margin: 0;
-  flex: 1;
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: 100%;
   padding: 0.4rem 0.5rem;
 }
 
@@ -908,6 +943,8 @@ button.wallet-balance:disabled {
   font-size: 0.86rem;
   line-height: 1.3;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
   transition: background var(--ease), color var(--ease), box-shadow var(--ease);
 }
 
@@ -936,18 +973,79 @@ button.wallet-balance:disabled {
   margin-top: 0.45rem;
 }
 
-.cabinet .charter {
-  max-height: 8rem;
-  overflow: auto;
+.snippet {
+  margin: 0 0 0.45rem;
+  white-space: pre-wrap;
+  overflow: visible;
+  max-height: none;
 }
 
-.cabinet textarea {
-  min-height: 0;
+.cabinet-tabs {
+  align-self: stretch;
+  max-width: 100%;
+}
+
+.cabinet-tab-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cabinet-panel > [data-cabinet-pane],
+.cabinet-scroll > [data-cabinet-pane] {
+  display: none;
+}
+
+.cabinet-panel:has(#cabinet-tab-inbox:checked) [data-cabinet-pane="inbox"],
+.cabinet-panel:has(#cabinet-tab-treasury:checked) [data-cabinet-pane="treasury"],
+.cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
+.cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
+.cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
+  display: block;
+}
+
+.cabinet-panel:has(#cabinet-tab-inbox:checked) label[for="cabinet-tab-inbox"],
+.cabinet-panel:has(#cabinet-tab-treasury:checked) label[for="cabinet-tab-treasury"],
+.cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
+.cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
+.cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(22, 20, 15, 0.1);
+}
+
+label.segment {
+  cursor: pointer;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.agent-chips-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  margin-bottom: 0.75rem;
 }
 
 .agent-chips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 0.35rem;
   list-style: none;
   margin: 0;
@@ -970,6 +1068,15 @@ button.wallet-balance:disabled {
 
 .agent-chips li.agent-wait {
   color: var(--muted);
+}
+
+.agent-chips .agent-door {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.door-hint {
+  margin: 0.35rem 0 0;
 }
 
 .check-list {
@@ -1094,7 +1201,6 @@ button.wallet-balance:disabled {
   }
 
   .cabinet {
-    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     gap: 0.75rem;
   }

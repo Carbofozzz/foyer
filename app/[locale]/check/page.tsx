@@ -20,7 +20,7 @@ export default async function CheckPage({ params }: { params: Promise<{ locale: 
       <p>
         <a href={`/${locale}`}>{t.check.home}</a>
         {" · "}
-        <a href={`/${locale}/replay`}>{t.spawn.watch}</a>
+        <a href={`/${locale}/cabinet/demo`}>{t.spawn.run}</a>
       </p>
     </main>
   );

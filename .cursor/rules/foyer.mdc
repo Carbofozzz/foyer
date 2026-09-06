@@ -12,9 +12,9 @@ Intra-principal court + gateway. Read `AGENTS.md` and `docs/HACKATHON.md` before
 - Court is GenLayer, one IC per house. No local verdict: if consensus does not land, `escalate`.
 - `objection_grounded` is a verdict flag. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - No daemons: `sweep(principal, now)` runs on cron `POST /tick` and on every read; keep it idempotent.
-- Agent key names the house; routes carry no principal id. Principal signs in with RainbowKit (SIWE); spawn still uses a `cab_` link.
+- Agent key names the house; routes carry no principal id. Principal signs in with RainbowKit (SIWE); the shared demo is `/:locale/cabinet/demo`.
 - The cabinet is the product surface now: house wallet, deposit/withdraw with the principal's own wallet, transfer history. Accounts (day 8) replace the link later; they do not invent a second money path.
-- Product guardian = another connected assistant that reads the constitution. Regex/phrase clients in `agents/` are test-only (first pass, spawn). Label them as test. Spawn is a throwaway house — do not mix.
+- Product guardian = another connected assistant that reads the constitution. Regex/phrase clients in `agents/` are test-only (first pass, spawn). Label them as test. Demo is one shared look-only house — do not mix.
 - Lock = tools/keys, not a system prompt.
 - Tracked docs in English. Pitch and private notes stay in `.local/`.
 - User-facing chat: Russian, short. Source comments: English. UI copy: i18n catalogs `en` / `es` / `de` / `tr` / `ru`.

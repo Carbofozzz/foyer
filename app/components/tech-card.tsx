@@ -14,22 +14,24 @@ type ConnectPayload = {
 export function TechCard({
   token,
   houseId,
-  locale,
   t,
   errorLabel,
-  docLabel,
+  preview = null,
 }: {
   token: string;
   houseId?: string;
-  locale: string;
   t: Messages["tech"];
   errorLabel: string;
-  docLabel: string;
+  preview?: ConnectPayload | null;
 }) {
   const [data, setData] = useState<ConnectPayload | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (preview) {
+      setData(preview);
+      return;
+    }
     fetch(`/api/cabinet/${token}/connect`, { headers: cabinetHeaders(houseId) })
       .then((response) => {
         if (!response.ok) throw new Error("fail");
@@ -37,7 +39,7 @@ export function TechCard({
       })
       .then((payload) => setData(payload.data))
       .catch(() => setError(true));
-  }, [token, houseId]);
+  }, [preview, token, houseId]);
 
   if (error) return <p className="error">{errorLabel}</p>;
   if (!data) return <p className="muted">{t.loading}</p>;
@@ -54,33 +56,36 @@ export function TechCard({
   return (
     <div className="stack">
       <p className="hint">{t.lead}</p>
-      <p>
-        <a href={`/${locale}/connect`}>{docLabel}</a>
-        {" · "}
+      <p className="hint">
+        {t.openapiLead}{" "}
         <a href="/api/openapi" target="_blank" rel="noreferrer">
           {t.openapi}
         </a>
       </p>
-      <label>
-        {t.curlLabel}
-        <textarea readOnly rows={8} value={curl} />
-      </label>
-      <CopyButton text={curl} copyLabel={t.copy} copiedLabel={t.copied} />
-      <label>
-        {t.pythonLabel}
-        <textarea readOnly rows={10} value={python} />
-      </label>
-      <CopyButton text={python} copyLabel={t.copy} copiedLabel={t.copied} />
-      <label>
-        {t.mcpLabel}
-        <textarea readOnly rows={3} value={mcp} />
-      </label>
-      <CopyButton text={mcp} copyLabel={t.copy} copiedLabel={t.copied} />
-      <label>
-        {t.cliLabel}
-        <textarea readOnly rows={3} value={cli} />
-      </label>
-      <CopyButton text={cli} copyLabel={t.copy} copiedLabel={t.copied} />
+      <Snippet label={t.curlLabel} text={curl} copyLabel={t.copy} copiedLabel={t.copied} />
+      <Snippet label={t.pythonLabel} text={python} copyLabel={t.copy} copiedLabel={t.copied} />
+      <Snippet label={t.mcpLabel} text={mcp} copyLabel={t.copy} copiedLabel={t.copied} />
+      <Snippet label={t.cliLabel} text={cli} copyLabel={t.copy} copiedLabel={t.copied} />
+    </div>
+  );
+}
+
+function Snippet({
+  label,
+  text,
+  copyLabel,
+  copiedLabel,
+}: {
+  label: string;
+  text: string;
+  copyLabel: string;
+  copiedLabel: string;
+}) {
+  return (
+    <div>
+      <p className="feed-label">{label}</p>
+      <pre className="mono snippet">{text}</pre>
+      <CopyButton text={text} copyLabel={copyLabel} copiedLabel={copiedLabel} />
     </div>
   );
 }
