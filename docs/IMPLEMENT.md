@@ -23,6 +23,8 @@ Bonds, appeal prices, per-agent wallets, and adapters that pay or book **for** a
 
 **Check:** open the cabinet while a case is in court — the HTML returns without a one-minute hang. Tick of many houses does not serialize all `openCourt` calls in one body.
 
+Test-stage bound (one court per cron minute) is enough for now. Scale-out is [Later](#later--next-sheet) §L1.
+
 ---
 
 ## Slice 2 — Permit, not execute
@@ -98,7 +100,7 @@ Without a report, “disobeyed” and “has not bought yet” are the same.
 
 Cabinet: short line on the agent chip or a details row. Owner uses it to edit the assistant’s prompt.
 
-**Limit (write it in the UI hint):** a purchase that never touched Foyer is invisible.
+**Limit (write it in the UI hint):** a purchase that never touched Foyer is invisible. Seeing that is [Later](#later--next-sheet) §L2.
 
 **Files:** new `lib/protocol/report.ts`, route under `app/api/actions/[id]/report`, schema column or small `reports` table on `action_id` unique, `lib/openapi/spec.ts`, MCP handler, cabinet chips.
 
@@ -152,4 +154,30 @@ One changelog bullet in `AGENTS.md` per slice. New env keys in `.env.example`. U
 
 ## Out of scope
 
-Bonds, court duties, appeal fees, Foyer paying or booking, a second account, a fifth outcome, Internet Court (`escalate_external` stays false), mainnet, A2A signatures.
+Bonds, court duties, appeal fees, Foyer paying or booking, a second account, a fifth outcome. Do not put these on the next sheet.
+
+---
+
+## Later — next sheet
+
+Seed for the **next** implementation list. Do not start these in slices 1–6.
+
+**L1. Courts at many houses.** One cron / one court per minute will not hold at ~100 houses. Do not raise N courts inside one tick. One due house → one job (queue or per-house tick). Courts run in parallel in different invocations. No global platform quota.
+
+**L2. Off-door acts.** Door stats only see what went through Foyer or what the agent reported. Closing the hole is **L10**, not a prompt.
+
+**L3. Telegram to every member.** This sheet: owner chat only. Later: optional fan-out to operators, still no Telegram login.
+
+**L4. Several deadlocks in one house.** This sheet: one `openCourt` per house sweep. Later: more than one case on that house’s IC without blocking the cabinet.
+
+**L5. Signatures / A2A.** Request signing, foreign clients. Not a cabinet blocker.
+
+**L6. `escalate_external`.** Field exists, stays false until there is an external court to bridge.
+
+**L7. Pin agent version.** Separate idea. Do not mix into the gateway.
+
+**L8. Mainnet GenLayer.** When studio-dev is no longer enough.
+
+**L9. Window policy depth.** This sheet: kind/amount on existing `Principal` fields. Later: richer rules without a new entity if we can, or a documented exception.
+
+**L10. Hands only after a pass, only for that action.** A prompt is not a lock. The agent’s runtime has no pay / book / mail tools — only Foyer (propose, inbox, ack). After `may_act`, Foyer mints a **one-shot capability** bound to that action: kind, amount, target, expiry, single use. Hands appear as one call (`perform`, or the agent’s own Stripe/calendar wrapper) that **consumes** the capability. Wrong payload or a second use fails. Foyer still does not pay; it unlocks the agent’s own method for that act only. Capability gone or expired — no hands. Without the runtime lock (tools off until the capability exists) the agent can still walk around. Consume is recorded and feeds door stats.

@@ -11,8 +11,9 @@ export function StatusPill({ tone, children }: { tone: PillTone; children: React
 }
 
 /** Action status as shown at the top of a feed item. */
-export function statusTone(status: string, held = false): PillTone {
+export function statusTone(status: string, held = false, mayAct?: boolean): PillTone {
   if (held) return "info";
+  if (status === "permitted") return mayAct === false ? "info" : "ok";
   if (status === "executed") return "ok";
   if (status === "escalated") return "danger";
   if (status === "awaiting_ack") return "warn";

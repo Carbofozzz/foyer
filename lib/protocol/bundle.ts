@@ -77,14 +77,15 @@ function chosenKind(
 export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
   const verdict = bundle.verdict;
   const kind = chosenKind(bundle);
+  const permitted = permittedPayloadOf(bundle);
+  const mayAct = bundle.action.status === "permitted" && permitted !== null;
   const held =
     Boolean(
       kind &&
         !KIND_REVERSIBLE[kind] &&
         bundle.action.status === "awaiting_ack" &&
         bundle.action.appealUntil &&
-        bundle.action.appealUntil > new Date() &&
-        !bundle.action.executedAt,
+        bundle.action.appealUntil > new Date(),
     );
   return {
     id: bundle.action.id,
@@ -98,6 +99,8 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     appeal_until: bundle.action.appealUntil?.toISOString() ?? null,
     held_until: held ? bundle.action.appealUntil?.toISOString() ?? null : null,
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
+    may_act: mayAct,
+    permitted_payload: permitted,
     proposer_id: bundle.action.proposerId,
     objections: bundle.objections.map((row) => ({
       id: row.id,
@@ -138,6 +141,19 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
       at: row.createdAt.toISOString(),
     })),
   };
+}
+
+function permittedPayloadOf(
+  bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>,
+): ActionPayload | null {
+  if (bundle.action.status !== "permitted") return null;
+  const raw = bundle.action.permittedPayload;
+  if (raw == null) return null;
+  try {
+    return asPayload(raw);
+  } catch {
+    return null;
+  }
 }
 
 function isObj(value: unknown): value is Record<string, unknown> {

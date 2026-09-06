@@ -69,6 +69,7 @@ export const actions = pgTable(
     ackUntil: timestamp("ack_until", { withTimezone: true }),
     appealUntil: timestamp("appeal_until", { withTimezone: true }),
     executedAt: timestamp("executed_at", { withTimezone: true }),
+    permittedPayload: jsonb("permitted_payload"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("actions_principal_status_silence").on(table.principalId, table.status, table.silenceUntil)],

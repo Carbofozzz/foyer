@@ -47,7 +47,11 @@
     "statusOpen": "En espera",
     "statusAck": "Esperando confirmación",
     "statusHeld": "En espera de apelación",
-    "statusExecuted": "Hecho",
+    "statusExecuted": "Permitido",
+    "statusPermitted": "Permitido",
+    "statusDenied": "No permitido",
+    "mayAct": "Puedes hacerlo tú.",
+    "mustNot": "No lo hagas.",
     "statusEscalated": "Te necesita",
     "request": "Petición",
     "objection": "Objeción",
@@ -237,7 +241,7 @@
     "courtTitle": "Tribunal",
     "courtLead": "Si no se ponen de acuerdo, el tribunal decide: seguir, no, un término medio o preguntarte. Si no decide, decides tú. Puedes apelar.",
     "flowAgents": "Asistentes",
-    "flowAction": "Pago o reserva"
+    "flowAction": "El asistente actúa"
   },
   "replay": {
     "kicker": "Archivo",

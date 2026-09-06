@@ -235,13 +235,14 @@ function FeedRow({
   const counter = firstObjection ? formatAction(firstObjection.counter_action) : "";
   const decided = decisionAction(item);
   const decision = decisionLine(item, t, decided, now);
-  const carried = formatAction(executedPayload(item.executions[0]?.result));
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
   const outcome = item.verdict?.outcome;
 
   return (
     <li className="feed-item">
-      <StatusPill tone={statusTone(item.status, held)}>{statusLabel(item.status, t, held)}</StatusPill>
+      <StatusPill tone={statusTone(item.status, held, item.may_act)}>
+        {statusLabel(item.status, t, held, item.may_act)}
+      </StatusPill>
       <div className="feed-block">
         <p className="feed-label">{t.request}</p>
         <p>
@@ -268,8 +269,8 @@ function FeedRow({
           </div>
           <p>{decision}</p>
           {held ? <p className="hint">{t.holdAppeal}</p> : null}
-          {item.verdict?.outcome !== "escalate" && carried && carried !== decided ? (
-            <p className="hint">{t.done.replace("{summary}", carried)}</p>
+          {item.status === "permitted" ? (
+            <p className="hint">{item.may_act ? t.mayAct : t.mustNot}</p>
           ) : null}
           {item.verdict?.judge === "onchain" && item.verdict.tx ? (
             <p className="hint">
@@ -319,10 +320,11 @@ function outcomeLabel(outcome: string, t: FeedCopy) {
   return t.outcomeEscalate;
 }
 
-function statusLabel(status: string, t: FeedCopy, held = false) {
+function statusLabel(status: string, t: FeedCopy, held = false, mayAct?: boolean) {
   if (held) return t.statusHeld;
   if (status === "open") return t.statusOpen;
   if (status === "awaiting_ack") return t.statusAck;
+  if (status === "permitted") return mayAct ? t.statusPermitted : t.statusDenied;
   if (status === "executed") return t.statusExecuted;
   if (status === "escalated") return t.statusEscalated;
   return status;
@@ -331,7 +333,7 @@ function statusLabel(status: string, t: FeedCopy, held = false) {
 function decisionLine(item: InboxItem, t: FeedCopy, decided: string, now: number) {
   const verdict = item.verdict;
   if (!verdict) {
-    if (item.status === "executed") return t.silence;
+    if (item.status === "executed" || item.status === "permitted") return t.silence;
     if (item.status === "open") {
       // Objected and past the silence window: the court is the only thing left.
       const deadlocked =
@@ -356,12 +358,6 @@ function decisionAction(item: InboxItem) {
   if (verdict.outcome === "remedy") return formatAction(verdict.remedy_action);
   if (verdict.outcome === "allow_b") return formatAction(item.objections[0]?.counter_action);
   return "";
-}
-
-function executedPayload(result: unknown) {
-  if (!result || typeof result !== "object") return null;
-  const row = result as Record<string, unknown>;
-  return row.charged ?? row.would_book ?? row.would_charge ?? row.would_message ?? row.would_cancel ?? null;
 }
 
 function formatAction(payload: unknown) {

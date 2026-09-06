@@ -47,7 +47,11 @@
     "statusOpen": "Waiting",
     "statusAck": "Waiting for confirmation",
     "statusHeld": "Held for appeal",
-    "statusExecuted": "Done",
+    "statusExecuted": "Allowed",
+    "statusPermitted": "Allowed",
+    "statusDenied": "Not allowed",
+    "mayAct": "You may do this yourself.",
+    "mustNot": "Do not do this.",
     "statusEscalated": "Needs you",
     "request": "Request",
     "objection": "Objection",
@@ -237,7 +241,7 @@
     "courtTitle": "Court",
     "courtLead": "If they disagree, the court decides: go ahead, block it, find a middle, or ask you. If it cannot decide, you decide. You can appeal.",
     "flowAgents": "Assistants",
-    "flowAction": "Payment or booking"
+    "flowAction": "The assistant acts"
   },
   "replay": {
     "kicker": "Archive",

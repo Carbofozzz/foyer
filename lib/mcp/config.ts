@@ -23,7 +23,7 @@ export function mcpConfig(origin: string, agentKey: string) {
 }
 
 export const MCP_PROMPT_LINES = [
-  "Actions into the world only through Foyer tools (propose, object, inbox, ack).",
+  "Propose, object, inbox, and ack only through Foyer tools. After inbox says may_act, do permitted_payload with your own tools.",
   "Cite the house constitution in every justification.",
-  "Turn off any direct payment, calendar, or mail tools — otherwise you walk around the gateway.",
+  "Do not pay, book, or message before may_act is true. A pass is permission, not Foyer doing the act.",
 ];
