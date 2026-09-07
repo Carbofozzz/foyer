@@ -1,6 +1,6 @@
 # Demo script
 
-Startup-ready freeze (day 14), plus depth: a pass is permission — the assistant acts. Speak for about eight minutes. The product is the **cabinet**, not the landing harness.
+A pass is permission — the assistant acts. Speak for about eight minutes. The product is the **cabinet**, not the landing harness.
 
 Public URL: **https://foyerapp.dev**. Local stand-in: `http://127.0.0.1:3001`. Smoke the same paths with `FOYER_URL=https://foyerapp.dev npm run demo`.
 
@@ -18,9 +18,9 @@ Public URL: **https://foyerapp.dev**. Local stand-in: `http://127.0.0.1:3001`. S
 
 ## 3. Checklist
 
-§9 of [HACKATHON.md](HACKATHON.md) stays green:
+Checklist from [INITIAL.md](INITIAL.md) (cabinet + protocol as shipped):
 
-| §9 | Where |
+| Check | Where |
 |---|---|
 | Connect without OpenAPI | Cabinet MCP + [CONNECT.md](CONNECT.md) |
 | Test-client dispute | Wizard “start the test clients”, then first pass. Real guardian = second connected assistant |

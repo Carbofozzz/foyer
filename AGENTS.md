@@ -2,7 +2,7 @@
 
 Working instructions for coding agents in this repository.
 
-Canonical product plan: [`docs/HACKATHON.md`](docs/HACKATHON.md). If this file and the plan disagree, follow the codebase, then update the docs in the same change.
+Canonical product: [`docs/INITIAL.md`](docs/INITIAL.md) (idea + what ships). Development plan: [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md). If this file and a plan disagree, follow the codebase, then update the docs in the same change.
 
 Private notes (pitch, discussion dumps) live in `.local/` and are gitignored. Do not copy them into tracked docs.
 
@@ -12,7 +12,7 @@ Foyer is an **intra-principal** court and gateway: agents of one person or compa
 
 Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence).
 
-The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / `calendar` tools. After a verdict the gateway calls adapters.
+The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / `calendar` tools. After a pass the gateway **permits**; the agent acts and reports.
 
 ## Invariants
 
@@ -25,7 +25,7 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
 - A **product guardian** is another connected assistant that reads the constitution in its own model. Phrase-matching clients in `agents/` are **test-only** (first pass, spawn) — label them as test; free-form rules may never fire them. **Demo** is one shared look-only house at `/:locale/cabinet/demo`. Do not mix the three.
 - Hackathon adapters are stubs with a stable `adapters[kind].apply` interface (`spend` | `book` | `message` | `cancel`). Each kind declares `reversible`; irreversible executions wait for the appeal window.
-- Outline of the whole product on the **day-4 public Vercel URL**. Day 7 is MVP. Day 14 is startup-ready. After that: depth, not new entities.
+- Public product at **https://foyerapp.dev**. Next protocol change is [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md), not a new entity beside the gateway.
 
 ## Layout (create these when code starts)
 
@@ -41,7 +41,7 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 
 ## Stack
 
-- Host: Vercel (previews from day 1, public URL by day 4).
+- Host: Vercel (previews and production). Public URL: https://foyerapp.dev.
 - App: Next.js App Router. Gateway and observer are the same deploy.
 - Store: Neon Postgres. Never process memory — serverless forgets.
 - Timers: Vercel Cron → `POST /tick`, plus the same `sweep()` on every read.
@@ -51,7 +51,7 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 
 ## Agent habits
 
-- Prefer small, incremental changes. Do not invent a second architecture beside `docs/HACKATHON.md`.
+- Prefer small, incremental changes. Do not invent a second architecture beside [`docs/INITIAL.md`](docs/INITIAL.md). Protocol replacement follows [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md).
 - When you add modules, env vars, or API contracts, append a dated bullet to [Architecture change log](#architecture-change-log) in the same turn.
 - New env keys go into `.env.example` with a short comment above each key.
 
@@ -92,8 +92,8 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-06: Landing flow — `app/components/flow-diagram.tsx` sits above the three outline cards and walks one request through four nodes (assistants → gateway → court → payment/booking), with `cabinet.request` / `objection` / `decision` as wire labels, the four outcome pills inside the court node, and a CSS-only travelling pulse (no client JS, stacks vertically under 800 px). Two new keys `outline.flowAgents` / `outline.flowAction` in all five catalogs. `ProductOutline` now also takes `cabinet`.
 - 2026-09-06: Cabinet chrome — runtime and role tabs in `ConnectCard` are a segmented control (`.segmented` / `.segment.is-active`, `aria-pressed`) instead of primary/ghost buttons; `.runtime-tabs` is gone. Cabinet `<details>` render as a settings list (full-width row, rotating chevron, hover, dividers under `.cabinet-meta`). Panel headers get a hairline, the feed keeps a `min-height` so open settings cannot squeeze it, and ghost buttons inside a `.stack` hug their label. `shortGen()` in `lib/gen/amount.ts` trims the displayed balance and transfer amounts to four decimals without rounding up (full value in `title`); dust never renders as a flat zero. Copy buttons flash `is-copied`.
 - 2026-09-06: Cabinet overflow — the settings rows (`.cabinet-meta`, and the key export in the treasury) moved inside `.cabinet-scroll`, so an expanded section scrolls with the feed instead of spilling past the panel; `.cabinet-panel` is `overflow: hidden` as a backstop.
-- 2026-09-06: Phrase-matching Budget / Calendar / Security / Legal / Finance clients are **test-only** (first pass, spawn). A product guardian is a second connected assistant that reads the constitution. Wizard, chips, Connect, Demo, and HACKATHON say so; free-form rules may never match.
-- 2026-09-06: Implementation guide for post-day-14 depth: [`docs/IMPLEMENT.md`](docs/IMPLEMENT.md). Gateway permits; the agent acts. No court duty. Demo/test and door stats are in that file.
+- 2026-09-06: Phrase-matching Budget / Calendar / Security / Legal / Finance clients are **test-only** (first pass, spawn). A product guardian is a second connected assistant that reads the constitution. Wizard, chips, Connect, Demo say so; free-form rules may never match.
+- 2026-09-06: Post-day-14 depth (permit, not execute; door stats). Later folded into [`docs/INITIAL.md`](docs/INITIAL.md).
 - 2026-09-06: Slice 1 — `sweep()` default `courts: 0`. Cabinet and protocol reads never call `openCourt`. Tick closes windows on every house, then opens at most one court (`findHouseNeedingCourt`). Index `actions(principal_id, status, silence_until)`.
 - 2026-09-06: Slice 2 — a pass is `permitted` plus `may_act` / `permitted_payload`. Gateway does not call adapters. Silence and post-ack set permission only; irreversible kinds still wait the appeal window. OpenAPI `0.15.0`.
 - 2026-09-06: Slice 3 — demo, Replay, `/check`, and `npm run demo` retarget to “pass → the agent acts”. No execute stub in the checklist.
@@ -115,3 +115,6 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-06: A test court request closes silence as soon as both texts are in. The feed says in court; tick still opens GenLayer. A leftover test objection is due on the next tick, not after the house silence window.
 - 2026-09-06: `GET /api/tick` is the cron entry. Vercel Cron always GET; POST-only meant production returned 405 and never recorded a tick. POST still works for a manual sweep.
 - 2026-09-06: Court queue skips spawn / unowned leftover houses. Tick opens a court only for a signed-in house. Cabinet feed shows the request time.
+- 2026-09-06: Tick reads `get_verdict` with the house wallet. A finalized return with no JSON yet stays pending — it does not count as a tx error. A false offline escalate is replaced when the IC already has a verdict.
+- 2026-09-06: Cabinet decide form only on `escalated`. The principal picks `allow_a` or `allow_b`. No note, no GenLayer re-trial. `POST /api/cases/:id/appeal` is that override.
+- 2026-09-07: Docs: HACKATHON.md and IMPLEMENT.md merged into [`docs/INITIAL.md`](docs/INITIAL.md) (idea + shipped loop, no 14-day schedule). [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md) is the development plan (wake, bargain, court on insist, yes/no/human). Not implemented yet.

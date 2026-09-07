@@ -1,8 +1,6 @@
 # Foyer
 
-A court and gateway for agents of one principal. A constitution in plain language, a single exit to the world, a GenLayer verdict.
-
-Hackathon track: **Onchain Justice**. 14 days on **Vercel**: public v0 by day 4, MVP by day 7, startup-ready by day 14.
+A court and gateway for agents of one principal. A constitution in plain language, a single exit to the world, a GenLayer verdict. Track: **Onchain Justice**. Host: **Vercel**.
 
 ## Run
 
@@ -25,8 +23,9 @@ Local: `npm run demo` (defaults to `http://127.0.0.1:3001`). Presenter walkthrou
 
 ## Docs
 
-- [Hackathon plan](docs/HACKATHON.md) — architecture, protocol, build days
-- [Demo script](docs/DEMO.md) — eight-minute walk + §9 checklist
+- [Idea and what ships](docs/INITIAL.md) — architecture, protocol, cabinet
+- [Development plan](docs/ORCHESTRATE.md) — wake, bargain, court on insist
+- [Demo script](docs/DEMO.md) — eight-minute walk + checklist
 - [Connect your runtime](docs/CONNECT.md) — MCP paste for Cursor / Claude / ChatGPT / OpenClaw; HTTP for a custom client
 - [Agent instructions](AGENTS.md) — invariants and layout for coding agents
 

@@ -259,13 +259,13 @@
     "watch": "Finished examples"
   },
   "appeal": {
-    "label": "Appeal",
+    "label": "Your call",
     "note": "Why should this change?",
-    "submit": "Appeal",
-    "submitting": "Sending…",
-    "outcome": "Or set the outcome yourself",
-    "keep": "Re-judge from the rules",
-    "allowA": "Keep the original request",
+    "submit": "Set",
+    "submitting": "Setting…",
+    "outcome": "What to do",
+    "keep": "Choose",
+    "allowA": "Allow the request",
     "allowB": "Take the objection",
     "remedy": "Keep the compromise",
     "escalate": "I’ll decide later"

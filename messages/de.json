@@ -259,14 +259,14 @@
     "watch": "Fertige Beispiele"
   },
   "appeal": {
-    "label": "Berufung",
+    "label": "Ihre Entscheidung",
     "note": "Warum sollte das geändert werden?",
-    "submit": "Berufung einlegen",
-    "submitting": "Senden…",
-    "outcome": "Oder selbst entscheiden",
-    "keep": "Nach den Regeln neu bewerten",
-    "allowA": "Den ursprünglichen Antrag lassen",
-    "allowB": "Den Einspruch nehmen",
+    "submit": "Festlegen",
+    "submitting": "Wird festgelegt…",
+    "outcome": "Was tun",
+    "keep": "Wählen",
+    "allowA": "Den Antrag zulassen",
+    "allowB": "Den Einspruch annehmen",
     "remedy": "Den Kompromiss lassen",
     "escalate": "Entscheide ich später"
   },

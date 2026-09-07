@@ -346,9 +346,6 @@ function FeedRow({
           </div>
           <p>{decision}</p>
           {held ? <p className="hint">{t.holdAppeal}</p> : null}
-          {item.status === "permitted" ? (
-            <p className="hint">{item.may_act ? t.mayAct : t.mustNot}</p>
-          ) : null}
           {item.report ? <p className="hint">{reportLine(item.report.result, t)}</p> : null}
           {item.verdict?.judge === "onchain" && courtTx ? (
             <p className="hint">
@@ -363,7 +360,7 @@ function FeedRow({
           ) : null}
         </div>
       ) : null}
-      {canAppeal && item.case && item.appeal_until && new Date(item.appeal_until).getTime() > now ? (
+      {canAppeal && item.case && item.status === "escalated" ? (
         <div className="feed-block">
           <AppealForm
             token={token}

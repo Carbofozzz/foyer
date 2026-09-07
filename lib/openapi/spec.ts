@@ -313,7 +313,7 @@ export function openApiSpec(origin: string) {
       "/api/cases/{id}/appeal": {
         parameters: [ID_PARAM],
         post: operation({
-          id: "appealCase", summary: "Principal appeal (cabinet session, not an agent key)",
+          id: "appealCase", summary: "Principal sets allow_a or allow_b on an escalated case",
           auth: "session",
           body: "AppealRequest",
           ok: "Verdict",

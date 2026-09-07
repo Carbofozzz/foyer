@@ -259,13 +259,13 @@
     "watch": "Ejemplos cerrados"
   },
   "appeal": {
-    "label": "Apelación",
+    "label": "Su decisión",
     "note": "¿Por qué debería cambiar?",
-    "submit": "Apelar",
-    "submitting": "Enviando…",
-    "outcome": "O fija tú el resultado",
-    "keep": "Volver a juzgar con las reglas",
-    "allowA": "Dejar la petición original",
+    "submit": "Fijar",
+    "submitting": "Fijando…",
+    "outcome": "Qué hacer",
+    "keep": "Elija",
+    "allowA": "Permitir la petición",
     "allowB": "Aceptar la objeción",
     "remedy": "Dejar el término medio",
     "escalate": "Lo decido yo más tarde"

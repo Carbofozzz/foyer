@@ -91,12 +91,14 @@ export async function inspectJudgeTx(hash: string): Promise<CourtTxPhase> {
 export async function readJudgeVerdict(
   contractAddress: string,
   caseId: string,
+  accountKey?: `0x${string}`,
 ): Promise<VerdictAnswer | null> {
   const address = asAddress(contractAddress);
   const chain = resolveChain();
   if (!address || !chain) return null;
   try {
-    const client = createClient({ chain });
+    const client = accountKey ? clientFor(accountKey) : createClient({ chain });
+    if (!client) return null;
     const raw = await client.readContract({
       address,
       functionName: "get_verdict",

@@ -11,6 +11,7 @@ import {
   type JudgeExtra,
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
+import { executeAfterAck } from "./execute";
 import type { EvidenceItem, Outcome, VerdictAnswer } from "./types";
 import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
@@ -50,6 +51,7 @@ export async function stepHouseCourt(principal: HousePrincipal, now: Date): Prom
     await advanceCase(inflight, principal, now);
     return true;
   }
+  if (await recoverFalseEscalate(principal, now)) return true;
   const bare = await findBareCase(principal.id);
   if (bare) {
     await submitForCase(bare.row, principal, bare.action, now);
@@ -106,7 +108,31 @@ export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
       ),
     )
     .limit(1);
-  return row?.principalId ?? null;
+  if (row) return row.principalId;
+
+  const [falseEsc] = await db
+    .select({ principalId: actions.principalId })
+    .from(cases)
+    .innerJoin(actions, eq(cases.actionId, actions.id))
+    .innerJoin(principals, eq(actions.principalId, principals.id))
+    .innerJoin(verdicts, eq(verdicts.caseId, cases.id))
+    .where(
+      and(
+        liveHouse,
+        eq(cases.status, "judged"),
+        eq(verdicts.judge, "offline"),
+        eq(verdicts.outcome, "escalate"),
+        eq(verdicts.reasoning, ERROR_ESCALATE.reasoning),
+        sql`not exists (
+          select 1 from verdicts newer
+          where newer.case_id = ${cases.id}
+            and (newer.created_at > ${verdicts.createdAt}
+              or (newer.created_at = ${verdicts.createdAt} and newer.id > ${verdicts.id}))
+        )`,
+      ),
+    )
+    .limit(1);
+  return falseEsc?.principalId ?? null;
 }
 
 export async function openCourt(action: ActionRow, principal: HousePrincipal, now: Date): Promise<void> {
@@ -179,14 +205,52 @@ async function advanceCase(row: CaseRow, principal: HousePrincipal, now: Date): 
   const phase = await inspectJudgeTx(row.tx);
   if (phase === "pending") return;
   if (phase === "ready") {
-    const contract = principal.courtContract;
-    const answer = contract ? await readJudgeVerdict(contract, row.id) : null;
+    const answer = await readCaseVerdict(principal, row.id);
     if (answer) {
       await applyVerdict(row, principal, now, answer, "onchain", row.tx);
       return;
     }
+    // Consensus landed. Do not burn a retry because the view lagged.
+    return;
   }
   await markTxFailed(row, principal, now);
+}
+
+async function readCaseVerdict(principal: HousePrincipal, caseId: string): Promise<VerdictAnswer | null> {
+  const contract = principal.courtContract;
+  if (!contract) return null;
+  const wallet = await ensureHouseWallet(principal);
+  return readJudgeVerdict(contract, caseId, wallet.accountKey);
+}
+
+async function recoverFalseEscalate(principal: HousePrincipal, now: Date): Promise<boolean> {
+  const row = await findFalseEscalateCase(principal.id);
+  if (!row) return false;
+  const answer = await readCaseVerdict(principal, row.id);
+  if (!answer) return false;
+  await applyVerdict(row, principal, now, answer, "onchain", row.tx);
+  return true;
+}
+
+async function findFalseEscalateCase(principalId: string): Promise<CaseRow | null> {
+  const db = getDb();
+  const [hit] = await db
+    .select({ court: cases, verdictJudge: verdicts.judge, verdictOutcome: verdicts.outcome, verdictReason: verdicts.reasoning })
+    .from(cases)
+    .innerJoin(actions, eq(cases.actionId, actions.id))
+    .innerJoin(verdicts, eq(verdicts.caseId, cases.id))
+    .where(and(eq(actions.principalId, principalId), eq(cases.status, "judged")))
+    .orderBy(desc(verdicts.createdAt), desc(verdicts.id))
+    .limit(1);
+  if (!hit) return null;
+  if (
+    hit.verdictJudge === "offline" &&
+    hit.verdictOutcome === "escalate" &&
+    hit.verdictReason === ERROR_ESCALATE.reasoning
+  ) {
+    return hit.court;
+  }
+  return null;
 }
 
 async function markTxFailed(row: CaseRow, principal: HousePrincipal, now: Date): Promise<void> {
@@ -295,7 +359,7 @@ async function applyVerdict(
     const [existing] = await db
       .select({ id: verdicts.id })
       .from(verdicts)
-      .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, tx)))
+      .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, tx), eq(verdicts.judge, "onchain")))
       .limit(1);
     if (existing) return;
   }
@@ -340,6 +404,13 @@ async function applyVerdict(
       appealUntil: new Date(now.getTime() + principal.appealWindowSec * 1000),
     })
     .where(eq(actions.id, row.actionId));
+
+  const [action] = await db
+    .select({ testPass: actions.testPass })
+    .from(actions)
+    .where(eq(actions.id, row.actionId))
+    .limit(1);
+  if (action?.testPass) await executeAfterAck(row.actionId);
 }
 
 /** Public submit for a principal appeal. Saves the hash; tick applies the IC JSON. */

@@ -259,13 +259,13 @@
     "watch": "Bitmiş örnekler"
   },
   "appeal": {
-    "label": "İtiraz",
+    "label": "Sizin kararınız",
     "note": "Neden değişmeli?",
-    "submit": "İtiraz et",
-    "submitting": "Gönderiliyor…",
-    "outcome": "Ya da sonucu siz seçin",
-    "keep": "Kurallara göre yeniden bak",
-    "allowA": "İlk isteği bırak",
+    "submit": "Koy",
+    "submitting": "Konuyor…",
+    "outcome": "Ne yapılsın",
+    "keep": "Seçin",
+    "allowA": "İsteğe izin ver",
     "allowB": "İtirazı kabul et",
     "remedy": "Uzlaşmayı bırak",
     "escalate": "Sonra ben karar veririm"
