@@ -3,18 +3,19 @@ import { acks, actions, objections } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "./keys";
 import { ProtocolError } from "./errors";
-import { engagedIds, loadActionBundle, lockedKinds, serializeAction, type HouseAuth } from "./bundle";
-import { parseCounterAction, parseEvidence, parseKind, parsePayload } from "./parse";
+import { engagedIds, loadActionBundle, serializeAction, type HouseAuth } from "./bundle";
+import { parseCounterAction, parseEvidence, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
 import { assertHouseProposeRoom, assertJustification } from "./abuse";
+import { enqueueWakes } from "@/lib/notify/wake";
 
-export async function proposeAction(auth: HouseAuth, body: Record<string, unknown>, now: Date) {
-  const kind = parseKind(body.kind);
-  const allowed = lockedKinds(auth.principal);
-  if (kind !== "cancel" && !allowed.includes(kind)) {
-    throw new ProtocolError("forbidden", "This kind is not locked through the gateway", 403);
-  }
-  const payload = parsePayload(kind, body.payload ?? body);
+export async function proposeAction(
+  auth: HouseAuth,
+  body: Record<string, unknown>,
+  now: Date,
+  options?: { origin?: string },
+) {
+  const payload = parsePayload(body.payload ?? body);
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
   if (!justification) throw new ProtocolError("bad_request", "justification is required", 400);
   assertJustification(justification);
@@ -26,12 +27,19 @@ export async function proposeAction(auth: HouseAuth, body: Record<string, unknow
     id,
     principalId: auth.principal.id,
     proposerId: auth.agent.id,
-    kind,
+    kind: "",
     payload,
     justification,
     evidence,
     status: "open",
     silenceUntil: new Date(now.getTime() + auth.principal.silenceWindowSec * 1000),
+  });
+  await enqueueWakes({
+    actionId: id,
+    principalId: auth.principal.id,
+    proposerId: auth.agent.id,
+    revision: 1,
+    origin: options?.origin,
   });
   const bundle = await loadActionBundle(id);
   if (!bundle) throw new ProtocolError("internal", "Failed to load action", 500);
@@ -51,7 +59,7 @@ export async function fileObjection(
   if (bundle.action.status !== "open") {
     throw new ProtocolError("conflict", "Silence window is closed", 409);
   }
-  if (bundle.objections.some((row) => row.objectorId === auth.agent.id)) {
+  if (bundle.objections.some((row) => row.objectorId === auth.agent.id && row.revision === bundle.action.revision)) {
     throw new ProtocolError("conflict", "Already objected", 409);
   }
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
@@ -65,6 +73,7 @@ export async function fileObjection(
     id: objectionId,
     actionId,
     objectorId: auth.agent.id,
+    revision: bundle.action.revision,
     justification,
     evidence,
     bond: "0",

@@ -2,6 +2,7 @@ import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { bearerToken, jsonError, jsonOk } from "@/lib/protocol/http";
 import { findHouseNeedingCourt, sweep } from "@/lib/protocol/sweep";
+import { publicOrigin } from "@/lib/mcp/config";
 import { deployEnv } from "@/lib/ops/client";
 import { writeRequestLog } from "@/lib/ops/log";
 import { recordTick } from "@/lib/ops/tick";
@@ -34,11 +35,11 @@ async function runTick(request: Request) {
     let advanced = 0;
     for (const house of houses) {
       if (house.id === dueId) continue;
-      const result = await sweep(house.id, now, { courts: 0 });
+      const result = await sweep(house.id, now, { courts: 0, origin: publicOrigin(request) });
       advanced += result.advanced;
     }
     if (dueId) {
-      const result = await sweep(dueId, now, { courts: 1 });
+      const result = await sweep(dueId, now, { courts: 1, origin: publicOrigin(request) });
       advanced += result.advanced;
     }
     await recordTick({ startedAt, houses: houses.length, advanced, ok: true });

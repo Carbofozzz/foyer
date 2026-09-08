@@ -1,29 +1,23 @@
 import type { Messages } from "@/lib/i18n/load";
 import { FlowDiagram } from "@/app/components/flow-diagram";
 
-export function ProductOutline({
-  outline,
-  cabinet,
-}: {
-  outline: Messages["outline"];
-  cabinet: Messages["cabinet"];
-}) {
+export function ProductOutline({ outline }: { outline: Messages["outline"] }) {
   return (
     <section className="home-outline-wrap">
       <p className="kicker">{outline.kicker}</p>
-      <FlowDiagram outline={outline} cabinet={cabinet} />
+      <FlowDiagram outline={outline} />
       <div className="home-outline">
         <article className="card stack">
-          <h2 className="section-title">{outline.constitutionTitle}</h2>
-          <p>{outline.constitutionLead}</p>
+          <h2 className="section-title">{outline.card1Title}</h2>
+          <p>{outline.card1Lead}</p>
         </article>
         <article className="card stack">
-          <h2 className="section-title">{outline.gatewayTitle}</h2>
-          <p>{outline.gatewayLead}</p>
+          <h2 className="section-title">{outline.card2Title}</h2>
+          <p>{outline.card2Lead}</p>
         </article>
         <article className="card stack">
-          <h2 className="section-title">{outline.courtTitle}</h2>
-          <p>{outline.courtLead}</p>
+          <h2 className="section-title">{outline.card3Title}</h2>
+          <p>{outline.card3Lead}</p>
         </article>
       </div>
     </section>

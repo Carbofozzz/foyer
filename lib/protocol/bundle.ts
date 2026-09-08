@@ -1,7 +1,7 @@
 import { asc, desc, eq } from "drizzle-orm";
 import { acks, actionReports, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { KIND_REVERSIBLE, type ActionKind, type ActionPayload, type EvidenceItem, type Outcome } from "./types";
+import { MAX_REVISION, type KnownActionKind, type ActionPayload, type EvidenceItem, type StoredOutcome } from "./types";
 import { asEvidence, asPayload } from "./parse";
 
 export type HouseAgent = typeof agents.$inferSelect;
@@ -26,6 +26,9 @@ export async function loadActionBundle(actionId: string) {
     db.select().from(actionReports).where(eq(actionReports.actionId, actionId)).limit(1),
   ]);
   const courtCase = caseRows[0] ?? null;
+  const currentObjections = filed
+    .filter((row) => row.revision === action.revision)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
   const verdictList = courtCase
     ? await db
         .select()
@@ -35,7 +38,7 @@ export async function loadActionBundle(actionId: string) {
     : [];
   return {
     action,
-    objections: filed,
+    objections: currentObjections,
     courtCase,
     verdict: verdictList[0] ?? null,
     acks: ackRows,
@@ -45,53 +48,34 @@ export async function loadActionBundle(actionId: string) {
 }
 
 export function actionPayload(action: ActionRow): ActionPayload {
-  return asPayload({ ...(isObj(action.payload) ? action.payload : {}), kind: action.kind });
+  const raw = isObj(action.payload) ? action.payload : {};
+  const summary = typeof raw.summary === "string" && raw.summary.trim() ? raw.summary : action.justification;
+  return asPayload({ ...raw, summary });
 }
 
 export function actionEvidence(action: ActionRow): EvidenceItem[] {
   return asEvidence(action.evidence);
 }
 
-export function lockedKinds(principal: HousePrincipal): ActionKind[] {
+export function lockedKinds(principal: HousePrincipal): KnownActionKind[] {
   const raw = principal.lockedKinds;
   if (!Array.isArray(raw)) return ["spend", "book", "message"];
-  return raw.filter((kind): kind is ActionKind => kind === "spend" || kind === "book" || kind === "message" || kind === "cancel");
+  return raw.filter(
+    (kind): kind is KnownActionKind =>
+      kind === "spend" || kind === "book" || kind === "message" || kind === "cancel",
+  );
 }
 
 export function engagedIds(proposerId: string, objectorIds: string[]): string[] {
   return [...new Set([proposerId, ...objectorIds])];
 }
 
-function chosenKind(
-  bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>,
-): ActionKind | null {
-  const verdict = bundle.verdict;
-  if (!verdict) return bundle.action.kind as ActionKind;
-  if (verdict.outcome === "allow_a") return bundle.action.kind as ActionKind;
-  if (verdict.outcome === "remedy" && verdict.remedyAction) return asPayload(verdict.remedyAction).kind;
-  if (verdict.outcome === "allow_b") {
-    const counter = bundle.objections[0]?.counterAction;
-    return counter ? asPayload(counter).kind : null;
-  }
-  return null;
-}
-
 export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
   const verdict = bundle.verdict;
-  const kind = chosenKind(bundle);
   const permitted = permittedPayloadOf(bundle);
   const mayAct = bundle.action.status === "permitted" && permitted !== null;
-  const held =
-    Boolean(
-      kind &&
-        !KIND_REVERSIBLE[kind] &&
-        bundle.action.status === "awaiting_ack" &&
-        bundle.action.appealUntil &&
-        bundle.action.appealUntil > new Date(),
-    );
   return {
     id: bundle.action.id,
-    kind: bundle.action.kind,
     payload: bundle.action.payload,
     justification: bundle.action.justification,
     evidence: bundle.action.evidence,
@@ -100,22 +84,27 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     silence_until: bundle.action.silenceUntil.toISOString(),
     ack_until: bundle.action.ackUntil?.toISOString() ?? null,
     appeal_until: bundle.action.appealUntil?.toISOString() ?? null,
-    held_until: held ? bundle.action.appealUntil?.toISOString() ?? null : null,
+    held_until: null,
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
     may_act: mayAct,
     permitted_payload: permitted,
     report: bundle.report
       ? {
-          did: bundle.report.did,
-          result: reportResult(bundle.report.did, mayAct),
           at: bundle.report.createdAt.toISOString(),
         }
       : null,
     test_pass: bundle.action.testPass,
     proposer_id: bundle.action.proposerId,
+    revision: bundle.action.revision,
+    bargain_round: bundle.action.bargainRound,
+    bargain_until: bundle.action.bargainUntil?.toISOString() ?? null,
+    insisted_at: bundle.action.insistedAt?.toISOString() ?? null,
+    phase: actionPhase(bundle),
+    proposer_can: proposerCan(bundle),
     objections: bundle.objections.map((row) => ({
       id: row.id,
       objector_id: row.objectorId,
+      revision: row.revision,
       justification: row.justification,
       evidence: row.evidence,
       bond: row.bond,
@@ -131,7 +120,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     verdict: verdict
       ? {
           id: verdict.id,
-          outcome: verdict.outcome as Outcome,
+          outcome: verdict.outcome as StoredOutcome,
           remedy_action: verdict.remedyAction,
           reasoning: verdict.reasoning,
           objection_grounded: verdict.objectionGrounded,
@@ -155,6 +144,29 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
   };
 }
 
+function actionPhase(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
+  const status = bundle.action.status;
+  if (status === "withdrawn") return "withdrawn" as const;
+  if (status === "permitted" || status === "executed") return status;
+  if (status === "escalated") return "escalated" as const;
+  if (status === "awaiting_ack") return "awaiting_ack" as const;
+  if (bundle.action.insistedAt && bundle.courtCase && bundle.courtCase.status !== "judged") {
+    return "in_court" as const;
+  }
+  if (status === "bargaining") return "bargaining" as const;
+  return "collecting" as const;
+}
+
+function proposerCan(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
+  const claimed = Boolean(bundle.action.insistedAt);
+  const bargaining = bundle.action.status === "bargaining" && !claimed;
+  return {
+    withdraw: (bundle.action.status === "open" || bundle.action.status === "bargaining") && !claimed,
+    revise: bargaining && bundle.action.revision < MAX_REVISION,
+    insist: bargaining && bundle.objections.length > 0,
+  };
+}
+
 function permittedPayloadOf(
   bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>,
 ): ActionPayload | null {
@@ -166,13 +178,6 @@ function permittedPayloadOf(
   } catch {
     return null;
   }
-}
-
-function reportResult(did: boolean, mayAct: boolean): "did" | "skipped" | "broke" {
-  if (did && mayAct) return "did";
-  if (!did && mayAct) return "skipped";
-  if (did && !mayAct) return "broke";
-  return "skipped";
 }
 
 function isObj(value: unknown): value is Record<string, unknown> {

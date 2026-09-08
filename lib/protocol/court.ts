@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { actions, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { COURT_FLOOR_WEI, ensureCourtFunds } from "@/lib/judge/funds";
@@ -11,10 +11,12 @@ import {
   type JudgeExtra,
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
-import type { EvidenceItem, Outcome, VerdictAnswer } from "./types";
+import { executeAfterAck } from "./execute";
+import type { EvidenceItem, JudgeInput, ObjectionOpinion, VerdictAnswer } from "./types";
 import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
 import { asEvidence, asPayload } from "./parse";
+import { normalizeCourtOutcome } from "./verdict";
 
 const ERROR_ESCALATE: VerdictAnswer = {
   outcome: "escalate",
@@ -50,14 +52,10 @@ export async function stepHouseCourt(principal: HousePrincipal, now: Date): Prom
     await advanceCase(inflight, principal, now);
     return true;
   }
+  if (await recoverFalseEscalate(principal, now)) return true;
   const bare = await findBareCase(principal.id);
   if (bare) {
     await submitForCase(bare.row, principal, bare.action, now);
-    return true;
-  }
-  const deadlock = await findDeadlock(principal.id, now);
-  if (deadlock) {
-    await openCourt(deadlock, principal, now);
     return true;
   }
   return false;
@@ -65,7 +63,7 @@ export async function stepHouseCourt(principal: HousePrincipal, now: Date): Prom
 
 const liveHouse = and(eq(principals.isSpawn, false), isNotNull(principals.ownerAddress));
 
-export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
+export async function findHouseNeedingCourt(_now: Date): Promise<string | null> {
   const db = getDb();
   const [inflight] = await db
     .select({ principalId: actions.principalId })
@@ -91,39 +89,49 @@ export async function findHouseNeedingCourt(now: Date): Promise<string | null> {
     .limit(1);
   if (bare) return bare.principalId;
 
-  const [row] = await db
+  const [falseEsc] = await db
     .select({ principalId: actions.principalId })
-    .from(actions)
-    .innerJoin(objections, eq(objections.actionId, actions.id))
+    .from(cases)
+    .innerJoin(actions, eq(cases.actionId, actions.id))
     .innerJoin(principals, eq(actions.principalId, principals.id))
-    .leftJoin(cases, eq(cases.actionId, actions.id))
+    .innerJoin(verdicts, eq(verdicts.caseId, cases.id))
     .where(
       and(
         liveHouse,
-        eq(actions.status, "open"),
-        isNull(cases.id),
-        or(lte(actions.silenceUntil, now), eq(actions.testPass, true)),
+        eq(cases.status, "judged"),
+        eq(verdicts.judge, "offline"),
+        eq(verdicts.outcome, "escalate"),
+        eq(verdicts.reasoning, ERROR_ESCALATE.reasoning),
+        sql`not exists (
+          select 1 from verdicts newer
+          where newer.case_id = ${cases.id}
+            and (newer.created_at > ${verdicts.createdAt}
+              or (newer.created_at = ${verdicts.createdAt} and newer.id > ${verdicts.id}))
+        )`,
       ),
     )
     .limit(1);
-  return row?.principalId ?? null;
+  return falseEsc?.principalId ?? null;
 }
 
 export async function openCourt(action: ActionRow, principal: HousePrincipal, now: Date): Promise<void> {
   const db = getDb();
-  const caseId = mintToken("cas");
-  const claimed = await db
-    .insert(cases)
-    .values({
-      id: caseId,
-      actionId: action.id,
-      constitutionSnapshot: principal.constitution,
-      status: "open",
-    })
-    .onConflictDoNothing({ target: cases.actionId })
-    .returning();
-  const row = claimed[0];
-  if (!row) return;
+  const [existing] = await db.select().from(cases).where(eq(cases.actionId, action.id)).limit(1);
+  let row = existing ?? null;
+  if (!row) {
+    const claimed = await db
+      .insert(cases)
+      .values({
+        id: mintToken("cas"),
+        actionId: action.id,
+        constitutionSnapshot: principal.constitution,
+        status: "open",
+      })
+      .onConflictDoNothing({ target: cases.actionId })
+      .returning();
+    row = claimed[0] ?? (await db.select().from(cases).where(eq(cases.actionId, action.id)).limit(1))[0] ?? null;
+  }
+  if (!row || row.status === "judged" || row.tx) return;
   await submitForCase(row, principal, action, now);
 }
 
@@ -155,38 +163,57 @@ async function findBareCase(principalId: string): Promise<{ row: CaseRow; action
   return hit ? { row: hit.court, action: hit.action } : null;
 }
 
-async function findDeadlock(principalId: string, now: Date): Promise<ActionRow | null> {
-  const db = getDb();
-  const [row] = await db
-    .select({ action: actions })
-    .from(actions)
-    .innerJoin(objections, eq(objections.actionId, actions.id))
-    .leftJoin(cases, eq(cases.actionId, actions.id))
-    .where(
-      and(
-        eq(actions.principalId, principalId),
-        eq(actions.status, "open"),
-        isNull(cases.id),
-        or(lte(actions.silenceUntil, now), eq(actions.testPass, true)),
-      ),
-    )
-    .limit(1);
-  return row?.action ?? null;
-}
-
 async function advanceCase(row: CaseRow, principal: HousePrincipal, now: Date): Promise<void> {
   if (!row.tx) return;
   const phase = await inspectJudgeTx(row.tx);
   if (phase === "pending") return;
   if (phase === "ready") {
-    const contract = principal.courtContract;
-    const answer = contract ? await readJudgeVerdict(contract, row.id) : null;
+    const answer = await readCaseVerdict(principal, row);
     if (answer) {
       await applyVerdict(row, principal, now, answer, "onchain", row.tx);
       return;
     }
+    // Consensus landed. Do not burn a retry because the view lagged.
+    return;
   }
   await markTxFailed(row, principal, now);
+}
+
+async function readCaseVerdict(principal: HousePrincipal, row: CaseRow): Promise<VerdictAnswer | null> {
+  const contract = row.contract || principal.courtContract;
+  if (!contract) return null;
+  const wallet = await ensureHouseWallet(principal);
+  return readJudgeVerdict(contract, row.id, wallet.accountKey);
+}
+
+async function recoverFalseEscalate(principal: HousePrincipal, now: Date): Promise<boolean> {
+  const row = await findFalseEscalateCase(principal.id);
+  if (!row) return false;
+  const answer = await readCaseVerdict(principal, row);
+  if (!answer) return false;
+  await applyVerdict(row, principal, now, answer, "onchain", row.tx);
+  return true;
+}
+
+async function findFalseEscalateCase(principalId: string): Promise<CaseRow | null> {
+  const db = getDb();
+  const [hit] = await db
+    .select({ court: cases, verdictJudge: verdicts.judge, verdictOutcome: verdicts.outcome, verdictReason: verdicts.reasoning })
+    .from(cases)
+    .innerJoin(actions, eq(cases.actionId, actions.id))
+    .innerJoin(verdicts, eq(verdicts.caseId, cases.id))
+    .where(and(eq(actions.principalId, principalId), eq(cases.status, "judged")))
+    .orderBy(desc(verdicts.createdAt), desc(verdicts.id))
+    .limit(1);
+  if (!hit) return null;
+  if (
+    hit.verdictJudge === "offline" &&
+    hit.verdictOutcome === "escalate" &&
+    hit.verdictReason === ERROR_ESCALATE.reasoning
+  ) {
+    return hit.court;
+  }
+  return null;
 }
 
 async function markTxFailed(row: CaseRow, principal: HousePrincipal, now: Date): Promise<void> {
@@ -222,13 +249,13 @@ async function submitForCase(
   }
 
   const extra = await appealExtra(row.id);
-  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await judgeInput(row, action), extra);
+  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action), extra);
   if (!hash) {
     await noteSubmitFail(row, principal, now);
     return;
   }
   const db = getDb();
-  await db.update(cases).set({ tx: hash, status: "open" }).where(eq(cases.id, row.id));
+  await db.update(cases).set({ tx: hash, status: "open", contract: contractAddress }).where(eq(cases.id, row.id));
   await recordCourtTx(principal, hash, contractAddress);
 }
 
@@ -241,23 +268,25 @@ async function noteSubmitFail(row: CaseRow, principal: HousePrincipal, now?: Dat
   }
 }
 
-async function judgeInput(row: CaseRow, action: ActionRow) {
+export async function buildJudgeInput(row: CaseRow, action: ActionRow): Promise<JudgeInput> {
   const db = getDb();
   const filed = await db.select().from(objections).where(eq(objections.actionId, action.id));
-  const primary = filed[0];
+  const current = filed
+    .filter((item) => item.revision === action.revision)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+  const opinions: ObjectionOpinion[] = current.map((item) => ({
+    objector_id: item.objectorId,
+    justification: item.justification,
+    counter_action: item.counterAction ? asPayload(item.counterAction) : null,
+  }));
   const evidence: EvidenceItem[] = [
     ...actionEvidence(action),
-    ...(primary ? asEvidence(primary.evidence) : []),
+    ...current.flatMap((item) => asEvidence(item.evidence)),
   ];
   return {
     constitution: row.constitutionSnapshot,
     proposed_action: actionPayload(action),
-    objection: primary
-      ? {
-          justification: primary.justification,
-          counter_action: primary.counterAction ? asPayload(primary.counterAction) : null,
-        }
-      : null,
+    objections: opinions,
     evidence,
   };
 }
@@ -273,8 +302,8 @@ async function appealExtra(caseId: string): Promise<JudgeExtra | undefined> {
   if (!prior) return undefined;
   return {
     prior_verdict: {
-      outcome: prior.outcome as Outcome,
-      remedy_action: prior.remedyAction ? asPayload(prior.remedyAction) : null,
+      outcome: normalizeCourtOutcome(prior.outcome) ?? "escalate",
+      remedy_action: null,
       reasoning: prior.reasoning,
       objection_grounded: prior.objectionGrounded,
     },
@@ -295,17 +324,10 @@ async function applyVerdict(
     const [existing] = await db
       .select({ id: verdicts.id })
       .from(verdicts)
-      .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, tx)))
+      .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, tx), eq(verdicts.judge, "onchain")))
       .limit(1);
     if (existing) return;
   }
-
-  const [latest] = await db
-    .select({ id: verdicts.id })
-    .from(verdicts)
-    .where(eq(verdicts.caseId, row.id))
-    .orderBy(desc(verdicts.createdAt))
-    .limit(1);
 
   await db.insert(verdicts).values({
     id: mintToken("vrd"),
@@ -316,7 +338,7 @@ async function applyVerdict(
     objectionGrounded: answer.objection_grounded,
     judge,
     tx,
-    appealOf: latest?.id ?? null,
+    appealOf: null,
     escalateExternal: false,
   });
   await db.update(cases).set({ status: "judged", tx: tx ?? row.tx, txErrors: 0 }).where(eq(cases.id, row.id));
@@ -340,6 +362,13 @@ async function applyVerdict(
       appealUntil: new Date(now.getTime() + principal.appealWindowSec * 1000),
     })
     .where(eq(actions.id, row.actionId));
+
+  const [action] = await db
+    .select({ testPass: actions.testPass })
+    .from(actions)
+    .where(eq(actions.id, row.actionId))
+    .limit(1);
+  if (action?.testPass) await executeAfterAck(row.actionId);
 }
 
 /** Public submit for a principal appeal. Saves the hash; tick applies the IC JSON. */
@@ -368,12 +397,12 @@ export async function submitAppealTx(
     await noteSubmitFail(row, principal, now);
     return null;
   }
-  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await judgeInput(row, action), extra);
+  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action), extra);
   if (!hash) {
     await noteSubmitFail(row, principal, now);
     return null;
   }
-  await getDb().update(cases).set({ tx: hash, status: "open" }).where(eq(cases.id, row.id));
+  await getDb().update(cases).set({ tx: hash, status: "open", contract: contractAddress }).where(eq(cases.id, row.id));
   await recordCourtTx(principal, hash, contractAddress);
   return hash;
 }

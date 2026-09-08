@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import type { ActionKind, PrincipalType } from "./types";
+import type { KnownActionKind, PrincipalType } from "./types";
 import { ProtocolError } from "./errors";
 import type { HousePrincipal } from "./bundle";
 
@@ -25,7 +25,7 @@ export async function saveConstitution(
 
 export async function saveLocks(principal: HousePrincipal, kinds: unknown) {
   if (!Array.isArray(kinds)) throw new ProtocolError("bad_request", "kinds must be an array", 400);
-  const allowed = kinds.filter((kind): kind is ActionKind =>
+  const allowed = kinds.filter((kind): kind is KnownActionKind =>
     kind === "spend" || kind === "book" || kind === "message",
   );
   if (allowed.length === 0) {

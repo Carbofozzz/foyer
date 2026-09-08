@@ -4,9 +4,10 @@ import { createAccount, createClient, isSuccessful } from "genlayer-js";
 import { studioDevnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 import type { Address, CalldataEncodable, DecodedDeployData, TransactionHash } from "genlayer-js/types";
-import { ACTION_KINDS, OUTCOMES, type ActionPayload, type JudgeInput, type VerdictAnswer } from "@/lib/protocol/types";
+import { type JudgeInput, type VerdictAnswer } from "@/lib/protocol/types";
 import { isRecord } from "@/lib/protocol/parse";
 import { asHexAddress } from "@/lib/gen/chain";
+import { normalizeCourtOutcome } from "@/lib/protocol/verdict";
 
 export type JudgeExtra = {
   prior_verdict?: VerdictAnswer | null;
@@ -91,12 +92,14 @@ export async function inspectJudgeTx(hash: string): Promise<CourtTxPhase> {
 export async function readJudgeVerdict(
   contractAddress: string,
   caseId: string,
+  accountKey?: `0x${string}`,
 ): Promise<VerdictAnswer | null> {
   const address = asAddress(contractAddress);
   const chain = resolveChain();
   if (!address || !chain) return null;
   try {
-    const client = createClient({ chain });
+    const client = accountKey ? clientFor(accountKey) : createClient({ chain });
+    if (!client) return null;
     const raw = await client.readContract({
       address,
       functionName: "get_verdict",
@@ -220,7 +223,7 @@ async function writeJudge(
       caseId,
       input.constitution,
       JSON.stringify(input.proposed_action),
-      JSON.stringify(input.objection),
+      JSON.stringify(input.objections),
       JSON.stringify(input.evidence),
       extra?.prior_verdict ? JSON.stringify(extra.prior_verdict) : "",
       extra?.appeal_note ?? "",
@@ -256,29 +259,12 @@ function parseAnswer(raw: unknown): VerdictAnswer | null {
     }
   }
   if (!isRecord(body) || body.found === false) return null;
-  if (typeof body.outcome !== "string" || !OUTCOMES.includes(body.outcome as VerdictAnswer["outcome"])) {
-    return null;
-  }
-  const outcome = body.outcome as VerdictAnswer["outcome"];
+  if (typeof body.outcome !== "string") return null;
+  const outcome = normalizeCourtOutcome(body.outcome);
+  if (!outcome) return null;
   const reasoning = typeof body.reasoning === "string" && body.reasoning.trim() ? body.reasoning.trim() : "No reasoning given.";
   const objection_grounded = Boolean(body.objection_grounded);
-  let remedy_action: ActionPayload | null = null;
-  if (outcome === "remedy") {
-    remedy_action = parseRemedy(body.remedy_action);
-    if (!remedy_action) return null;
-  }
-  return { outcome, remedy_action, reasoning, objection_grounded };
-}
-
-function parseRemedy(raw: unknown): ActionPayload | null {
-  if (!isRecord(raw) || typeof raw.kind !== "string" || !ACTION_KINDS.includes(raw.kind as ActionPayload["kind"])) {
-    return null;
-  }
-  if (typeof raw.summary !== "string" || !raw.summary.trim()) return null;
-  const payload: ActionPayload = { kind: raw.kind as ActionPayload["kind"], summary: raw.summary.trim() };
-  if (typeof raw.amount === "number" && Number.isFinite(raw.amount)) payload.amount = raw.amount;
-  if (typeof raw.currency === "string" && raw.currency.trim()) payload.currency = raw.currency.trim();
-  return payload;
+  return { outcome, remedy_action: null, reasoning, objection_grounded };
 }
 
 async function withBudget<T>(ms: number, fn: () => Promise<T | null>): Promise<T | null> {

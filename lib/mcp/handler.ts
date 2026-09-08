@@ -1,5 +1,6 @@
 import { requireAgent } from "@/lib/protocol/auth";
 import { ackAction, fileObjection, getAction, inboxFor, proposeAction } from "@/lib/protocol/actions";
+import { insistAction, reviseAction, withdrawAction } from "@/lib/protocol/bargain";
 import { reportAction, reportBody } from "@/lib/protocol/report";
 import type { HouseAuth } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
@@ -7,6 +8,7 @@ import { sweep } from "@/lib/protocol/sweep";
 import { ABUSE } from "@/lib/protocol/abuse";
 import { isRecord } from "@/lib/protocol/parse";
 import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
+import { MCP_INBOX_POLL_SEC, publicOrigin } from "@/lib/mcp/config";
 
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: unknown };
 
@@ -18,12 +20,12 @@ const TOOLS = [
   },
   {
     name: "propose",
-    description: "Propose an action (spend, book, message, cancel) with justification and evidence.",
+    description:
+      `Propose an action with justification and evidence. After this call, poll inbox at least every ${MCP_INBOX_POLL_SEC} seconds until the action is decided. Chat runtimes are not woken.`,
     inputSchema: {
       type: "object",
-      required: ["kind", "justification"],
+      required: ["justification"],
       properties: {
-        kind: { type: "string", enum: ["spend", "book", "message", "cancel"] },
         summary: { type: "string" },
         amount: { type: "number" },
         currency: { type: "string" },
@@ -35,7 +37,7 @@ const TOOLS = [
   },
   {
     name: "object",
-    description: "Object to an open action. Optional counter_action.",
+    description: "Object to an open action while the collection window is open. Optional counter_action.",
     inputSchema: {
       type: "object",
       required: ["action_id", "justification"],
@@ -49,8 +51,44 @@ const TOOLS = [
   },
   {
     name: "inbox",
-    description: "List actions, deadlines, and verdicts for this house.",
+    description:
+      `List actions, deadlines, and verdicts for this house. After you propose or object, call this at least every ${MCP_INBOX_POLL_SEC} seconds until the action is decided. Chat runtimes are not woken.`,
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "withdraw",
+    description: "Proposer only. End the action with no permit and no court.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id"],
+      properties: { action_id: { type: "string" } },
+    },
+  },
+  {
+    name: "revise",
+    description: "Proposer only, after objections. New payload, new revision, wake checkers again.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id", "justification"],
+      properties: {
+        action_id: { type: "string" },
+        summary: { type: "string" },
+        amount: { type: "number" },
+        currency: { type: "string" },
+        justification: { type: "string" },
+        evidence: { type: "array" },
+        payload: { type: "object" },
+      },
+    },
+  },
+  {
+    name: "insist",
+    description: "Proposer only. The only call that opens court on this action.",
+    inputSchema: {
+      type: "object",
+      required: ["action_id"],
+      properties: { action_id: { type: "string" } },
+    },
   },
   {
     name: "ack",
@@ -63,7 +101,8 @@ const TOOLS = [
   },
   {
     name: "get_action",
-    description: "Get one action’s lock, court, and whether you may_act with permitted_payload.",
+    description:
+      "Get one action’s lock, court, and whether you may_act with permitted_payload. Same poll duty as inbox after you propose.",
     inputSchema: {
       type: "object",
       required: ["action_id"],
@@ -72,13 +111,12 @@ const TOOLS = [
   },
   {
     name: "report",
-    description: "After you act or skip, report { did: true | false } for that action.",
+    description: "After a final allow or deny, POST report to ack that you read it. No did flag.",
     inputSchema: {
       type: "object",
-      required: ["action_id", "did"],
+      required: ["action_id"],
       properties: {
         action_id: { type: "string" },
-        did: { type: "boolean" },
       },
     },
   },
@@ -89,7 +127,7 @@ export async function handleMcpGet(request: Request): Promise<Response> {
   if ("error" in auth && auth.error) {
     return withCors(auth.error);
   }
-  await sweep(auth.principal.id, new Date());
+  await sweep(auth.principal.id, new Date(), { origin: publicOrigin(request) });
   return withCors(
     Response.json({
       data: {
@@ -115,7 +153,7 @@ export async function handleMcpPost(request: Request): Promise<Response> {
   const { rpc } = parsed;
   const id = rpc.id ?? null;
   try {
-    const result = await dispatch(auth, rpc.method ?? "initialize", rpc.params);
+    const result = await dispatch(auth, rpc.method ?? "initialize", rpc.params, publicOrigin(request));
     return rpcOk(id, result);
   } catch (error) {
     const message =
@@ -149,8 +187,8 @@ async function readRpc(request: Request): Promise<{ rpc: Rpc } | { error: Respon
   }
 }
 
-async function dispatch(auth: HouseAuth, method: string, params: unknown) {
-  await sweep(auth.principal.id, new Date());
+async function dispatch(auth: HouseAuth, method: string, params: unknown, origin: string) {
+  await sweep(auth.principal.id, new Date(), { origin });
   if (method === "initialize") {
     return {
       protocolVersion: "2024-11-05",
@@ -167,13 +205,13 @@ async function dispatch(auth: HouseAuth, method: string, params: unknown) {
     const p = isRecord(params) ? params : {};
     const name = typeof p.name === "string" ? p.name : "";
     const args = isRecord(p.arguments) ? p.arguments : {};
-    const data = await callTool(auth, name, args);
+    const data = await callTool(auth, name, args, origin);
     return { content: [{ type: "text", text: JSON.stringify(data) }] };
   }
   throw new Error(`Unknown method: ${method}`);
 }
 
-async function callTool(auth: HouseAuth, name: string, args: Record<string, unknown>) {
+async function callTool(auth: HouseAuth, name: string, args: Record<string, unknown>, origin: string) {
   const now = new Date();
   if (name === "get_constitution") {
     return {
@@ -186,11 +224,23 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
     if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {
       throw new ProtocolError("rate_limited", "Too many proposals from this agent", 429);
     }
-    return proposeAction(auth, args, now);
+    return proposeAction(auth, args, now, { origin });
   }
   if (name === "object") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
     return fileObjection(auth, actionId, args, now);
+  }
+  if (name === "withdraw") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return withdrawAction(auth, actionId);
+  }
+  if (name === "revise") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return reviseAction(auth, actionId, args, now, { origin });
+  }
+  if (name === "insist") {
+    const actionId = typeof args.action_id === "string" ? args.action_id : "";
+    return insistAction(auth, actionId, now);
   }
   if (name === "inbox") return inboxFor(auth);
   if (name === "ack") {

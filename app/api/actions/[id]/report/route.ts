@@ -14,11 +14,14 @@ async function postReport(request: Request, context: { params: Promise<{ id: str
   if ("error" in auth) return auth.error;
   await sweep(auth.principal.id, new Date());
   const { id } = await context.params;
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return jsonError("bad_request", "JSON body required", 400);
+  let body: unknown = {};
+  const text = await request.text();
+  if (text.trim()) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return jsonError("bad_request", "JSON body required", 400);
+    }
   }
   try {
     return jsonOk(await reportAction(auth, id, reportBody(body)));

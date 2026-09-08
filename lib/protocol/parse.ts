@@ -1,20 +1,13 @@
-import { ACTION_KINDS, type ActionKind, type ActionPayload, type EvidenceItem } from "./types";
+import { WAKE_KINDS, type ActionPayload, type EvidenceItem, type WakeKind } from "./types";
 import { ABUSE } from "./abuse";
 import { ProtocolError } from "./errors";
 
-export function parseKind(value: unknown): ActionKind {
-  if (typeof value !== "string" || !ACTION_KINDS.includes(value as ActionKind)) {
-    throw new ProtocolError("bad_request", "kind must be spend, book, message, or cancel", 400);
-  }
-  return value as ActionKind;
-}
-
-export function parsePayload(kind: ActionKind, raw: unknown): ActionPayload {
+export function parsePayload(raw: unknown): ActionPayload {
   const body = isRecord(raw) ? raw : {};
   const summary = typeof body.summary === "string" ? body.summary.trim() : "";
   if (!summary) throw new ProtocolError("bad_request", "payload.summary is required", 400);
   if (summary.length > ABUSE.summary) throw new ProtocolError("bad_request", "payload.summary is too long", 400);
-  const payload: ActionPayload = { kind, summary };
+  const payload: ActionPayload = { summary };
   if (body.amount != null) {
     if (typeof body.amount !== "number" || !Number.isFinite(body.amount) || body.amount < 0 || body.amount > 1e12) {
       throw new ProtocolError("bad_request", "payload.amount is invalid", 400);
@@ -74,14 +67,11 @@ export function parseEvidence(raw: unknown): EvidenceItem[] {
 export function parseCounterAction(raw: unknown): ActionPayload | null {
   if (raw == null) return null;
   if (!isRecord(raw)) throw new ProtocolError("bad_request", "counter_action must be an object", 400);
-  const kind = parseKind(raw.kind);
-  return parsePayload(kind, raw);
+  return parsePayload(raw);
 }
 
 export function asPayload(raw: unknown): ActionPayload {
-  const body = isRecord(raw) ? raw : {};
-  const kind = parseKind(body.kind ?? "message");
-  return parsePayload(kind, body);
+  return parsePayload(raw);
 }
 
 export function asEvidence(raw: unknown): EvidenceItem[] {
@@ -94,4 +84,50 @@ export function asEvidence(raw: unknown): EvidenceItem[] {
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export type AgentWakeSpec = {
+  wake: WakeKind;
+  callbackUrl: string | null;
+  callbackSecret: string | null;
+};
+
+export function parseAgentWake(body: Record<string, unknown>): AgentWakeSpec {
+  const raw = typeof body.wake === "string" ? body.wake.trim() : "outbound";
+  if (!WAKE_KINDS.includes(raw as WakeKind)) {
+    throw new ProtocolError("bad_request", "wake must be outbound or callback", 400);
+  }
+  if (raw === "hosted") {
+    throw new ProtocolError("bad_request", "hosted agents are not available", 400);
+  }
+  const wake = raw as WakeKind;
+  if (wake !== "callback") {
+    return { wake, callbackUrl: null, callbackSecret: null };
+  }
+  const callbackUrl = parseCallbackUrl(body.callback_url);
+  const secretRaw = typeof body.callback_secret === "string" ? body.callback_secret.trim() : "";
+  if (secretRaw.length > 256) {
+    throw new ProtocolError("bad_request", "callback_secret is too long", 400);
+  }
+  return { wake, callbackUrl, callbackSecret: secretRaw || null };
+}
+
+export function parseCallbackUrl(raw: unknown): string {
+  if (typeof raw !== "string" || !raw.trim()) {
+    throw new ProtocolError("bad_request", "callback_url is required", 400);
+  }
+  const text = raw.trim();
+  if (text.length > 2048) {
+    throw new ProtocolError("bad_request", "callback_url is too long", 400);
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(text);
+  } catch {
+    throw new ProtocolError("bad_request", "callback_url is invalid", 400);
+  }
+  const local = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  if (parsed.protocol === "https:") return parsed.toString();
+  if (parsed.protocol === "http:" && local) return parsed.toString();
+  throw new ProtocolError("bad_request", "callback_url must be https", 400);
 }

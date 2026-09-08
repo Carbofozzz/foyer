@@ -4,6 +4,7 @@ import { sweep } from "@/lib/protocol/sweep";
 import { ABUSE, readBoundedJson } from "@/lib/protocol/abuse";
 import { proposeAction } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
+import { publicOrigin } from "@/lib/mcp/config";
 
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
@@ -19,7 +20,7 @@ async function postPropose(request: Request) {
   }
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;
-  await sweep(auth.principal.id, new Date());
+  await sweep(auth.principal.id, new Date(), { origin: publicOrigin(request) });
   if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {
     return jsonError("rate_limited", "Too many proposals from this agent", 429);
   }
@@ -31,7 +32,7 @@ async function postPropose(request: Request) {
   }
   if (!isRecord(body)) return jsonError("bad_request", "JSON object required", 400);
   try {
-    const action = await proposeAction(auth, body, new Date());
+    const action = await proposeAction(auth, body, new Date(), { origin: publicOrigin(request) });
     return jsonOk(action, 201);
   } catch (error) {
     return protocolFail(error);

@@ -1,72 +1,78 @@
+import type { ReactNode } from "react";
 import type { Messages } from "@/lib/i18n/load";
-import { StatusPill } from "@/app/components/status-pill";
+import { StatusPill, type PillTone } from "@/app/components/status-pill";
 
 /**
- * One request walking the product: assistants ask, the gateway checks the rules,
- * a dispute goes to court, and only then the world is touched.
- * Static markup — the travelling pulse is CSS, so this stays a server component.
+ * The whole request path on one rail: two steps, the fork, court, three endings.
+ * Numbered bullets carry the spine; hollow bullets are what can happen along it.
  */
-export function FlowDiagram({
-  outline,
-  cabinet,
-}: {
-  outline: Messages["outline"];
-  cabinet: Messages["cabinet"];
-}) {
+export function FlowDiagram({ outline }: { outline: Messages["outline"] }) {
   return (
     <div className="flow">
-      <div className="flow-track">
+      <Row mark="1">
         <div className="flow-node">
-          <span className="flow-num">01</span>
-          <span className="flow-name">{outline.flowAgents}</span>
-          <span className="flow-sub">Travel · Budget</span>
+          <span className="flow-name">{outline.flowAsk}</span>
         </div>
+      </Row>
 
-        <Wire label={cabinet.request} delay="0s" />
-
+      <Row mark="2">
         <div className="flow-node">
-          <span className="flow-num">02</span>
-          <span className="flow-name">{outline.gatewayTitle}</span>
-          <span className="flow-sub">{outline.constitutionTitle}</span>
+          <span className="flow-name">{outline.flowWait}</span>
         </div>
+      </Row>
 
-        <Wire label={cabinet.objection} delay="0.5s" />
+      <Row>
+        <div className="flow-node is-end">
+          <span className="flow-sub">{outline.flowQuiet}</span>
+          <span className="flow-name">{outline.flowQuietOut}</span>
+        </div>
+      </Row>
 
-        <div className="flow-node flow-node-court">
-          <span className="flow-num">03</span>
-          <span className="flow-name">{outline.courtTitle}</span>
-          <ul className="flow-outcomes">
-            <li>
-              <StatusPill tone="ok">{cabinet.outcomeAllowA}</StatusPill>
-            </li>
-            <li>
-              <StatusPill tone="info">{cabinet.outcomeAllowB}</StatusPill>
-            </li>
-            <li>
-              <StatusPill tone="warn">{cabinet.outcomeRemedy}</StatusPill>
-            </li>
-            <li>
-              <StatusPill tone="danger">{cabinet.outcomeEscalate}</StatusPill>
-            </li>
+      <Row>
+        <div className="flow-node">
+          <span className="flow-sub">{outline.flowObject}</span>
+          <span className="flow-name">{outline.flowTalk}</span>
+          <ul className="flow-picks">
+            <li>{outline.flowTakeBack}</li>
+            <li>{outline.flowChange}</li>
+            <li className="is-cont">{outline.flowCourtAsk}</li>
           </ul>
         </div>
+      </Row>
 
-        <Wire label={cabinet.decision} delay="1s" />
-
-        <div className="flow-node">
-          <span className="flow-num">04</span>
-          <span className="flow-name">{outline.flowAction}</span>
+      <Row mark="3">
+        <div className="flow-node flow-node-court">
+          <span className="flow-name">{outline.flowCourt}</span>
         </div>
-      </div>
+      </Row>
+
+      <Row last>
+        <div className="flow-ends">
+          <Ending tone="ok" label={outline.flowYes} text={outline.flowAfterYes} />
+          <Ending tone="info" label={outline.flowNo} text={outline.flowAfterNo} />
+          <Ending tone="danger" label={outline.flowYou} text={outline.flowAfterYou} />
+        </div>
+      </Row>
     </div>
   );
 }
 
-function Wire({ label, delay }: { label: string; delay: string }) {
+function Row({ mark, last, children }: { mark?: string; last?: boolean; children: ReactNode }) {
   return (
-    <div className="flow-wire">
-      <span className="flow-wire-label">{label}</span>
-      <span className="flow-pulse" style={{ animationDelay: delay }} aria-hidden="true" />
+    <div className={last ? "flow-row is-last" : "flow-row"}>
+      <span className={mark ? "flow-bullet" : "flow-bullet is-dot"} aria-hidden="true">
+        {mark}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function Ending({ tone, label, text }: { tone: PillTone; label: string; text: string }) {
+  return (
+    <div className="flow-node is-end">
+      <StatusPill tone={tone}>{label}</StatusPill>
+      <span className="flow-name">{text}</span>
     </div>
   );
 }
