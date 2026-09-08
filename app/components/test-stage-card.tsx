@@ -99,7 +99,7 @@ export function TestStageCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [modal, setModal] = useState<ModalView>(null);
+  const [modal, setModal] = useState<ModalView | null>(null);
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/cabinet/${token}/test`, { headers: cabinetHeaders(houseId) });
