@@ -7,6 +7,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { mintToken } from "@/lib/protocol/keys";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { ensureHouseWallet, revealHouseWallet } from "./house-wallet";
+import { requestStudioFaucet, studioFaucetAvailable } from "./funds";
 import { estimateTransferReserve, transferFromHouse, walletBalance } from "./onchain";
 
 export type TransferKind = "deposit" | "withdraw" | "court";
@@ -29,6 +30,7 @@ export type HouseWalletView = {
   withdrawable: string;
   court_contract: string | null;
   owner: string | null;
+  studio_faucet: boolean;
   transfers: HouseTransfer[];
 };
 
@@ -46,8 +48,15 @@ export async function loadHouseWalletView(principal: HousePrincipal): Promise<Ho
     withdrawable: formatGen(available),
     court_contract: principal.courtContract,
     owner: principal.ownerAddress,
+    studio_faucet: studioFaucetAvailable(),
     transfers: await listTransfers(principal.id),
   };
+}
+
+export async function faucetHouse(principal: HousePrincipal): Promise<HouseWalletView> {
+  const wallet = await ensureHouseWallet(principal);
+  await requestStudioFaucet(wallet.address);
+  return loadHouseWalletView(principal);
 }
 
 export async function exportHouseWalletKey(principal: HousePrincipal): Promise<{ address: string; private_key: string }> {

@@ -7,7 +7,7 @@ Public URL: **https://foyerapp.dev**. Local stand-in: `http://127.0.0.1:3001`. S
 ## 1. Person with one chat agent (~5 min)
 
 1. Open `/{locale}` → **Sign in with your wallet**. One wallet is one house.
-2. Wizard: rules → lock kinds → paste the MCP block ([Connect](CONNECT.md)). A checker is a **hook**, not a second chat. A real guardian is a connected assistant.
+2. Setup modal: rules → optional assistant → top up (wallet or Studio faucet) → email. Reopen from the cabinet header. A checker is a **hook**, not a second chat. A real guardian is a connected assistant.
 3. Point at the feed: propose, objections (all of them), bargain (withdraw / revise / insist). Court only after insist: yes, no, or you. After a final answer the assistant acks with `report` — Foyer did not pay or book.
 4. Open **HTTP / OpenAPI** under Connect. Same key. Optional: `npm run http:client`.
 

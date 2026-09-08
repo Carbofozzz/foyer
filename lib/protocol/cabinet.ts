@@ -45,3 +45,37 @@ export async function markConnectDone(principal: HousePrincipal) {
     .set({ wizardConnectDone: true, wizardHarnessDone: true })
     .where(eq(principals.id, principal.id));
 }
+
+function parseContactEmail(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw !== "string") throw new ProtocolError("bad_request", "email must be a string", 400);
+  const email = raw.trim();
+  if (!email) return null;
+  if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new ProtocolError("bad_request", "email is invalid", 400);
+  }
+  return email;
+}
+
+/** One save at the end of the cabinet setup wizard. Lock kinds are skipped. */
+export async function finishWizard(
+  principal: HousePrincipal,
+  input: { constitution: string; type?: PrincipalType; email?: unknown },
+) {
+  const text = input.constitution.trim();
+  if (!text) throw new ProtocolError("bad_request", "constitution is required", 400);
+  const email = parseContactEmail(input.email);
+  const db = getDb();
+  await db
+    .update(principals)
+    .set({
+      constitution: text,
+      wizardRulesDone: true,
+      wizardLockDone: true,
+      wizardConnectDone: true,
+      wizardHarnessDone: true,
+      ...(input.type === "org" || input.type === "personal" ? { type: input.type } : {}),
+      ...(email ? { contactEmail: email } : {}),
+    })
+    .where(eq(principals.id, principal.id));
+}

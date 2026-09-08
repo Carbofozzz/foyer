@@ -9,6 +9,7 @@ import { PagedList } from "@/app/components/paged-list";
 import { addressExplorerUrl, asHexAddress, GENLAYER_CHAIN_ID, ownerKey, txExplorerUrl } from "@/lib/gen/chain";
 import { parseGen, shortGen } from "@/lib/gen/amount";
 import type { Messages } from "@/lib/i18n/load";
+import { HOUSE_EVENT } from "@/lib/wallet/events";
 
 type Transfer = {
   id: string;
@@ -102,6 +103,23 @@ export function TreasuryCard({
       return;
     }
     load();
+    function onHouse() {
+      load();
+    }
+    function onTab() {
+      const radio = document.getElementById("cabinet-tab-treasury");
+      if (radio instanceof HTMLInputElement && radio.checked) load();
+    }
+    window.addEventListener(HOUSE_EVENT, onHouse);
+    document.querySelectorAll("input.cabinet-tab-radio").forEach((node) => {
+      node.addEventListener("change", onTab);
+    });
+    return () => {
+      window.removeEventListener(HOUSE_EVENT, onHouse);
+      document.querySelectorAll("input.cabinet-tab-radio").forEach((node) => {
+        node.removeEventListener("change", onTab);
+      });
+    };
   }, [preview, load]);
 
   async function deposit() {

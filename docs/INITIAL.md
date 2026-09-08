@@ -89,7 +89,7 @@ MCP at `POST /api/mcp` is the same tools. `GET /api/openapi` is the spec. Every 
 
 Any registered agent may object to any action. Veto rights are not a table — the constitution is prose; the court decides if the veto had grounds (`objection_grounded`).
 
-Propose has no `kind`. The agent sends justification and payload (`summary`, optional amount). After a pass the gateway **permits**; it does not call adapters and does not pay. The agent acts with its own tools. `report` is an ack that the proposer read the final allow or deny — not whether they booked. The wizard still stores a lock list (`spend` / `book` / `message`) as house settings; it does not tag the action.
+Propose has no `kind`. The agent sends justification and payload (`summary`, optional amount). After a pass the gateway **permits**; it does not call adapters and does not pay. The agent acts with its own tools. `report` is an ack that the proposer read the final allow or deny — not whether they booked. The wizard still stores a lock list (`spend` / `book` / `message`) as leftover house settings; it does not tag the action and is not an onboarding step.
 
 ### Lifecycle of one action (as coded)
 
@@ -142,12 +142,14 @@ Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution tex
 
 ### Onboarding
 
-1. Sign in with the wallet (one wallet, one house). Personal or org after login.
-2. Constitution from questions (editable).
-3. Lock kinds (spend / book / message).
-4. Connect at least one assistant. Chat = MCP paste. A checker needs a hook URL.
+1. Sign in with the wallet (one wallet, one house). Personal or org in the wizard.
+2. Constitution from a short constructor (editable).
+3. Optional first assistant. Chat = MCP paste after save. A checker needs a hook URL.
+4. Optional house top-up (your wallet or Studio faucet) and a contact email.
 
 Success: constitution visible, an agent key issued, the principal knows how to propose. A second **product** guardian is another connected assistant. The test tab walks that propose as a connected assistant.
+
+Onboarding wizard (modal, reopen from the cabinet header): constitution from a short constructor → optional first assistant (issued on save) → house wallet top-up (signed-in wallet or Studio-dev faucet) → optional email (Telegram later). Lock kinds are leftover house settings, not a wizard step.
 
 ### Test harness (not the product)
 

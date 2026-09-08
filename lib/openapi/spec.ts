@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.35.0",
+      version: "0.36.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -410,6 +410,14 @@ export function openApiSpec(origin: string) {
           summary: "Invite a wallet as operator or observer (owner only, org only)",
           auth: "session",
           created: true,
+        }),
+      },
+      "/api/cabinet/{token}/wizard": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        post: operation({
+          id: "finishCabinetWizard",
+          summary: "Save onboarding: constitution, optional agent, optional email",
+          auth: "session",
         }),
       },
       "/api/mcp": {

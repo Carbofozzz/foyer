@@ -1272,6 +1272,71 @@ label.segment {
   max-height: none;
 }
 
+.wizard-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.wizard-modal {
+  width: min(36rem, 100%);
+  max-height: min(88vh, 48rem);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+  padding: 1rem 1.1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.wizard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wizard-head h2 {
+  margin: 0;
+}
+
+.wizard-head .kicker {
+  margin: 0.2rem 0 0;
+}
+
+.wizard-modal h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wizard-choice {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.wizard-choice legend {
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
 .agent-chips-block {
   display: flex;
   flex-wrap: wrap;

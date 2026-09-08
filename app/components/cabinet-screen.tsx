@@ -6,7 +6,7 @@ import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
 import { sweep } from "@/lib/protocol/sweep";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
-import { CabinetWizard } from "@/app/components/cabinet-wizard";
+import { CabinetSetup } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
@@ -61,13 +61,6 @@ export async function CabinetScreen({
   const door = await doorStatsFor(principal.id);
   const doorById = Object.fromEntries(door.map((row) => [row.agent_id, row]));
   const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
-  const step = !principal.wizardRulesDone
-    ? "rules"
-    : !principal.wizardLockDone
-      ? "lock"
-      : !principal.wizardConnectDone && inbox.items.length === 0
-        ? "connect"
-        : null;
   const now = Date.now();
   const signedIn = token === "me";
   const houseId = signedIn ? principal.id : undefined;
@@ -101,47 +94,46 @@ export async function CabinetScreen({
           {signedIn ? <HouseSwitch locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} /> : null}
           {!manage ? <p className="hint">{t.cabinet.readOnly}</p> : null}
         </div>
-        {signedIn ? (
-          <WalletButton
-            locale={locale}
-            signOutLabel={t.cabinet.signOut}
-            connectLabel={t.home.signIn}
-            initialAddress={viewerAddress ?? principal.ownerAddress}
-          />
+        {signedIn || manage ? (
+          <div className="cabinet-head-actions">
+            {manage ? (
+              <CabinetSetup
+                token={token}
+                houseId={houseId}
+                openOnMount={!principal.wizardConnectDone}
+                wizard={t.wizard}
+                connect={t.connect}
+                charter={t.charter}
+                cabinet={t.cabinet}
+                cabinetError={t.cabinet.error}
+                constitution={principal.constitution}
+                houseType={principal.type === "org" ? "org" : "personal"}
+                email={principal.contactEmail ?? ""}
+              />
+            ) : null}
+            {signedIn ? (
+              <WalletButton
+                locale={locale}
+                signOutLabel={t.cabinet.signOut}
+                connectLabel={t.home.signIn}
+                initialAddress={viewerAddress ?? principal.ownerAddress}
+              />
+            ) : null}
+          </div>
         ) : null}
       </header>
 
-      {step && !manage ? (
-        <section className="cabinet-panel">
-          <p className="hint">{t.cabinet.setupWait}</p>
-        </section>
-      ) : step ? (
-        <section className="cabinet-panel">
-          <CabinetWizard
-            token={token}
-            houseId={houseId}
-            step={step}
-            wizard={t.wizard}
-            connect={t.connect}
-            tech={t.tech}
-            charter={t.charter}
-            cabinetError={t.cabinet.error}
-            constitution={principal.constitution}
-            houseType={principal.type === "org" ? "org" : "personal"}
+      <section className="cabinet-panel" data-cabinet-ready="">
+        {tabItems.map((item) => (
+          <input
+            key={item.id}
+            className="cabinet-tab-radio"
+            type="radio"
+            name="cabinet-tab"
+            id={`cabinet-tab-${item.id}`}
+            defaultChecked={item.id === currentTab}
           />
-        </section>
-      ) : (
-        <section className="cabinet-panel">
-          {tabItems.map((item) => (
-            <input
-              key={item.id}
-              className="cabinet-tab-radio"
-              type="radio"
-              name="cabinet-tab"
-              id={`cabinet-tab-${item.id}`}
-              defaultChecked={item.id === currentTab}
-            />
-          ))}
+        ))}
           <nav className="cabinet-tabs segmented" aria-label={t.cabinet.tabs}>
             {tabItems.map((item) => (
               <label key={item.id} className="segment" htmlFor={`cabinet-tab-${item.id}`}>
@@ -267,7 +259,6 @@ export async function CabinetScreen({
             ) : null}
           </div>
         </section>
-      )}
     </main>
   );
 }

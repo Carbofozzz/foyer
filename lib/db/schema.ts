@@ -26,6 +26,7 @@ export const principals = pgTable("principals", {
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
   ownerAddress: text("owner_address").unique(),
+  contactEmail: text("contact_email"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
