@@ -9,6 +9,7 @@ import { hashSecret } from "@/lib/protocol/keys";
 import { notifyCopy } from "./mail";
 
 const TELEGRAM_FETCH_MS = 4000;
+const LINK_MS = 60 * 60 * 1000;
 
 async function telegramFetch(url: string, init?: RequestInit): Promise<Response> {
   return fetch(url, { ...init, signal: AbortSignal.timeout(TELEGRAM_FETCH_MS) });
