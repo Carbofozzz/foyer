@@ -18,7 +18,7 @@ import { syncEscalateMail } from "@/lib/notify/outbox";
 export async function sweep(
   principalId: string,
   now: Date,
-  options?: { courts?: number; origin?: string },
+  options?: { courts?: number; origin?: string; wakes?: boolean },
 ): Promise<{ advanced: number }> {
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
@@ -26,7 +26,9 @@ export async function sweep(
 
   let advanced = 0;
   const origin = options?.origin || defaultPublicOrigin();
-  advanced += await deliverPendingWakes(principalId, origin);
+  if (options?.wakes !== false) {
+    advanced += await deliverPendingWakes(principalId, origin);
+  }
 
   const openRows = await db
     .select()
@@ -38,7 +40,7 @@ export async function sweep(
   for (const row of openRows) {
     const bundle = await loadActionBundle(row.id);
     if (!bundle || bundle.action.status !== "open") continue;
-    const gate = await requiredWakeGate(bundle.action.id, bundle.action.revision);
+    const gate = bundle.action.testPass ? "ready" : await requiredWakeGate(bundle.action.id, bundle.action.revision);
     if (gate === "pending") continue;
     if (gate === "failed") {
       await escalateUnreachable(principal, bundle.action.id, now);

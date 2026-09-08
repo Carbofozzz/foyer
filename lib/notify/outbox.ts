@@ -9,12 +9,18 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { notifyCopy, sendMail } from "./mail";
 import { notifyReasonKey } from "./reasons";
-import { sendTelegram, drainTelegramUpdates } from "./telegram";
+import { sendTelegram } from "./telegram";
 
 const DECIDE_MS = 7 * 24 * 60 * 60 * 1000;
 const SEND_ATTEMPTS = 5;
 
 type NotifyChannel = "email" | "telegram";
+
+function decideOrigin(origin?: string): string {
+  const raw = (origin || defaultPublicOrigin()).replace(/\/$/, "");
+  if (/localhost|127\.0\.0\.1/i.test(raw)) return defaultPublicOrigin().replace(/\/$/, "");
+  return raw;
+}
 
 function preferredChannel(principal: typeof principals.$inferSelect): NotifyChannel | null {
   if (principal.telegramChatId) return "telegram";
@@ -26,7 +32,6 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal || principal.isSpawn) return 0;
-  await drainTelegramUpdates();
 
   const stale = await db
     .select({ id: notifications.id, actionStatus: actions.status, noteStatus: notifications.status })
@@ -133,7 +138,7 @@ async function deliverOne(
     typeof payload.amount === "number"
       ? `${payload.amount}${payload.currency ? ` ${payload.currency}` : ""}`
       : "";
-  const base = (origin || defaultPublicOrigin()).replace(/\/$/, "");
+  const base = decideOrigin(origin);
   const url = `${base}/${locale}/decide/${raw}`;
   const text = [
     t.decideLead,

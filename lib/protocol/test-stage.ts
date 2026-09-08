@@ -597,7 +597,7 @@ async function buildEvents(
 }
 
 export async function loadTestStage(principal: HousePrincipal, origin?: string) {
-  await sweep(principal.id, new Date(), { courts: 0, origin });
+  await sweep(principal.id, new Date(), { courts: 0, origin, wakes: false });
   const houseAgents = await listStageAgents(principal.id);
   const kinds = lockedKinds(principal);
   const actionId = await latestTestActionId(principal.id);
@@ -660,9 +660,8 @@ export async function runTestStage(
       { agent, principal },
       { payload: { summary }, justification: summary, evidence: [] },
       now,
-      { origin },
+      { origin, testPass: true },
     );
-    await getDb().update(actions).set({ testPass: true }).where(eq(actions.id, proposed.id));
     return loadTestStage(principal, origin);
   }
   if (op === "object") {
@@ -726,7 +725,7 @@ export async function inspectTestStage(
   actionId: string,
   origin?: string,
 ) {
-  await sweep(principal.id, new Date(), { courts: 0, origin });
+  await sweep(principal.id, new Date(), { courts: 0, origin, wakes: false });
   const agent = await stageAgent(principal, agentId);
   const [row] = await getDb().select().from(actions).where(eq(actions.id, actionId)).limit(1);
   if (!row || row.principalId !== principal.id || !row.testPass) {

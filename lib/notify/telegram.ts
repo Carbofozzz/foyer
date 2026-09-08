@@ -8,7 +8,12 @@ import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { hashSecret } from "@/lib/protocol/keys";
 import { notifyCopy } from "./mail";
 
+const TELEGRAM_FETCH_MS = 4000;
 const LINK_MS = 60 * 60 * 1000;
+
+async function telegramFetch(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(TELEGRAM_FETCH_MS) });
+}
 const BOT_STATE_ID = "bot";
 
 export function telegramConfigured(): boolean {
@@ -39,7 +44,7 @@ export async function sendTelegram(chatId: string, text: string): Promise<void> 
     console.info(`[telegram off] chat=${chatId}\n${text}`);
     return;
   }
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const response = await telegramFetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
@@ -55,7 +60,7 @@ export async function registerTelegramWebhook(origin?: string): Promise<void> {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!token || !secret) throw new Error("telegram is not configured");
   const base = (origin || defaultPublicOrigin()).replace(/\/$/, "");
-  const response = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+  const response = await telegramFetch(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -130,7 +135,7 @@ export async function drainTelegramUpdates(): Promise<void> {
     let response = await telegramGetUpdates(token, offset);
     let body = await readTelegramBody(response);
     if (webhookBlocksPolling(response.status, body)) {
-      await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`, {
+      await telegramFetch(`https://api.telegram.org/bot${token}/deleteWebhook`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ drop_pending_updates: false }),
@@ -179,7 +184,7 @@ async function telegramGetUpdates(token: string, offset: number): Promise<Respon
   const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
   url.searchParams.set("timeout", "0");
   if (offset > 0) url.searchParams.set("offset", String(offset));
-  return fetch(url);
+  return telegramFetch(url.toString());
 }
 
 async function readTelegramBody(response: Response): Promise<{ ok?: boolean; result?: unknown; description?: unknown }> {

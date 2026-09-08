@@ -148,3 +148,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-09: Telegram link — hex `?start=` payload (no bare t.me), `getUpdates` after `deleteWebhook` on 409 so `/start` is not dropped, webhook handler is not rate-limited.
 - 2026-09-09: `telegram_link_tokens.payload` was missing in Postgres; mint swallowed the insert and Contacts rendered an empty Telegram block. Column added; mint now `ADD COLUMN IF NOT EXISTS`.
 - 2026-09-09: Telegram `/start` is claimed once (no linked/unknown/linked spam). Contacts wait copy only while unlinked. GET `?wake=1` drains updates; the 4s poll does not.
+- 2026-09-09: Cabinet test does not POST house hooks or drain Telegram on each poll. Failed checker wakes no longer steal a test bargain. Decide links never use localhost.
