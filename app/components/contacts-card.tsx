@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import type { Messages } from "@/lib/i18n/load";
 
@@ -41,6 +41,9 @@ export function ContactsCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [waitTelegram, setWaitTelegram] = useState(false);
+  const linkedRef = useRef(Boolean(preview?.telegram));
+  linkedRef.current = telegram;
 
   useEffect(() => {
     if (preview || locked) return;
@@ -51,10 +54,12 @@ export function ContactsCard({
       setTelegramHandle(data.telegram_handle ?? null);
       setTelegramUrl(data.telegram_url ?? null);
       setConfigured(data.telegram_configured !== false);
+      if (data.telegram) setWaitTelegram(false);
       setError(false);
     }
-    function load() {
-      fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
+    function load(wake: boolean) {
+      const q = wake ? "?wake=1" : "";
+      fetch(`/api/cabinet/${token}/contacts${q}`, { headers: cabinetHeaders(houseId) })
         .then((response) => {
           if (!response.ok) throw new Error("fail");
           return response.json() as Promise<{ data: ContactsData }>;
@@ -62,13 +67,13 @@ export function ContactsCard({
         .then((payload) => apply(payload.data))
         .catch(() => setError(true));
     }
-    load();
+    load(true);
     function onVis() {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") load(true);
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
-    const tick = window.setInterval(load, 2000);
+    const tick = window.setInterval(() => load(!linkedRef.current), 4000);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
@@ -165,11 +170,22 @@ export function ContactsCard({
         ) : null}
       </div>
       <div className="contact-channel">
-        <p className="contact-channel-label">{t.contactsTelegram}</p>
+        <label>
+          {t.contactsTelegram}
+          <input
+            type="text"
+            value={telegram ? displayTelegramName(telegramHandle ?? "") : ""}
+            readOnly
+            disabled={locked || !canEdit}
+            autoComplete="off"
+          />
+        </label>
         {telegram ? <p className="hint">{t.contactsTelegramLinked}</p> : null}
-        {telegram && telegramHandle ? (
-          <p className="hint">{t.contactsTelegramAccount.replace("{name}", displayTelegramName(telegramHandle))}</p>
+        {waitTelegram && !telegram ? <p className="hint">{t.contactsTelegramWait}</p> : null}
+        {!telegram && configured && !telegramUrl && canEdit && !locked ? (
+          <p className="hint">{t.contactsTelegramOff}</p>
         ) : null}
+        {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
         {telegram && canEdit && !locked ? (
           <div className="wallet-actions">
             <button type="button" className="ghost" disabled={pending} onClick={() => void unlink()}>
@@ -184,13 +200,12 @@ export function ContactsCard({
               href={telegramUrl}
               target="_blank"
               rel="noreferrer"
-              onClick={() => setHint(t.contactsTelegramWait)}
+              onClick={() => setWaitTelegram(true)}
             >
               {t.contactsTelegramOpen}
             </a>
           </div>
         ) : null}
-        {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
       </div>
       {hint ? <p className="hint">{hint}</p> : null}
       {error ? <p className="error">{errorLabel}</p> : null}
@@ -199,6 +214,8 @@ export function ContactsCard({
 }
 
 function displayTelegramName(raw: string) {
-  if (raw.includes(" ")) return raw;
-  return raw.startsWith("@") ? raw : `@${raw}`;
+  const name = raw.trim();
+  if (!name) return "";
+  if (name.includes(" ")) return name;
+  return name.startsWith("@") ? name : `@${name}`;
 }

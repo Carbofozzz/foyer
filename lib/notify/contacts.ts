@@ -105,8 +105,8 @@ export function contactsView(principal: HousePrincipal) {
   };
 }
 
-export async function contactsPayload(principal: HousePrincipal) {
-  await drainTelegramUpdates();
+export async function contactsPayload(principal: HousePrincipal, opts?: { drain?: boolean }) {
+  if (opts?.drain !== false) await drainTelegramUpdates();
   const [fresh] = await getDb().select().from(principals).where(eq(principals.id, principal.id)).limit(1);
   const row = fresh ?? principal;
   const view = contactsView(row);
