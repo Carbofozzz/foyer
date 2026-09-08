@@ -165,16 +165,21 @@ function CabinetWizardModal({
 
   useEffect(() => {
     if (step !== "contacts") return;
-    fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
-      .then((response) => {
-        if (!response.ok) throw new Error("fail");
-        return response.json() as Promise<{ data: { telegram?: boolean; telegram_url?: string | null } }>;
-      })
-      .then((payload) => {
-        setTelegramLinked(Boolean(payload.data.telegram));
-        setTelegramUrl(payload.data.telegram_url ?? null);
-      })
-      .catch(() => undefined);
+    function load() {
+      fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
+        .then((response) => {
+          if (!response.ok) throw new Error("fail");
+          return response.json() as Promise<{ data: { telegram?: boolean; telegram_url?: string | null } }>;
+        })
+        .then((payload) => {
+          setTelegramLinked(Boolean(payload.data.telegram));
+          setTelegramUrl(payload.data.telegram_url ?? null);
+        })
+        .catch(() => undefined);
+    }
+    load();
+    const tick = window.setInterval(load, 4000);
+    return () => window.clearInterval(tick);
   }, [step, token, houseId]);
 
   function goNext() {

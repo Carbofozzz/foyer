@@ -262,6 +262,7 @@
     "reportBroke": "Asistan geçiş olmadan hareket etti.",
     "contactsTelegramOpen": "Telegram’ı aç",
     "contactsTelegramLinked": "Telegram bağlı. Yükseltmeler oraya gider, e-postaya değil.",
+    "contactsTelegramAccount": "Hesap: {name}",
     "contactsTelegramUnlink": "Telegram’ı kopar",
     "contactsTelegramOff": "Bu dağıtımda Telegram yok."
   },

@@ -8,7 +8,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { notifyCopy, sendMail } from "./mail";
-import { mintTelegramStartUrl } from "./telegram";
+import { mintTelegramStartUrl, drainTelegramUpdates } from "./telegram";
 
 const CONFIRM_MS = 48 * 60 * 60 * 1000;
 
@@ -101,13 +101,17 @@ export function contactsView(principal: HousePrincipal) {
     email: principal.contactEmail,
     email_verified: Boolean(principal.emailVerifiedAt),
     telegram: Boolean(principal.telegramChatId),
+    telegram_handle: principal.telegramHandle,
   };
 }
 
 export async function contactsPayload(principal: HousePrincipal) {
-  const view = contactsView(principal);
+  await drainTelegramUpdates();
+  const [fresh] = await getDb().select().from(principals).where(eq(principals.id, principal.id)).limit(1);
+  const row = fresh ?? principal;
+  const view = contactsView(row);
   return {
     ...view,
-    telegram_url: view.telegram ? null : await mintTelegramStartUrl(principal),
+    telegram_url: view.telegram ? null : await mintTelegramStartUrl(row),
   };
 }

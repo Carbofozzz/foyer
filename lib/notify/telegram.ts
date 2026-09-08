@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
-import { principals, telegramLinkTokens } from "@/lib/db/schema";
+import { principals, telegramBotState, telegramLinkTokens } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
@@ -9,6 +9,7 @@ import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { notifyCopy } from "./mail";
 
 const LINK_MS = 60 * 60 * 1000;
+const BOT_STATE_ID = "bot";
 
 export function telegramConfigured(): boolean {
   return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME);
@@ -72,12 +73,19 @@ export async function registerTelegramWebhook(origin?: string): Promise<void> {
 export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<string | null> {
   const username = botUsername();
   if (!botToken() || !username) return null;
-  const raw = mintToken("tgl");
   const db = getDb();
+  const [existing] = await db
+    .select()
+    .from(telegramLinkTokens)
+    .where(and(eq(telegramLinkTokens.principalId, principal.id), gt(telegramLinkTokens.expiresAt, new Date())))
+    .limit(1);
+  if (existing?.payload) return `https://t.me/${username}?start=${existing.payload}`;
+  const raw = mintToken("tgl");
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principal.id));
   await db.insert(telegramLinkTokens).values({
     tokenHash: hashSecret(raw),
     principalId: principal.id,
+    payload: raw,
     expiresAt: new Date(Date.now() + LINK_MS),
   });
   return `https://t.me/${username}?start=${raw}`;
@@ -87,9 +95,46 @@ export async function unlinkTelegram(principalId: string): Promise<void> {
   const db = getDb();
   await db
     .update(principals)
-    .set({ telegramChatId: null, telegramLinkedAt: null })
+    .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
     .where(eq(principals.id, principalId));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principalId));
+}
+
+function telegramHandleFromMessage(message: { from?: { username?: unknown; first_name?: unknown } }): string | null {
+  const from = message.from;
+  if (!from) return null;
+  if (typeof from.username === "string" && from.username.trim()) return from.username.trim();
+  if (typeof from.first_name === "string" && from.first_name.trim()) return from.first_name.trim();
+  return null;
+}
+
+export async function drainTelegramUpdates(): Promise<void> {
+  const token = botToken();
+  if (!token) return;
+  const db = getDb();
+  const [cursor] = await db.select().from(telegramBotState).where(eq(telegramBotState.id, BOT_STATE_ID)).limit(1);
+  const offset = cursor ? Number(cursor.lastUpdateId) + 1 : 0;
+  const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
+  url.searchParams.set("timeout", "0");
+  url.searchParams.set("allowed_updates", JSON.stringify(["message"]));
+  if (offset > 0) url.searchParams.set("offset", String(offset));
+  const response = await fetch(url);
+  if (!response.ok) return;
+  const body = (await response.json()) as { ok?: boolean; result?: unknown };
+  if (!body.ok || !Array.isArray(body.result)) return;
+  let maxId = cursor ? Number(cursor.lastUpdateId) : 0;
+  for (const update of body.result) {
+    if (!update || typeof update !== "object") continue;
+    const id = (update as { update_id?: unknown }).update_id;
+    if (typeof id === "number" && id > maxId) maxId = id;
+    await handleTelegramUpdate(update);
+  }
+  if (maxId > 0) {
+    await db
+      .insert(telegramBotState)
+      .values({ id: BOT_STATE_ID, lastUpdateId: String(maxId) })
+      .onConflictDoUpdate({ target: telegramBotState.id, set: { lastUpdateId: String(maxId) } });
+  }
 }
 
 export async function handleTelegramUpdate(body: unknown): Promise<void> {
@@ -120,14 +165,15 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
     return;
   }
 
+  const handle = telegramHandleFromMessage(message as { from?: { username?: unknown; first_name?: unknown } });
   await db
     .update(principals)
-    .set({ telegramChatId: null, telegramLinkedAt: null })
+    .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
     .where(eq(principals.telegramChatId, chatId));
   const [house] = await db.select().from(principals).where(eq(principals.id, row.principalId)).limit(1);
   await db
     .update(principals)
-    .set({ telegramChatId: chatId, telegramLinkedAt: new Date() })
+    .set({ telegramChatId: chatId, telegramLinkedAt: new Date(), telegramHandle: handle })
     .where(eq(principals.id, row.principalId));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, row.principalId));
   const locale = house && isLocale(house.contactLocale) ? house.contactLocale : "en";

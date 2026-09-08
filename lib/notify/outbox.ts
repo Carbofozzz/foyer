@@ -9,7 +9,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { notifyCopy, sendMail } from "./mail";
 import { notifyReasonKey } from "./reasons";
-import { sendTelegram } from "./telegram";
+import { sendTelegram, drainTelegramUpdates } from "./telegram";
 
 const DECIDE_MS = 7 * 24 * 60 * 60 * 1000;
 const SEND_ATTEMPTS = 5;
@@ -26,6 +26,7 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal || principal.isSpawn) return 0;
+  await drainTelegramUpdates();
 
   const stale = await db
     .select({ id: notifications.id, actionStatus: actions.status, noteStatus: notifications.status })

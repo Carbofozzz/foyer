@@ -205,6 +205,7 @@ export function openApiSpec(origin: string) {
             email: { oneOf: [{ type: "string" }, { type: "null" }] },
             email_verified: { type: "boolean" },
             telegram: { type: "boolean" },
+            telegram_handle: { oneOf: [{ type: "string" }, { type: "null" }] },
             telegram_url: { oneOf: [{ type: "string" }, { type: "null" }] },
           },
           required: ["email", "email_verified", "telegram"],
