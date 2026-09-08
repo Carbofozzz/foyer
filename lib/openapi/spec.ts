@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.35.0",
+      version: "0.38.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -185,6 +185,29 @@ export function openApiSpec(origin: string) {
             outcome: { type: "string", enum: ["allow", "deny"] },
           },
           required: ["outcome"],
+        },
+        ConfirmEmailRequest: {
+          type: "object",
+          properties: { token: { type: "string" } },
+          required: ["token"],
+        },
+        DecideRequest: {
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            outcome: { type: "string", enum: ["allow", "deny"] },
+          },
+          required: ["token", "outcome"],
+        },
+        Contacts: {
+          type: "object",
+          properties: {
+            email: { oneOf: [{ type: "string" }, { type: "null" }] },
+            email_verified: { type: "boolean" },
+            telegram: { type: "boolean" },
+            telegram_url: { oneOf: [{ type: "string" }, { type: "null" }] },
+          },
+          required: ["email", "email_verified", "telegram"],
         },
         Verdict: {
           type: "object",
@@ -411,6 +434,62 @@ export function openApiSpec(origin: string) {
           auth: "session",
           created: true,
         }),
+      },
+      "/api/cabinet/{token}/wizard": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        post: operation({
+          id: "finishCabinetWizard",
+          summary: "Save onboarding: constitution, optional agent, optional email",
+          auth: "session",
+        }),
+      },
+      "/api/cabinet/{token}/contacts": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        get: operation({
+          id: "getContacts",
+          summary: "House owner email and whether it is confirmed",
+          auth: "session",
+          ok: "Contacts",
+        }),
+        post: operation({
+          id: "saveContacts",
+          summary: "Save email, resend confirm, or unlink Telegram",
+          auth: "session",
+        }),
+      },
+      "/api/confirm-email": {
+        post: operation({
+          id: "confirmEmail",
+          summary: "Confirm a house email from the mailed link",
+          body: "ConfirmEmailRequest",
+        }),
+      },
+      "/api/decide": {
+        get: {
+          operationId: "getDecide",
+          summary: "Facts for a one-action decide link (no login)",
+          parameters: [{ name: "token", in: "query", required: true, schema: { type: "string" } }],
+          responses: {
+            "200": { description: "Action still needs yes or no" },
+            "410": { description: "Link spent, expired, or already decided" },
+          },
+        },
+        post: operation({
+          id: "postDecide",
+          summary: "Allow or deny from a decide link (same as cabinet appeal)",
+          body: "DecideRequest",
+          ok: "Verdict",
+        }),
+      },
+      "/api/telegram": {
+        post: {
+          operationId: "telegramWebhook",
+          summary: "Telegram bot webhook. Cron bearer plus { setup: true } registers setWebhook.",
+          responses: {
+            "200": { description: "Update accepted" },
+            "401": { description: "Missing webhook secret or cron secret" },
+          },
+        },
       },
       "/api/mcp": {
         get: operation({ id: "mcpPing", summary: "MCP ping: tool names and the calling agent", auth: "agent" }),

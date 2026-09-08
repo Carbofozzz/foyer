@@ -1,6 +1,6 @@
 import { cabinetFromToken, needManage, needOperate } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
-import { exportHouseWalletKey, loadHouseWalletView, recordDeposit, withdrawTo } from "@/lib/judge/wallet";
+import { exportHouseWalletKey, faucetHouse, loadHouseWalletView, recordDeposit, withdrawTo } from "@/lib/judge/wallet";
 import { canManage } from "@/lib/protocol/members";
 import { isRecord } from "@/lib/protocol/parse";
 import { readSession } from "@/lib/protocol/session";
@@ -46,6 +46,11 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       const to = typeof body.to === "string" ? body.to : "";
       return jsonOk(await withdrawTo(principal, { to, gen: body.gen }));
     }
+    if (body.faucet === true) {
+      const denied = needOperate(auth);
+      if ("error" in denied) return denied.error;
+      return jsonOk(await faucetHouse(principal));
+    }
     if (body.deposit === true) {
       const denied = needOperate(auth);
       if ("error" in denied) return denied.error;
@@ -62,7 +67,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
         }),
       );
     }
-    return jsonError("bad_request", "export, deposit, or withdraw is required", 400);
+    return jsonError("bad_request", "export, deposit, withdraw, or faucet is required", 400);
   } catch (error) {
     return protocolFail(error);
   }

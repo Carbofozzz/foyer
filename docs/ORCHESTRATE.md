@@ -242,7 +242,7 @@ Each step is a card in a growing history. After propose: a **Foyer sent a notice
 
 ## Out of scope here
 
-Telegram and the other INITIAL backlog (including hosted agents), bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
+Telegram-as-bot and email-on-escalate are [NOTIFY.md](NOTIFY.md), not this loop. Other INITIAL backlog (including hosted agents), bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
 
 ---
 

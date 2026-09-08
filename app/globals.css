@@ -715,6 +715,8 @@ button.ghost.is-copied {
 
 /* Inside a one-column stack these should hug their label, not the column. */
 .stack > .ghost,
+.stack > .primary,
+.stack > a.primary,
 .stack > .segmented {
   justify-self: start;
 }
@@ -969,6 +971,18 @@ button.wallet-balance:disabled {
   font-size: 0.8rem;
 }
 
+.contact-channel {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-channel-label {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
 .wallet-field {
   display: grid;
   gap: 0.4rem;
@@ -1082,6 +1096,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
+.cabinet-panel:has(#cabinet-tab-contacts:checked) [data-cabinet-pane="contacts"],
 .cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
   display: block;
 }
@@ -1091,6 +1106,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) label[for="cabinet-tab-test"],
+.cabinet-panel:has(#cabinet-tab-contacts:checked) label[for="cabinet-tab-contacts"],
 .cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
   background: var(--card);
   color: var(--ink);
@@ -1272,6 +1288,71 @@ label.segment {
   max-height: none;
 }
 
+.wizard-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.wizard-modal {
+  width: min(36rem, 100%);
+  max-height: min(88vh, 48rem);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+  padding: 1rem 1.1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.wizard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wizard-head h2 {
+  margin: 0;
+}
+
+.wizard-head .kicker {
+  margin: 0.2rem 0 0;
+}
+
+.wizard-modal h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wizard-choice {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.wizard-choice legend {
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
 .agent-chips-block {
   display: flex;
   flex-wrap: wrap;
@@ -1292,20 +1373,76 @@ label.segment {
   padding: 0;
 }
 
+.connect-issue {
+  margin: 0;
+  padding: 0.85rem 0.9rem 0.95rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper, #f4efe6) 55%, var(--card));
+  display: grid;
+  gap: 0.55rem;
+}
+
+.connect-issue .feed-label {
+  margin: 0;
+}
+
+.connect-current {
+  margin: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.connect-current .connect-field {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.connect-current .connect-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.connect-current .connect-field .ghost {
+  justify-self: start;
+}
+
 .connect-add {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 0.5rem 0.65rem;
+  align-items: end;
 }
 
-.connect-add .segmented,
 .connect-add .hint {
   flex: 1 1 100%;
 }
 
-.connect-add input {
-  flex: 1 1 12rem;
+.connect-add .connect-field {
+  flex: 1 1 10rem;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  align-content: end;
+}
+
+.connect-add .connect-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.connect-add .connect-field-action {
+  flex: 0 0 auto;
+}
+
+.connect-add .segmented {
+  flex: 0 0 auto;
+  width: max-content;
 }
 
 .agent-chips button {

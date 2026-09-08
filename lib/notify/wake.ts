@@ -7,6 +7,7 @@ import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { mintToken } from "@/lib/protocol/keys";
 import { unsealKey } from "@/lib/protocol/seal";
 import { isBidirectionalWake } from "@/lib/protocol/types";
+import { REASON_HOOK_FAILED } from "@/lib/notify/reasons";
 
 const MAX_ATTEMPTS = 5;
 const FETCH_MS = 4000;
@@ -111,7 +112,7 @@ export async function requiredWakeGate(actionId: string, revision: number): Prom
 }
 
 export async function escalateUnreachable(principal: HousePrincipal, actionId: string, now: Date): Promise<void> {
-  await escalateOffline(principal, actionId, now, "A required checker did not receive the request.");
+  await escalateOffline(principal, actionId, now, REASON_HOOK_FAILED);
 }
 
 /** Offline escalate. Never submits GenLayer. Skips if insist already claimed a case. */

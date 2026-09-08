@@ -8,6 +8,7 @@ import { stepHouseCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
 import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
+import { syncEscalateMail } from "@/lib/notify/outbox";
 
 /**
  * Advances time for one house. Idempotent.
@@ -78,6 +79,8 @@ export async function sweep(
       advanced += 1;
     }
   }
+
+  advanced += await syncEscalateMail(principalId, origin);
 
   return { advanced };
 }

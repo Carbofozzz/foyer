@@ -17,25 +17,26 @@ import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
 import { asEvidence, asPayload } from "./parse";
 import { normalizeCourtOutcome } from "./verdict";
+import { REASON_NO_FEE, REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
 
 const ERROR_ESCALATE: VerdictAnswer = {
   outcome: "escalate",
   remedy_action: null,
-  reasoning: "The court transaction finalized with an error too many times.",
+  reasoning: REASON_TX_ERROR,
   objection_grounded: false,
 };
 
 const NO_FEE: VerdictAnswer = {
   outcome: "escalate",
   remedy_action: null,
-  reasoning: "The house wallet cannot pay the court fee, so the court never ran.",
+  reasoning: REASON_NO_FEE,
   objection_grounded: false,
 };
 
 const SUBMIT_FAIL: VerdictAnswer = {
   outcome: "escalate",
   remedy_action: null,
-  reasoning: "The court transaction could not be submitted after several attempts.",
+  reasoning: REASON_SUBMIT_FAIL,
   objection_grounded: false,
 };
 

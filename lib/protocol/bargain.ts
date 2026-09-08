@@ -1,6 +1,7 @@
 import { and, eq, lte } from "drizzle-orm";
 import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
+import { REASON_BARGAIN_TIMEOUT } from "@/lib/notify/reasons";
 import { enqueueWakes, escalateOffline } from "@/lib/notify/wake";
 import { openCourt } from "./court";
 import { ProtocolError } from "./errors";
@@ -31,7 +32,7 @@ export async function timeoutBargains(principal: HousePrincipal, now: Date): Pro
   let advanced = 0;
   for (const row of rows) {
     if (row.insistedAt) continue;
-    await escalateOffline(principal, row.id, now, "Bargain timed out without insist.");
+    await escalateOffline(principal, row.id, now, REASON_BARGAIN_TIMEOUT);
     advanced += 1;
   }
   return advanced;
