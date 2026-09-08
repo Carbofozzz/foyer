@@ -264,7 +264,8 @@
     "contactsTelegramLinked": "Telegram подключён. Эскалации идут туда, не на почту.",
     "contactsTelegramAccount": "Аккаунт: {name}",
     "contactsTelegramUnlink": "Отключить Telegram",
-    "contactsTelegramOff": "Telegram на этом деплое не настроен."
+    "contactsTelegramOff": "Telegram на этом деплое не настроен.",
+    "contactsTelegramWait": "В Telegram нажмите Start и вернитесь сюда."
   },
   "wizard": {
     "title": "Настройка дома",

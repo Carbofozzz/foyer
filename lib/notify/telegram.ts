@@ -1,11 +1,11 @@
-import { timingSafeEqual } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { and, eq, gt, or } from "drizzle-orm";
 import { principals, telegramBotState, telegramLinkTokens } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
-import { hashSecret, mintToken } from "@/lib/protocol/keys";
+import { hashSecret } from "@/lib/protocol/keys";
 import { notifyCopy } from "./mail";
 
 const LINK_MS = 60 * 60 * 1000;
@@ -81,7 +81,7 @@ export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<s
       .where(and(eq(telegramLinkTokens.principalId, principal.id), gt(telegramLinkTokens.expiresAt, new Date())))
       .limit(1);
     if (existing?.payload) return `https://t.me/${username}?start=${existing.payload}`;
-    const raw = mintToken("tgl");
+    const raw = randomBytes(16).toString("hex");
     await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principal.id));
     await db.insert(telegramLinkTokens).values({
       tokenHash: hashSecret(raw),
@@ -91,7 +91,7 @@ export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<s
     });
     return `https://t.me/${username}?start=${raw}`;
   } catch {
-    return `https://t.me/${username}`;
+    return null;
   }
 }
 
@@ -118,16 +118,21 @@ export async function drainTelegramUpdates(): Promise<void> {
   try {
     const db = getDb();
     const [cursor] = await db.select().from(telegramBotState).where(eq(telegramBotState.id, BOT_STATE_ID)).limit(1);
-    const offset = cursor ? Number(cursor.lastUpdateId) + 1 : 0;
-    const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
-    url.searchParams.set("timeout", "0");
-    url.searchParams.set("allowed_updates", JSON.stringify(["message"]));
-    if (offset > 0) url.searchParams.set("offset", String(offset));
-    const response = await fetch(url);
-    if (!response.ok) return;
-    const body = (await response.json()) as { ok?: boolean; result?: unknown };
-    if (!body.ok || !Array.isArray(body.result)) return;
-    let maxId = cursor ? Number(cursor.lastUpdateId) : 0;
+    const last = cursor ? Number(cursor.lastUpdateId) : 0;
+    const offset = Number.isFinite(last) && last > 0 ? last + 1 : 0;
+    let response = await telegramGetUpdates(token, offset);
+    let body = await readTelegramBody(response);
+    if (webhookBlocksPolling(response.status, body)) {
+      await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ drop_pending_updates: false }),
+      });
+      response = await telegramGetUpdates(token, offset);
+      body = await readTelegramBody(response);
+    }
+    if (!response.ok || !body.ok || !Array.isArray(body.result)) return;
+    let maxId = Number.isFinite(last) ? last : 0;
     for (const update of body.result) {
       if (!update || typeof update !== "object") continue;
       const id = (update as { update_id?: unknown }).update_id;
@@ -141,8 +146,29 @@ export async function drainTelegramUpdates(): Promise<void> {
         .onConflictDoUpdate({ target: telegramBotState.id, set: { lastUpdateId: String(maxId) } });
     }
   } catch {
-    // Linking still works via webhook; do not fail Contacts.
+    // Do not fail Contacts.
   }
+}
+
+async function telegramGetUpdates(token: string, offset: number): Promise<Response> {
+  const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
+  url.searchParams.set("timeout", "0");
+  if (offset > 0) url.searchParams.set("offset", String(offset));
+  return fetch(url);
+}
+
+async function readTelegramBody(response: Response): Promise<{ ok?: boolean; result?: unknown; description?: unknown }> {
+  try {
+    return (await response.json()) as { ok?: boolean; result?: unknown; description?: unknown };
+  } catch {
+    return {};
+  }
+}
+
+function webhookBlocksPolling(status: number, body: { ok?: boolean; description?: unknown }): boolean {
+  if (status === 409) return true;
+  const description = typeof body.description === "string" ? body.description : "";
+  return body.ok === false && /webhook/i.test(description);
 }
 
 export async function handleTelegramUpdate(body: unknown): Promise<void> {
@@ -154,19 +180,25 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
   const chatId = chat && (typeof chat.id === "number" || typeof chat.id === "string") ? String(chat.id) : "";
   if (!chatId || typeof text !== "string") return;
 
-  const start = text.match(/^\/start(?:@\w+)?(?:\s+(\S+))?$/);
+  const start = text.trim().replace(/\u00a0/g, " ").match(/^\/start(?:@\S+)?(?:\s+(\S+))?$/i);
   if (!start) return;
-  const payload = start[1];
+  const payload = decodeStartPayload(start[1]);
   if (!payload) {
     await sendTelegram(chatId, notifyCopy("en").telegramNeedLink).catch(() => undefined);
     return;
   }
 
   const db = getDb();
+  const tokenHash = hashSecret(payload);
   const [row] = await db
     .select()
     .from(telegramLinkTokens)
-    .where(and(eq(telegramLinkTokens.tokenHash, hashSecret(payload)), gt(telegramLinkTokens.expiresAt, new Date())))
+    .where(
+      and(
+        gt(telegramLinkTokens.expiresAt, new Date()),
+        or(eq(telegramLinkTokens.tokenHash, tokenHash), eq(telegramLinkTokens.payload, payload)),
+      ),
+    )
     .limit(1);
   if (!row) {
     await sendTelegram(chatId, notifyCopy("en").telegramUnknown).catch(() => undefined);
@@ -186,4 +218,13 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, row.principalId));
   const locale = house && isLocale(house.contactLocale) ? house.contactLocale : "en";
   await sendTelegram(chatId, notifyCopy(locale).telegramLinked).catch(() => undefined);
+}
+
+function decodeStartPayload(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }

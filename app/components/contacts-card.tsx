@@ -68,7 +68,7 @@ export function ContactsCard({
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
-    const tick = window.setInterval(load, 4000);
+    const tick = window.setInterval(load, 2000);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
@@ -179,7 +179,13 @@ export function ContactsCard({
         ) : null}
         {!telegram && telegramUrl && canEdit && !locked ? (
           <div className="wallet-actions">
-            <a className="ghost" href={telegramUrl} target="_blank" rel="noreferrer">
+            <a
+              className="ghost"
+              href={telegramUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setHint(t.contactsTelegramWait)}
+            >
               {t.contactsTelegramOpen}
             </a>
           </div>
