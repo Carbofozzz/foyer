@@ -104,7 +104,6 @@ export function ConnectCard({
   }, [preview, token, houseId, errorLabel]);
 
   const current = agents.find((row) => row.id === selected) ?? agents[0] ?? null;
-  const onlyOutbound = agents.length > 0 && agents.every((row) => row.wake === "outbound");
 
   async function issue() {
     if (preview) return;
@@ -178,10 +177,90 @@ export function ConnectCard({
         <h2 className="section-title">{t.title}</h2>
       )}
       <p className="hint">{t.lead}</p>
-      {onlyOutbound || agents.length === 0 ? <p className="hint">{t.hostedOffer}</p> : null}
+      {preview ? null : (
+        <div className="connect-issue">
+          <p className="feed-label">{t.another}</p>
+          <form
+            className="connect-add"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void issue();
+            }}
+          >
+            <label className="connect-field">
+              <span>{t.nameLabel}</span>
+              <input
+                type="text"
+                value={name}
+                required
+                placeholder={t.namePlaceholder}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <div className="connect-field">
+              <span>{t.wakeLabel}</span>
+              <div className="segmented" role="group" aria-label={t.wakeLabel}>
+                {WAKES.map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className={wake === kind ? "segment is-active" : "segment"}
+                    aria-pressed={wake === kind}
+                    onClick={() => setWake(kind)}
+                  >
+                    {wakeLabel(kind, t)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {wake === "outbound" ? (
+              <div className="connect-field connect-field-action">
+                <span aria-hidden="true">&nbsp;</span>
+                <button type="submit" disabled={pending || !name.trim()} aria-busy={pending}>
+                  {pending ? t.issuing : t.issue}
+                </button>
+              </div>
+            ) : null}
+            <p className="hint">
+              {wake === "callback" ? t.wakeHintCallback : t.wakeHintOutbound}
+            </p>
+            {wake === "callback" ? (
+              <>
+                <label className="connect-field">
+                  <span>{t.callbackUrlLabel}</span>
+                  <input
+                    type="url"
+                    value={callbackUrl}
+                    placeholder={t.callbackUrlPlaceholder}
+                    onChange={(event) => setCallbackUrl(event.target.value)}
+                  />
+                </label>
+                <label className="connect-field">
+                  <span>{t.callbackSecretLabel}</span>
+                  <input
+                    type="text"
+                    value={callbackSecret}
+                    placeholder={t.callbackSecretPlaceholder}
+                    autoComplete="off"
+                    onChange={(event) => setCallbackSecret(event.target.value)}
+                  />
+                </label>
+                <div className="connect-field connect-field-action">
+                  <span aria-hidden="true">&nbsp;</span>
+                  <button type="submit" disabled={pending || !name.trim()} aria-busy={pending}>
+                    {pending ? t.issuing : t.issue}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </form>
+        </div>
+      )}
       <p className="feed-label">{t.list}</p>
       {!loaded ? (
         <p className="muted">{t.loading}</p>
+      ) : agents.length === 0 ? (
+        <p className="empty">{t.empty}</p>
       ) : (
         <ul className="agent-chips">
           {agents.map((row) => (
@@ -195,91 +274,35 @@ export function ConnectCard({
                 <span className="agent-door">
                   {" "}
                   · {wakeLabel(row.wake, t)}
-                  {row.wake === "callback" ? ` · ${row.hook_ok ? t.hookOk : t.hookMissing}` : ""}
                 </span>
               </button>
             </li>
           ))}
         </ul>
       )}
-      {preview ? null : (
-        <form
-          className="connect-add"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void issue();
-          }}
-        >
-          <input
-            type="text"
-            value={name}
-            required
-            placeholder={t.namePlaceholder}
-            aria-label={t.nameLabel}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <div className="segmented" role="group" aria-label={t.wakeLabel}>
-            {WAKES.map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                className={wake === kind ? "segment is-active" : "segment"}
-                aria-pressed={wake === kind}
-                onClick={() => setWake(kind)}
-              >
-                {wakeLabel(kind, t)}
-              </button>
-            ))}
-          </div>
-          <p className="hint">
-            {wake === "callback" ? t.wakeHintCallback : t.wakeHintOutbound}
-          </p>
-          {wake === "callback" ? (
-            <>
-              <input
-                type="url"
-                value={callbackUrl}
-                placeholder={t.callbackUrlPlaceholder}
-                aria-label={t.callbackUrlLabel}
-                onChange={(event) => setCallbackUrl(event.target.value)}
-              />
-              <input
-                type="text"
-                value={callbackSecret}
-                placeholder={t.callbackSecretPlaceholder}
-                aria-label={t.callbackSecretLabel}
-                autoComplete="off"
-                onChange={(event) => setCallbackSecret(event.target.value)}
-              />
-            </>
-          ) : null}
-          <button type="submit" disabled={pending || !name.trim()} aria-busy={pending}>
-            {pending ? t.issuing : t.issue}
-          </button>
-        </form>
-      )}
-      {loaded && agents.length === 0 ? <p className="empty">{t.empty}</p> : null}
       {current ? (
-        <>
+        <div className="connect-current">
           <p className="feed-label">
             {t.pick} {current.name}
             <span className="agent-door">
               {" "}
               · {wakeLabel(current.wake, t)}
-              {current.wake === "callback" ? ` · ${current.hook_ok ? t.hookOk : t.hookMissing}` : ""}
             </span>
           </p>
           {current.wake === "hosted" ? (
             <p className="hint">{t.hostedNote}</p>
           ) : (
             <>
-              <p className="hint">{t.offTools}</p>
-              {current.callback_url ? (
-                <p className="mono snippet">{current.callback_url}</p>
+              <p className="hint">{current.wake === "callback" ? t.offToolsHook : t.offTools}</p>
+              {current.wake === "callback" && current.callback_url ? (
+                <div className="connect-field">
+                  <span>{t.callbackUrlLabel}</span>
+                  <p className="mono snippet">{current.callback_url}</p>
+                </div>
               ) : null}
-              {current.callback_secret ? (
-                <div>
-                  <p className="feed-label">{t.callbackSecretLabel}</p>
+              {current.wake === "callback" && current.callback_secret ? (
+                <div className="connect-field">
+                  <span>{t.callbackSecretLabel}</span>
                   <pre className="mono snippet">{current.callback_secret}</pre>
                   <CopyButton text={current.callback_secret} copyLabel={t.copy} copiedLabel={t.copied} />
                 </div>
@@ -302,7 +325,7 @@ export function ConnectCard({
               <TechCard token={token} houseId={houseId} t={tech} errorLabel={errorLabel} preview={current} />
             </details>
           )}
-        </>
+        </div>
       ) : null}
       {error ? <p className="error">{error}</p> : null}
       {asWizard ? (

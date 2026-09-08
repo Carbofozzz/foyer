@@ -1292,20 +1292,76 @@ label.segment {
   padding: 0;
 }
 
+.connect-issue {
+  margin: 0;
+  padding: 0.85rem 0.9rem 0.95rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper, #f4efe6) 55%, var(--card));
+  display: grid;
+  gap: 0.55rem;
+}
+
+.connect-issue .feed-label {
+  margin: 0;
+}
+
+.connect-current {
+  margin: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.connect-current .connect-field {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.connect-current .connect-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.connect-current .connect-field .ghost {
+  justify-self: start;
+}
+
 .connect-add {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 0.5rem 0.65rem;
+  align-items: end;
 }
 
-.connect-add .segmented,
 .connect-add .hint {
   flex: 1 1 100%;
 }
 
-.connect-add input {
-  flex: 1 1 12rem;
+.connect-add .connect-field {
+  flex: 1 1 10rem;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  align-content: end;
+}
+
+.connect-add .connect-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.connect-add .connect-field-action {
+  flex: 0 0 auto;
+}
+
+.connect-add .segmented {
+  flex: 0 0 auto;
+  width: max-content;
 }
 
 .agent-chips button {
