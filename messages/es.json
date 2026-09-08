@@ -262,6 +262,7 @@
     "reportBroke": "El asistente actuó sin permiso.",
     "contactsTelegramOpen": "Abrir Telegram",
     "contactsTelegramLinked": "Telegram está enlazado. Las escaladas van ahí, no al correo.",
+    "contactsTelegramAccount": "Cuenta: {name}",
     "contactsTelegramUnlink": "Desconectar Telegram",
     "contactsTelegramOff": "Telegram no está configurado en este deploy."
   },

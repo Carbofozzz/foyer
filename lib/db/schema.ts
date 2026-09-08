@@ -31,6 +31,7 @@ export const principals = pgTable("principals", {
   contactLocale: text("contact_locale").notNull().default("en"),
   telegramChatId: text("telegram_chat_id").unique(),
   telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
+  telegramHandle: text("telegram_handle"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -304,8 +305,14 @@ export const telegramLinkTokens = pgTable("telegram_link_tokens", {
   principalId: text("principal_id")
     .notNull()
     .references(() => principals.id),
+  payload: text("payload").notNull().default(""),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const telegramBotState = pgTable("telegram_bot_state", {
+  id: text("id").primaryKey(),
+  lastUpdateId: text("last_update_id").notNull(),
 });
 
 export const decideTokens = pgTable(

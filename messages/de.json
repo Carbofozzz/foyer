@@ -262,6 +262,7 @@
     "reportBroke": "Der Assistent hat ohne Erlaubnis gehandelt.",
     "contactsTelegramOpen": "Telegram öffnen",
     "contactsTelegramLinked": "Telegram ist verbunden. Eskalationen gehen dorthin, nicht per E-Mail.",
+    "contactsTelegramAccount": "Konto: {name}",
     "contactsTelegramUnlink": "Telegram trennen",
     "contactsTelegramOff": "Telegram ist auf diesem Deploy nicht eingerichtet."
   },

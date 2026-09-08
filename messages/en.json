@@ -156,6 +156,7 @@
     "contactsTelegramSoon": "Look-only demo.",
     "contactsTelegramOpen": "Open Telegram",
     "contactsTelegramLinked": "Telegram is linked. Escalations go there, not to email.",
+    "contactsTelegramAccount": "Account: {name}",
     "contactsTelegramUnlink": "Disconnect Telegram",
     "contactsTelegramOff": "Telegram is not configured on this deploy.",
     "testLead": "Send a request as one assistant. Others may object while the timer runs. Then the one who asked can revise, withdraw, or insist.",

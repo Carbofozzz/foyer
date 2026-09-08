@@ -262,6 +262,7 @@
     "reportBroke": "Помощник действовал без пропуска.",
     "contactsTelegramOpen": "Открыть Telegram",
     "contactsTelegramLinked": "Telegram подключён. Эскалации идут туда, не на почту.",
+    "contactsTelegramAccount": "Аккаунт: {name}",
     "contactsTelegramUnlink": "Отключить Telegram",
     "contactsTelegramOff": "Telegram на этом деплое не настроен."
   },

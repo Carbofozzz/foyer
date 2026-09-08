@@ -8,6 +8,7 @@ type ContactsData = {
   email: string | null;
   email_verified: boolean;
   telegram: boolean;
+  telegram_handle?: string | null;
   telegram_url?: string | null;
 };
 
@@ -33,6 +34,7 @@ export function ContactsCard({
   const [email, setEmail] = useState(preview?.email ?? "");
   const [verified, setVerified] = useState(Boolean(preview?.email_verified));
   const [telegram, setTelegram] = useState(Boolean(preview?.telegram));
+  const [telegramHandle, setTelegramHandle] = useState<string | null>(preview?.telegram_handle ?? null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(preview?.telegram_url ?? null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
@@ -40,18 +42,34 @@ export function ContactsCard({
 
   useEffect(() => {
     if (preview || locked) return;
-    fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
-      .then((response) => {
-        if (!response.ok) throw new Error("fail");
-        return response.json() as Promise<{ data: ContactsData }>;
-      })
-      .then((payload) => {
-        setEmail(payload.data.email ?? "");
-        setVerified(payload.data.email_verified);
-        setTelegram(payload.data.telegram);
-        setTelegramUrl(payload.data.telegram_url ?? null);
-      })
-      .catch(() => setError(true));
+    function apply(data: ContactsData) {
+      setEmail(data.email ?? "");
+      setVerified(data.email_verified);
+      setTelegram(data.telegram);
+      setTelegramHandle(data.telegram_handle ?? null);
+      setTelegramUrl(data.telegram_url ?? null);
+    }
+    function load() {
+      fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
+        .then((response) => {
+          if (!response.ok) throw new Error("fail");
+          return response.json() as Promise<{ data: ContactsData }>;
+        })
+        .then((payload) => apply(payload.data))
+        .catch(() => undefined);
+    }
+    load();
+    function onVis() {
+      if (document.visibilityState === "visible") load();
+    }
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    const tick = window.setInterval(load, 4000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+      window.clearInterval(tick);
+    };
   }, [preview, locked, token, houseId]);
 
   async function save() {
@@ -74,6 +92,7 @@ export function ContactsCard({
     setEmail(payload.data.email ?? "");
     setVerified(Boolean(payload.data.email_verified));
     setTelegram(Boolean(payload.data.telegram));
+    setTelegramHandle(payload.data.telegram_handle ?? null);
     setTelegramUrl(payload.data.telegram_url ?? null);
     if (payload.data.confirmQueued) setHint(t.contactsSent);
   }
@@ -109,6 +128,7 @@ export function ContactsCard({
     }
     const payload = (await response.json()) as { data: ContactsData };
     setTelegram(Boolean(payload.data.telegram));
+    setTelegramHandle(payload.data.telegram_handle ?? null);
     setTelegramUrl(payload.data.telegram_url ?? null);
   }
 
@@ -143,6 +163,9 @@ export function ContactsCard({
       <div className="contact-channel">
         <p className="contact-channel-label">{t.contactsTelegram}</p>
         {telegram ? <p className="hint">{t.contactsTelegramLinked}</p> : null}
+        {telegram && telegramHandle ? (
+          <p className="hint">{t.contactsTelegramAccount.replace("{name}", displayTelegramName(telegramHandle))}</p>
+        ) : null}
         {telegram && canEdit && !locked ? (
           <div className="wallet-actions">
             <button type="button" className="ghost" disabled={pending} onClick={() => void unlink()}>
@@ -163,4 +186,9 @@ export function ContactsCard({
       {error ? <p className="error">{errorLabel}</p> : null}
     </div>
   );
+}
+
+function displayTelegramName(raw: string) {
+  if (raw.includes(" ")) return raw;
+  return raw.startsWith("@") ? raw : `@${raw}`;
 }
