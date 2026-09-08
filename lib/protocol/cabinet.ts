@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
+import { saveHouseEmail } from "@/lib/notify/contacts";
 import type { KnownActionKind, PrincipalType } from "./types";
 import { ProtocolError } from "./errors";
 import type { HousePrincipal } from "./bundle";
@@ -46,25 +47,13 @@ export async function markConnectDone(principal: HousePrincipal) {
     .where(eq(principals.id, principal.id));
 }
 
-function parseContactEmail(raw: unknown): string | null {
-  if (raw == null) return null;
-  if (typeof raw !== "string") throw new ProtocolError("bad_request", "email must be a string", 400);
-  const email = raw.trim();
-  if (!email) return null;
-  if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new ProtocolError("bad_request", "email is invalid", 400);
-  }
-  return email;
-}
-
 /** One save at the end of the cabinet setup wizard. Lock kinds are skipped. */
 export async function finishWizard(
   principal: HousePrincipal,
-  input: { constitution: string; type?: PrincipalType; email?: unknown },
+  input: { constitution: string; type?: PrincipalType; email?: unknown; locale?: string; origin?: string },
 ) {
   const text = input.constitution.trim();
   if (!text) throw new ProtocolError("bad_request", "constitution is required", 400);
-  const email = parseContactEmail(input.email);
   const db = getDb();
   await db
     .update(principals)
@@ -75,7 +64,9 @@ export async function finishWizard(
       wizardConnectDone: true,
       wizardHarnessDone: true,
       ...(input.type === "org" || input.type === "personal" ? { type: input.type } : {}),
-      ...(email ? { contactEmail: email } : {}),
     })
     .where(eq(principals.id, principal.id));
+  if (input.email !== undefined) {
+    await saveHouseEmail(principal, input.email, input.locale ?? "en", input.origin);
+  }
 }

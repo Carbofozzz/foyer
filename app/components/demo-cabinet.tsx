@@ -2,16 +2,18 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
+import { ContactsCard } from "@/app/components/contacts-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { PagedList } from "@/app/components/paged-list";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { DEMO_CASES, DEMO_TOKEN, DEMO_TREASURY, demoConnect, type DemoCase } from "@/lib/demo/preview";
 
-const TABS: { id: CabinetTabId; key: "inbox" | "treasury" | "tabRules" | "tabConnect" }[] = [
+const TABS: { id: CabinetTabId; key: "inbox" | "treasury" | "tabRules" | "tabConnect" | "tabContacts" }[] = [
   { id: "inbox", key: "inbox" },
   { id: "treasury", key: "treasury" },
   { id: "rules", key: "tabRules" },
+  { id: "contacts", key: "tabContacts" },
   { id: "connect", key: "tabConnect" },
 ];
 
@@ -95,6 +97,17 @@ export function DemoCabinet({
               t={t.cabinet}
               errorLabel={t.cabinet.error}
               enrollLabel={t.cabinet.enrollment}
+            />
+          </div>
+          <div data-cabinet-pane="contacts">
+            <ContactsCard
+              token={DEMO_TOKEN}
+              locale={locale}
+              canEdit={false}
+              locked
+              preview={{ email: "demo@foyerapp.dev", email_verified: true, telegram: false }}
+              t={t.cabinet}
+              errorLabel={t.cabinet.error}
             />
           </div>
           <div data-cabinet-pane="connect" className="stack">

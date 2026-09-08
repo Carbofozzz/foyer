@@ -715,6 +715,8 @@ button.ghost.is-copied {
 
 /* Inside a one-column stack these should hug their label, not the column. */
 .stack > .ghost,
+.stack > .primary,
+.stack > a.primary,
 .stack > .segmented {
   justify-self: start;
 }
@@ -969,6 +971,18 @@ button.wallet-balance:disabled {
   font-size: 0.8rem;
 }
 
+.contact-channel {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-channel-label {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
 .wallet-field {
   display: grid;
   gap: 0.4rem;
@@ -1082,6 +1096,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
+.cabinet-panel:has(#cabinet-tab-contacts:checked) [data-cabinet-pane="contacts"],
 .cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
   display: block;
 }
@@ -1091,6 +1106,7 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) label[for="cabinet-tab-test"],
+.cabinet-panel:has(#cabinet-tab-contacts:checked) label[for="cabinet-tab-contacts"],
 .cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
   background: var(--card);
   color: var(--ink);

@@ -9,6 +9,7 @@ import type { Messages } from "@/lib/i18n/load";
 import { CabinetSetup } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
+import { ContactsCard } from "@/app/components/contacts-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { AppealForm } from "@/app/components/appeal-form";
@@ -16,6 +17,7 @@ import { HouseSwitch } from "@/app/components/house-switch";
 import { MembersCard } from "@/app/components/members-card";
 import { TestStageCard } from "@/app/components/test-stage-card";
 import { InboxFeed } from "@/app/components/inbox-feed";
+import { CabinetInboxRefresh } from "@/app/components/cabinet-inbox-refresh";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
@@ -67,6 +69,7 @@ export async function CabinetScreen({
   const manage = canManage(memberRole);
   const operate = canOperate(memberRole);
   const tabIds: CabinetTabId[] = ["inbox", "treasury", "rules"];
+  if (manage) tabIds.push("contacts");
   if (operate) tabIds.push("connect", "test");
   if (signedIn && principal.type === "org" && !principal.isSpawn) tabIds.push("people");
   const currentTab = parseCabinetTab(tab, tabIds);
@@ -74,6 +77,7 @@ export async function CabinetScreen({
     { id: "inbox", label: t.cabinet.inbox },
     { id: "treasury", label: t.cabinet.treasury },
     { id: "rules", label: t.cabinet.tabRules },
+    ...(manage ? [{ id: "contacts" as CabinetTabId, label: t.cabinet.tabContacts }] : []),
     ...(operate
       ? [
           { id: "connect" as CabinetTabId, label: t.cabinet.tabConnect },
@@ -109,6 +113,7 @@ export async function CabinetScreen({
                 constitution={principal.constitution}
                 houseType={principal.type === "org" ? "org" : "personal"}
                 email={principal.contactEmail ?? ""}
+                locale={locale}
               />
             ) : null}
             {signedIn ? (
@@ -134,6 +139,7 @@ export async function CabinetScreen({
             defaultChecked={item.id === currentTab}
           />
         ))}
+        <CabinetInboxRefresh />
           <nav className="cabinet-tabs segmented" aria-label={t.cabinet.tabs}>
             {tabItems.map((item) => (
               <label key={item.id} className="segment" htmlFor={`cabinet-tab-${item.id}`}>
@@ -222,6 +228,18 @@ export async function CabinetScreen({
                 errorLabel={t.cabinet.error}
               />
             </div>
+            {manage ? (
+              <div data-cabinet-pane="contacts">
+                <ContactsCard
+                  token={token}
+                  houseId={houseId}
+                  locale={locale}
+                  canEdit={manage}
+                  t={t.cabinet}
+                  errorLabel={t.cabinet.error}
+                />
+              </div>
+            ) : null}
             {operate ? (
               <div data-cabinet-pane="connect">
                 <ConnectCard

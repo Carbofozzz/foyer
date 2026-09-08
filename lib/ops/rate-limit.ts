@@ -16,6 +16,9 @@ export const LIMITS = {
   report: { max: 40, windowSec: 3600 },
   enroll: { max: 20, windowSec: 3600 },
   mcp: { max: 80, windowSec: 3600 },
+  confirmEmail: { max: 20, windowSec: 3600 },
+  decide: { max: 30, windowSec: 3600 },
+  telegram: { max: 120, windowSec: 3600 },
 } as const satisfies Record<string, RateLimit>;
 
 /** Returns true when the caller is over the limit. */

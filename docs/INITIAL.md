@@ -4,7 +4,7 @@ Intra-principal court and gateway. Track: **Onchain Justice**.
 
 This file is the product as it exists: the idea, the running implementation, and a short backlog. Further protocol change is [ORCHESTRATE.md](ORCHESTRATE.md). If this file and the code disagree, follow the code, then update this file in the same change.
 
-Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md).
+Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md).
 
 ---
 
@@ -215,6 +215,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 - **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
 - Org: optional notice fan-out to operators; who withdraws vs who only reads is already in members.
+- **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.
 
 ---
 

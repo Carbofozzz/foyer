@@ -3,6 +3,8 @@ import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { finishWizard } from "@/lib/protocol/cabinet";
 import { issueConnectAgent } from "@/lib/protocol/house-clients";
 import { isRecord } from "@/lib/protocol/parse";
+import { publicOrigin } from "@/lib/mcp/config";
+import { isLocale } from "@/lib/i18n/config";
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
@@ -18,8 +20,15 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return jsonError("bad_request", "constitution is required", 400);
   }
   const type = body.type === "org" || body.type === "personal" ? body.type : undefined;
+  const locale = typeof body.locale === "string" && isLocale(body.locale) ? body.locale : "en";
   try {
-    await finishWizard(auth.principal, { constitution: body.constitution, type, email: body.email });
+    await finishWizard(auth.principal, {
+      constitution: body.constitution,
+      type,
+      email: body.email,
+      locale,
+      origin: publicOrigin(request),
+    });
     if (isRecord(body.agent) && typeof body.agent.name === "string" && body.agent.name.trim()) {
       const operate = needOperate(auth);
       if ("error" in operate) return operate.error;

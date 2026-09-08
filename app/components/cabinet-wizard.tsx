@@ -35,6 +35,7 @@ export function CabinetSetup({
   constitution,
   houseType,
   email,
+  locale,
 }: {
   token: string;
   houseId?: string;
@@ -47,6 +48,7 @@ export function CabinetSetup({
   constitution: string;
   houseType: HouseKind;
   email: string;
+  locale: string;
 }) {
   const [open, setOpen] = useState(false);
   const dismissKey = `foyer-wizard-${houseId ?? token}`;
@@ -89,6 +91,7 @@ export function CabinetSetup({
           constitution={constitution}
           houseType={houseType}
           email={email}
+          locale={locale}
           onClose={close}
         />
       ) : null}
@@ -107,6 +110,7 @@ function CabinetWizardModal({
   constitution,
   houseType,
   email: initialEmail,
+  locale,
   onClose,
 }: {
   token: string;
@@ -119,6 +123,7 @@ function CabinetWizardModal({
   constitution: string;
   houseType: HouseKind;
   email: string;
+  locale: string;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -151,10 +156,26 @@ function CabinetWizardModal({
   const [callbackUrl, setCallbackUrl] = useState("");
   const [callbackSecret, setCallbackSecret] = useState("");
   const [email, setEmail] = useState(initialEmail);
+  const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
+  const [telegramLinked, setTelegramLinked] = useState(false);
 
   useEffect(() => {
     if (followConstructor) setText(assembled);
   }, [assembled, followConstructor]);
+
+  useEffect(() => {
+    if (step !== "contacts") return;
+    fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
+      .then((response) => {
+        if (!response.ok) throw new Error("fail");
+        return response.json() as Promise<{ data: { telegram?: boolean; telegram_url?: string | null } }>;
+      })
+      .then((payload) => {
+        setTelegramLinked(Boolean(payload.data.telegram));
+        setTelegramUrl(payload.data.telegram_url ?? null);
+      })
+      .catch(() => undefined);
+  }, [step, token, houseId]);
 
   function goNext() {
     setError(null);
@@ -194,7 +215,7 @@ function CabinetWizardModal({
     const response = await fetch(`/api/cabinet/${token}/wizard`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ constitution: text, type: kind, email, agent }),
+      body: JSON.stringify({ constitution: text, type: kind, email, agent, locale }),
     });
     setPending(false);
     if (!response.ok) {
@@ -344,10 +365,18 @@ function CabinetWizardModal({
                 autoComplete="email"
               />
             </label>
-            <button type="button" disabled>
-              {wizard.telegram}
-            </button>
-            <p className="hint">{wizard.telegramSoon}</p>
+            <div className="contact-channel">
+              <p className="contact-channel-label">{cabinet.contactsTelegram}</p>
+              {telegramLinked ? <p className="hint">{cabinet.contactsTelegramLinked}</p> : null}
+              {!telegramLinked && telegramUrl ? (
+                <div className="wallet-actions">
+                  <a className="ghost" href={telegramUrl} target="_blank" rel="noreferrer">
+                    {wizard.telegram}
+                  </a>
+                </div>
+              ) : null}
+              {!telegramLinked && !telegramUrl ? <p className="hint">{wizard.telegramSoon}</p> : null}
+            </div>
           </div>
         ) : null}
 

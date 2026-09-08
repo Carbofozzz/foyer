@@ -27,6 +27,10 @@ export const principals = pgTable("principals", {
   sealedWalletKey: text("sealed_wallet_key"),
   ownerAddress: text("owner_address").unique(),
   contactEmail: text("contact_email"),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  contactLocale: text("contact_locale").notNull().default("en"),
+  telegramChatId: text("telegram_chat_id").unique(),
+  telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -284,3 +288,56 @@ export const cronTicks = pgTable("cron_ticks", {
   ok: boolean("ok").notNull().default(true),
   error: text("error"),
 });
+
+export const emailConfirmTokens = pgTable("email_confirm_tokens", {
+  tokenHash: text("token_hash").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  email: text("email").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const telegramLinkTokens = pgTable("telegram_link_tokens", {
+  tokenHash: text("token_hash").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const decideTokens = pgTable(
+  "decide_tokens",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("decide_tokens_action").on(table.actionId)],
+);
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    channel: text("channel").notNull(),
+    status: text("status").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("notifications_action_channel").on(table.actionId, table.channel),
+    index("notifications_status").on(table.status),
+  ],
+);
