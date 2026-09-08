@@ -42,8 +42,7 @@ if (process.argv.includes("--propose")) {
   const action = await call("/api/actions", {
     method: "POST",
     body: {
-      kind: "book",
-      payload: { kind: "book", summary: "HTTP client probe, €10", amount: 10, currency: "EUR" },
+      payload: { summary: "HTTP client probe, €10", amount: 10, currency: "EUR" },
       justification: "External HTTP client completing the loop.",
       evidence: [{ type: "text", value: "scripts/http-client.mjs" }],
     },

@@ -4,6 +4,15 @@ export function publicOrigin(request: Request): string {
   return `${proto}://${host}`;
 }
 
+/** Origin for wake POSTs when there is no incoming request (cron). */
+export function defaultPublicOrigin(): string {
+  const explicit = process.env.FOYER_PUBLIC_URL?.replace(/\/$/, "");
+  if (explicit) return explicit;
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/^https?:\/\//, "");
+  if (vercel) return `https://${vercel}`;
+  return "https://foyerapp.dev";
+}
+
 /** Standard MCP HTTP snippet: URL + bearer key. Not tied to one runtime. */
 export function mcpConfig(origin: string, agentKey: string) {
   return JSON.stringify(
@@ -22,8 +31,12 @@ export function mcpConfig(origin: string, agentKey: string) {
   );
 }
 
+/** Chat runtimes are not woken. The proposer must poll at least this often. */
+export const MCP_INBOX_POLL_SEC = 30;
+
 export const MCP_PROMPT_LINES = [
-  "Propose, object, read inbox, ack, and report only through Foyer tools.",
-  "When inbox says may_act, do permitted_payload with your own tools, then report { did: true }. If you skip, report { did: false }.",
-  "Cite the house constitution in every justification. Do not pay, book, or message before may_act. A pass is permission — Foyer does not do the act.",
+  "Propose, object, read inbox, ack, withdraw, revise, insist, and report only through Foyer tools.",
+  `After you propose or object, call inbox at least every ${MCP_INBOX_POLL_SEC} seconds until verdict.outcome is allow or deny, or status is withdrawn. Chat runtimes are not woken — this poll is how you learn.`,
+  "When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.",
+  "Cite the house constitution in every justification. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
 ];

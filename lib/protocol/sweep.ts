@@ -2,41 +2,58 @@ import { and, eq, lte } from "drizzle-orm";
 import { actions, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { recordTimeoutAcks } from "./actions";
+import { enterBargain, timeoutBargains } from "./bargain";
 import { engagedIds, loadActionBundle } from "./bundle";
 import { stepHouseCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
+import { defaultPublicOrigin } from "@/lib/mcp/config";
+import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
+
 /**
  * Advances time for one house. Idempotent.
- * Test objections come from the cabinet test form, not phrase matchers.
- * Reads pass courts: 0. Only tick opens a court.
+ * Test objections come from the cabinet test stage as house agents.
+ * Reads pass courts: 0. Tick only polls an already submitted court.
  */
 export async function sweep(
   principalId: string,
   now: Date,
-  options?: { courts?: number },
+  options?: { courts?: number; origin?: string },
 ): Promise<{ advanced: number }> {
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };
 
   let advanced = 0;
+  const origin = options?.origin || defaultPublicOrigin();
+  advanced += await deliverPendingWakes(principalId, origin);
 
   const openRows = await db
     .select()
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
-  // Reads never wait on GenLayer. Tick submits or polls one court tx.
   const courts = options?.courts ?? 0;
 
   for (const row of openRows) {
     const bundle = await loadActionBundle(row.id);
     if (!bundle || bundle.action.status !== "open") continue;
+    const gate = await requiredWakeGate(bundle.action.id, bundle.action.revision);
+    if (gate === "pending") continue;
+    if (gate === "failed") {
+      await escalateUnreachable(principal, bundle.action.id, now);
+      advanced += 1;
+      continue;
+    }
     if (bundle.objections.length === 0) {
       await executeSilenceAllow(bundle.action);
       advanced += 1;
+    } else {
+      await enterBargain(bundle.action.id, principal.silenceWindowSec, now);
+      advanced += 1;
     }
   }
+
+  advanced += await timeoutBargains(principal, now);
 
   if (courts > 0 && (await stepHouseCourt(principal, now))) advanced += 1;
 

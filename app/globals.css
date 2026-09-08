@@ -221,17 +221,126 @@ a {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  margin: 0.4rem 0 0;
+  margin: 1rem 0 0;
+}
+
+.home-outline .card {
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .home-outline {
+    grid-template-columns: 1fr;
+  }
 }
 
 .flow {
   margin: 0.5rem 0 1.4rem;
 }
 
-.flow-track {
+/* One row of the rail: bullet in the first column, card in the second. */
+.flow-row {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.6fr) minmax(0, 1fr) minmax(5rem, 0.6fr) minmax(0, 1.15fr) minmax(5rem, 0.6fr) minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+  column-gap: 0.9rem;
+  padding-bottom: 0.85rem;
+}
+
+.flow-row::before {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  top: 1.6rem;
+  bottom: -0.05rem;
+  width: 1px;
+  background: var(--line);
+}
+
+.flow-row.is-last::before {
+  display: none;
+}
+
+.flow-row.is-last {
+  padding-bottom: 0;
+}
+
+/* Pulse travelling down that segment of the rail. */
+.flow-row::after {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  margin-left: -0.19rem;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: flow-run 4.2s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+.flow-row.is-last::after {
+  display: none;
+}
+
+.flow-row:nth-child(2)::after {
+  animation-delay: 0.3s;
+}
+
+.flow-row:nth-child(3)::after {
+  animation-delay: 0.6s;
+}
+
+.flow-row:nth-child(4)::after {
+  animation-delay: 0.9s;
+}
+
+.flow-row:nth-child(5)::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes flow-run {
+  0% {
+    top: 1.6rem;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    top: calc(100% - 0.38rem);
+    opacity: 0;
+  }
+}
+
+.flow-bullet {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  margin-top: 0.62rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-bullet.is-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 1.05rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
 }
 
 .flow-node {
@@ -239,9 +348,9 @@ a {
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  padding: 0.7rem 0.85rem 0.75rem;
+  padding: 0.7rem 0.9rem 0.78rem;
   display: grid;
-  gap: 0.12rem;
+  gap: 0.15rem;
   align-content: start;
 }
 
@@ -249,140 +358,78 @@ a {
   border-color: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
-.flow-num {
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+/* Nothing follows an ending, so it sits flat on the page. */
+.flow-node.is-end {
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+  box-shadow: none;
+}
+
+.flow-node > .pill {
+  justify-self: start;
+  margin-bottom: 0.2rem;
 }
 
 .flow-name {
   font-weight: 600;
   font-size: 0.98rem;
-  line-height: 1.25;
+  line-height: 1.35;
+}
+
+.flow-node.is-end .flow-name {
+  font-weight: 500;
+  font-size: 0.92rem;
 }
 
 .flow-sub {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
-.flow-outcomes {
+.flow-ends {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Same gap as the cards below, so the two three-column rows share a rhythm. */
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.flow-ends > .flow-node {
+  align-content: start;
+}
+
+.flow-picks {
   list-style: none;
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+  display: grid;
+  gap: 0.35rem;
 }
 
-.flow-wire {
-  position: relative;
-  height: 1px;
-  margin-top: 2.15rem;
-  background: linear-gradient(90deg, transparent, var(--line) 22%, var(--line) 78%, transparent);
-}
-
-/* Arrow head at the receiving end. */
-.flow-wire::after {
-  content: "";
-  position: absolute;
-  right: 0.15rem;
-  top: 50%;
-  width: 0.34rem;
-  height: 0.34rem;
-  transform: translateY(-50%) rotate(45deg);
-  border-top: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-}
-
-.flow-wire-label {
-  position: absolute;
-  bottom: 0.4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.64rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.flow-picks li {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
   color: var(--muted);
-  white-space: nowrap;
 }
 
-.flow-pulse {
-  position: absolute;
-  top: 50%;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0;
-  animation: flow-run 3.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
-}
-
-@keyframes flow-run {
-  0% {
-    left: 0;
-    transform: translateY(-50%);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    left: calc(100% - 0.4rem);
-    transform: translateY(-50%);
-    opacity: 0;
-  }
+/* The one option that keeps the request moving down the rail. */
+.flow-picks li.is-cont {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  border-left: 2px solid var(--accent);
+  background: var(--accent-soft);
 }
 
 @media (max-width: 800px) {
-  .flow-track {
-    grid-template-columns: minmax(0, 1fr);
+  .flow-ends {
+    grid-template-columns: 1fr;
   }
-
-  .flow-wire {
-    justify-self: center;
-    width: 1px;
-    height: 2.1rem;
-    margin: 0.35rem 0;
-    background: linear-gradient(180deg, var(--line), var(--line));
-  }
-
-  .flow-wire::after {
-    right: auto;
-    left: 50%;
-    top: auto;
-    bottom: 0.1rem;
-    transform: translateX(-50%) rotate(135deg);
-  }
-
-  .flow-wire-label {
-    bottom: auto;
-    top: 50%;
-    left: 0.55rem;
-    transform: translateY(-50%);
-  }
-
-  .flow-pulse {
-    display: none;
-  }
-}
-
-.home-outline .card {
-  margin: 0;
 }
 
 .card.stack > .section-title {
   margin-bottom: 0;
-}
-
-@media (max-width: 800px) {
-  .home-outline {
-    grid-template-columns: 1fr;
-  }
 }
 
 .brand {
@@ -1088,22 +1135,141 @@ label.segment {
   opacity: 0.55;
 }
 
-.test-request-grid {
+.test-stage .test-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.test-now {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   gap: 0.75rem;
 }
 
-@media (min-width: 640px) {
-  .test-request-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.test-card {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.65rem;
 }
 
-.test-path {
-  border: 0;
+.test-card.is-active {
+  border-color: var(--line);
+  box-shadow: var(--shadow-raised);
+}
+
+.test-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-family: var(--ui);
+  font-weight: 600;
+}
+
+.test-card-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.test-why {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.test-kicker {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.test-actors {
+  list-style: none;
   margin: 0;
   padding: 0;
-  min-inline-size: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.test-actor {
+  border-top: 1px solid var(--hairline);
+  padding-top: 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.test-actor-name {
+  margin: 0;
+}
+
+.test-handles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.test-handles .ghost {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+.test-handles button:disabled,
+.test-handles .ghost:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.test-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.test-modal {
+  width: min(42rem, 100%);
+  max-height: min(80vh, 42rem);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+  padding: 0.9rem 1rem 1rem;
+}
+
+.test-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.test-modal-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.test-modal pre {
+  margin: 0;
+  max-height: none;
 }
 
 .agent-chips-block {
@@ -1131,6 +1297,11 @@ label.segment {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.connect-add .segmented,
+.connect-add .hint {
+  flex: 1 1 100%;
 }
 
 .connect-add input {

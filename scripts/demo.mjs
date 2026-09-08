@@ -25,8 +25,11 @@ const pages = ["/en", "/en/cabinet/demo", "/en/legal", "/en/privacy", "/api/open
 for (const path of pages) {
   const page = await get(path);
   if (path === "/en/cabinet/demo") {
-    for (const label of ["Activity", "Treasury", "Rules", "Then a transaction."]) {
+    for (const label of ["Activity", "Treasury", "Rules", "Then a transaction.", "The request is refused."]) {
       if (!page.text.includes(label)) throw new Error(`/en/cabinet/demo missing ${label}`);
+    }
+    if (page.text.includes("A middle option") || page.text.includes("Objection taken")) {
+      throw new Error("/en/cabinet/demo still shows old four-outcome copy");
     }
     if (page.text.includes("Carried out")) {
       throw new Error("/en/cabinet/demo still says Foyer carried it out");

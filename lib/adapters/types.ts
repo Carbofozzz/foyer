@@ -1,4 +1,4 @@
-import type { ActionKind, ActionPayload } from "@/lib/protocol/types";
+import type { ActionPayload, KnownActionKind } from "@/lib/protocol/types";
 
 export type AdapterContext = {
   principalId: string;
@@ -10,4 +10,4 @@ export type Adapter = {
   apply: (payload: ActionPayload, ctx: AdapterContext) => Promise<Record<string, unknown>>;
 };
 
-export type AdapterMap = Record<ActionKind, Adapter>;
+export type AdapterMap = Record<KnownActionKind, Adapter>;

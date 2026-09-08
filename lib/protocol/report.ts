@@ -5,8 +5,6 @@ import { ProtocolError } from "./errors";
 import { loadActionBundle, serializeAction, type HouseAuth } from "./bundle";
 import { isRecord } from "./parse";
 
-export type ReportKind = "did" | "skipped" | "broke";
-
 export type DoorStats = {
   agent_id: string;
   proposed: number;
@@ -19,28 +17,17 @@ export type DoorStats = {
   skipped: number;
 };
 
-export function classifyReport(did: boolean, mayAct: boolean): ReportKind {
-  if (did && mayAct) return "did";
-  if (!did && mayAct) return "skipped";
-  if (did && !mayAct) return "broke";
-  return "skipped";
-}
-
-export function parseDid(body: Record<string, unknown>): boolean {
-  if (typeof body.did !== "boolean") {
-    throw new ProtocolError("bad_request", "did must be true or false", 400);
-  }
-  return body.did;
-}
-
-export async function reportAction(auth: HouseAuth, actionId: string, body: Record<string, unknown>) {
-  const did = parseDid(body);
+/** Proposer acks a final allow or deny. No did flag — the act is outside Foyer. */
+export async function reportAction(auth: HouseAuth, actionId: string, _body?: Record<string, unknown>) {
   const bundle = await loadActionBundle(actionId);
   if (!bundle || bundle.action.principalId !== auth.principal.id) {
     throw new ProtocolError("not_found", "Unknown house", 404);
   }
   if (bundle.action.proposerId !== auth.agent.id) {
     throw new ProtocolError("forbidden", "Only the proposer may report", 403);
+  }
+  if (bundle.action.status !== "permitted") {
+    throw new ProtocolError("conflict", "Report after a final allow or deny", 409);
   }
   const existing = await findReport(actionId);
   if (existing) {
@@ -53,29 +40,12 @@ export async function reportAction(auth: HouseAuth, actionId: string, body: Reco
     .values({
       actionId,
       agentId: auth.agent.id,
-      did,
+      did: true,
     })
     .onConflictDoNothing();
   const done = await loadActionBundle(actionId);
   if (!done) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(done);
-}
-
-/** First-pass / spawn test client: after a permit, they report the act. */
-export async function maybeReportTestPass(actionId: string): Promise<void> {
-  const bundle = await loadActionBundle(actionId);
-  if (!bundle || !bundle.action.testPass) return;
-  if (bundle.action.status !== "permitted") return;
-  if (await findReport(actionId)) return;
-  const serialized = serializeAction(bundle);
-  await getDb()
-    .insert(actionReports)
-    .values({
-      actionId,
-      agentId: bundle.action.proposerId,
-      did: serialized.may_act,
-    })
-    .onConflictDoNothing();
 }
 
 export async function doorStatsFor(principalId: string): Promise<DoorStats[]> {
@@ -108,14 +78,8 @@ export async function doorStatsFor(principalId: string): Promise<DoorStats[]> {
       if (row.status === "escalated") escalated += 1;
       if (mayAct) passed += 1;
       if (blockedRow) blocked += 1;
-      if (report) {
-        const kind = classifyReport(report.did, mayAct);
-        if (kind === "broke") broke += 1;
-        if (kind === "did") did += 1;
-        if (kind === "skipped" && mayAct) skipped += 1;
-      } else if (mayAct) {
-        pending += 1;
-      }
+      if (row.status === "permitted" && !report) pending += 1;
+      if (report) did += 1;
     }
     return {
       agent_id: agent.id,
@@ -137,6 +101,7 @@ async function findReport(actionId: string) {
 }
 
 export function reportBody(value: unknown): Record<string, unknown> {
+  if (value == null || value === "") return {};
   if (!isRecord(value)) throw new ProtocolError("bad_request", "JSON object required", 400);
   return value;
 }

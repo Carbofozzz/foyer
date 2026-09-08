@@ -20,10 +20,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <h1>{t.home.title}</h1>
       <p className="lead">{t.home.lead}</p>
       <HomeGate locale={locale} t={t.home} initialAddress={session?.address ?? null} />
-      <p className="price-line">
-        <strong>{t.home.priceKicker}</strong> {t.home.priceLead}
-      </p>
-      <ProductOutline outline={t.outline} cabinet={t.cabinet} />
+      <ProductOutline outline={t.outline} />
       <SpawnButton locale={locale} t={t.spawn} />
       <WaitlistForm locale={locale} t={t.waitlist} />
     </main>

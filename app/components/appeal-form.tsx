@@ -19,7 +19,7 @@ export function AppealForm({
   errorLabel: string;
 }) {
   const router = useRouter();
-  const [outcome, setOutcome] = useState<"allow_a" | "allow_b" | "">("");
+  const [outcome, setOutcome] = useState<"allow" | "deny" | "">("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
 
@@ -50,10 +50,10 @@ export function AppealForm({
       <p className="feed-label">{t.label}</p>
       <label>
         {t.outcome}
-        <select value={outcome} onChange={(event) => setOutcome(event.target.value as "allow_a" | "allow_b" | "")}>
+        <select value={outcome} onChange={(event) => setOutcome(event.target.value as "allow" | "deny" | "")}>
           <option value="">{t.keep}</option>
-          <option value="allow_a">{t.allowA}</option>
-          <option value="allow_b">{t.allowB}</option>
+          <option value="allow">{t.allowA}</option>
+          <option value="deny">{t.deny}</option>
         </select>
       </label>
       <button type="submit" disabled={pending || !outcome} aria-busy={pending}>

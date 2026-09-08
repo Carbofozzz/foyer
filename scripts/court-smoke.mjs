@@ -88,10 +88,23 @@ const write = {
     "cas_smoke",
     "Save money, except being late for work or losing a client.",
     JSON.stringify({ kind: "book", summary: "Business class, EUR 420", amount: 420, currency: "EUR" }),
-    JSON.stringify({
-      justification: "Economy is enough for this trip.",
-      counter_action: { kind: "book", summary: "Economy, EUR 180", amount: 180, currency: "EUR" },
-    }),
+    JSON.stringify([
+      {
+        objector_id: "agt_budget",
+        justification: "Economy is enough for this trip.",
+        counter_action: { kind: "book", summary: "Economy, EUR 180", amount: 180, currency: "EUR" },
+      },
+      {
+        objector_id: "agt_calendar",
+        justification: "Those dates collide with a client meeting.",
+        counter_action: null,
+      },
+      {
+        objector_id: "agt_charter",
+        justification: "The charter prefers the cheaper fare unless a client is at risk.",
+        counter_action: null,
+      },
+    ]),
     JSON.stringify([{ type: "text", value: "Presentation at 9:00 the next morning" }]),
     "",
     "",

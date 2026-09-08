@@ -21,6 +21,8 @@ export const principals = pgTable("principals", {
   testClients: boolean("test_clients").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
+  /** 0 = four-outcome IC. 2 = allow/deny/escalate with an objections list. */
+  courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
   ownerAddress: text("owner_address").unique(),
@@ -36,7 +38,12 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   keyHash: text("key_hash").notNull().unique(),
   sealedKey: text("sealed_key"),
+  /** Leftover phrase-matcher rows. New agents are never this. */
   isGuardian: boolean("is_guardian").notNull().default(false),
+  /** outbound | callback | hosted (reserved, not minted). Existing rows default outbound. */
+  wake: text("wake").notNull().default("outbound"),
+  callbackUrl: text("callback_url"),
+  sealedCallbackSecret: text("sealed_callback_secret"),
   bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -73,6 +80,10 @@ export const actions = pgTable(
     executedAt: timestamp("executed_at", { withTimezone: true }),
     permittedPayload: jsonb("permitted_payload"),
     testPass: boolean("test_pass").notNull().default(false),
+    revision: integer("revision").notNull().default(1),
+    bargainUntil: timestamp("bargain_until", { withTimezone: true }),
+    bargainRound: integer("bargain_round").notNull().default(0),
+    insistedAt: timestamp("insisted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("actions_principal_status_silence").on(table.principalId, table.status, table.silenceUntil)],
@@ -88,13 +99,38 @@ export const objections = pgTable(
     objectorId: text("objector_id")
       .notNull()
       .references(() => agents.id),
+    revision: integer("revision").notNull().default(1),
     justification: text("justification").notNull(),
     evidence: jsonb("evidence").notNull(),
     bond: text("bond").notNull(),
     counterAction: jsonb("counter_action"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex("objections_action_objector").on(table.actionId, table.objectorId)],
+  (table) => [uniqueIndex("objections_action_objector_revision").on(table.actionId, table.objectorId, table.revision)],
+);
+
+/** Delivery of a propose/revise to one bidirectional agent. */
+export const wakes = pgTable(
+  "wakes",
+  {
+    id: text("id").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    revision: integer("revision").notNull().default(1),
+    status: text("status").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("wakes_action_agent_revision").on(table.actionId, table.agentId, table.revision),
+    index("wakes_status").on(table.status),
+  ],
 );
 
 export const cases = pgTable(
@@ -108,6 +144,8 @@ export const cases = pgTable(
     status: text("status").notNull(),
     tx: text("tx"),
     txErrors: integer("tx_errors").notNull().default(0),
+    /** Contract that received this case’s judge write. Inflight old cases keep the previous ABI. */
+    contract: text("contract"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("cases_action_id").on(table.actionId)],
@@ -119,6 +157,7 @@ export const verdicts = pgTable("verdicts", {
     .notNull()
     .references(() => cases.id),
   outcome: text("outcome").notNull(),
+  /** Archive for old allow_b / remedy rows. New court answers do not write this. */
   remedyAction: jsonb("remedy_action"),
   reasoning: text("reasoning").notNull(),
   objectionGrounded: boolean("objection_grounded").notNull(),
@@ -192,7 +231,7 @@ export const waitlist = pgTable("waitlist", {
 });
 
 /** Almost-real spend adapter receipts. Not a bank wire. */
-/** One report per action: the agent says whether it performed the permitted payload. */
+/** One report per action: the proposer acked the final allow or deny. */
 export const actionReports = pgTable("action_reports", {
   actionId: text("action_id")
     .primaryKey()

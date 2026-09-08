@@ -1,14 +1,16 @@
 import { cabinetFromToken, needOperate } from "@/lib/protocol/auth";
 import { jsonOk, protocolFail } from "@/lib/protocol/http";
-import { skipHarness } from "@/lib/protocol/house-clients";
+import { publicOrigin } from "@/lib/mcp/config";
+import { inspectQuery } from "@/lib/protocol/test-stage";
 
-export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
+export const maxDuration = 120;
+
+export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
   const auth = needOperate(await cabinetFromToken(token, request));
   if ("error" in auth) return auth.error;
   try {
-    await skipHarness(auth.principal);
-    return jsonOk({ skipped: true });
+    return jsonOk(await inspectQuery(auth.principal, new URL(request.url), publicOrigin(request)));
   } catch (error) {
     return protocolFail(error);
   }

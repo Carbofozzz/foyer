@@ -62,12 +62,6 @@ export function DemoCabinet({
                 {chips.map((chip) => (
                   <li key={chip.name} className={chip.asked > 0 ? "agent-live" : "agent-wait"}>
                     {chip.name}
-                    {chip.asked > 0 ? (
-                      <span className="agent-door">
-                        {" "}
-                        · {t.cabinet.doorLine.replace("{asked}", String(chip.asked)).replace("{did}", String(chip.did))}
-                      </span>
-                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -129,7 +123,7 @@ function DemoFeedRow({
   replay: Messages["replay"];
 }) {
   const story = replay[row.id];
-  const denied = row.outcome === "allow_b" && !story.decided;
+  const denied = row.outcome === "deny";
   const status =
     row.outcome === "escalate" ? cabinet.statusEscalated : denied ? cabinet.statusDenied : cabinet.statusPermitted;
   const tone =
@@ -143,26 +137,32 @@ function DemoFeedRow({
         <p>
           {story.proposer} · {kindLabel(row.kind, cabinet)}: {story.asked}
         </p>
+        {row.path === "revise" ? <p className="hint">{cabinet.revised.replace("{summary}", story.decided)}</p> : null}
       </div>
-      {story.objector ? (
-        <div className="feed-block">
+      {demoObjections(story).map((item) => (
+        <div className="feed-block" key={`${item.name}-${item.counter}`}>
           <p className="feed-label">{cabinet.objection}</p>
-          <p>
-            {story.objector}
-            {story.counter ? `: ${story.counter}` : ""}
-          </p>
+          <p>{item.name}</p>
+          {item.counter ? <p className="hint">{cabinet.suggestion.replace("{summary}", item.counter)}</p> : null}
         </div>
-      ) : null}
+      ))}
       <div className="feed-block">
         <div className="feed-label-row">
           <p className="feed-label">{cabinet.decision}</p>
           <StatusPill tone={outcomeTone(row.outcome)}>{outcomeLabel(row.outcome, cabinet)}</StatusPill>
         </div>
-        <p>{decisionCopy(row.outcome, story.decided, cabinet)}</p>
-        <p className="hint">{resultCopy(row, story, replay)}</p>
+        <p>{decisionCopy(row, cabinet)}</p>
+        <p className="hint">{resultCopy(row, replay)}</p>
       </div>
     </li>
   );
+}
+
+function demoObjections(story: Messages["replay"]["a"]) {
+  const rows: { name: string; counter: string }[] = [];
+  if (story.objector) rows.push({ name: story.objector, counter: story.counter });
+  if (story.objector2) rows.push({ name: story.objector2, counter: story.counter2 });
+  return rows;
 }
 
 function demoAgentChips(t: Messages) {
@@ -172,9 +172,11 @@ function demoAgentChips(t: Messages) {
   for (const row of DEMO_CASES) {
     const story = t.replay[row.id];
     if (!names.includes(story.proposer)) names.push(story.proposer);
-    if (story.objector && !names.includes(story.objector)) names.push(story.objector);
+    for (const item of demoObjections(story)) {
+      if (!names.includes(item.name)) names.push(item.name);
+    }
     asked.set(story.proposer, (asked.get(story.proposer) ?? 0) + 1);
-    if (row.outcome === "allow_a" || row.outcome === "remedy") {
+    if (row.outcome === "allow") {
       did.set(story.proposer, (did.get(story.proposer) ?? 0) + 1);
     }
   }
@@ -192,23 +194,22 @@ function kindLabel(kind: DemoCase["kind"], cabinet: Messages["cabinet"]) {
 }
 
 function outcomeLabel(outcome: DemoCase["outcome"], cabinet: Messages["cabinet"]) {
-  if (outcome === "allow_a") return cabinet.outcomeAllowA;
-  if (outcome === "allow_b") return cabinet.outcomeAllowB;
-  if (outcome === "remedy") return cabinet.outcomeRemedy;
+  if (outcome === "allow") return cabinet.outcomeAllowA;
+  if (outcome === "deny") return cabinet.outcomeDeny;
   return cabinet.outcomeEscalate;
 }
 
-function decisionCopy(outcome: DemoCase["outcome"], decided: string, cabinet: Messages["cabinet"]) {
-  if (outcome === "allow_a") return cabinet.allowA;
-  if (outcome === "remedy") return cabinet.remedy.replace("{summary}", decided);
-  if (outcome === "escalate") return cabinet.escalate;
-  if (decided) return cabinet.allowBCounter.replace("{summary}", decided);
-  return cabinet.allowBBlock;
+function decisionCopy(row: DemoCase, cabinet: Messages["cabinet"]) {
+  if (row.path === "silence") return cabinet.silence;
+  if (row.path === "revise") return cabinet.revisedSilence;
+  if (row.outcome === "allow") return cabinet.allowA;
+  if (row.outcome === "deny") return cabinet.deny;
+  return cabinet.escalate;
 }
 
-function resultCopy(row: DemoCase, story: Messages["replay"]["a"], replay: Messages["replay"]) {
+function resultCopy(row: DemoCase, replay: Messages["replay"]) {
   if (row.outcome === "escalate") return replay.resultYou;
-  if (row.outcome === "allow_b" && !story.decided) return replay.resultNone;
+  if (row.outcome === "deny") return replay.resultNone;
   if (row.kind === "message") return replay.resultMessage;
   return replay.resultTx;
 }

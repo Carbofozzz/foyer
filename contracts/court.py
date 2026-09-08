@@ -1,27 +1,26 @@
-# v0.4.0
+# v0.5.0
 # { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 import json
 
 import genlayer as gl
 
-OUTCOMES = ("allow_a", "allow_b", "remedy", "escalate")
+OUTCOMES = ("allow", "deny", "escalate")
 
 PROMPT = """You are the court for one principal. Agents of that person or company share a wallet and a name, but not a goal.
 
-Given constitution, proposed_action, objection (with its optional counter_action), and evidence. Which decision best executes the constitution: allow_a, allow_b, remedy, or escalate?
+Given constitution, proposed_action, a JSON list of objections (who, text, optional counter_action as advice only), and evidence. Answer only whether the original proposal may proceed.
 
 Rules:
-- allow_a: execute the proposed action. The proposal follows the constitution better.
-- allow_b: execute the objector's counter_action, or nothing when the objection is a pure block.
-- remedy: neither side is right; return remedy_action as an executable action (kind plus payload fields of the same shape as the proposal). If no such action can be written, answer escalate instead.
-- escalate: the constitution is silent or its articles contradict. Nothing executes until the principal decides.
-- Also answer whether the objection had grounds in the constitution (objection_grounded).
-- If this is an appeal, judge against the constitution snapshot (the constitution field). Use prior_verdict and appeal_note as extra evidence. Do not invent a fifth outcome.
+- allow: permit the proposer's current payload as written. The proposal follows the constitution better than rejecting it.
+- deny: do not permit. Empty permit. Do not execute anyone's counter_action. Changing the trip is a revise, not a court result.
+- escalate: the constitution is silent or its articles contradict. The principal decides yes or no on that same payload.
+- objection_grounded: true if at least one objection had grounds in the constitution.
+- Do not pick a winning objector. Do not write a remedy_action. Do not invent a fourth outcome.
+- If this is an appeal, judge against the constitution snapshot (the constitution field). Use prior_verdict and appeal_note as extra evidence.
 
 Return ONLY JSON:
 {
-  "outcome": "allow_a" | "allow_b" | "remedy" | "escalate",
-  "remedy_action": {"kind": "spend"|"book"|"message"|"cancel", "summary": str, "amount": number|null, "currency": str|null} | null,
+  "outcome": "allow" | "deny" | "escalate",
   "reasoning": str,
   "objection_grounded": bool
 }
@@ -46,7 +45,7 @@ class Court(gl.contract.Contract):
         case_id: str,
         constitution: str,
         proposed_action: str,
-        objection: str,
+        objections: str,
         evidence: str,
         prior_verdict: str,
         appeal_note: str,
@@ -63,8 +62,8 @@ constitution:
 proposed_action:
 {proposed_action}
 
-objection:
-{objection}
+objections:
+{objections}
 
 evidence:
 {evidence}
@@ -94,7 +93,6 @@ appeal_note:
             {
                 "found": True,
                 "outcome": str(result["outcome"]),
-                "remedy_action": result.get("remedy_action"),
                 "reasoning": str(result["reasoning"]),
                 "objection_grounded": bool(result["objection_grounded"]),
             },
@@ -117,53 +115,24 @@ def _as_bool(value) -> bool:
     return bool(value)
 
 
-def _norm_amount(value):
-    if value is None or value == "":
-        return None
-    try:
-        return round(float(value), 2)
-    except (TypeError, ValueError):
-        return None
-
-
 def _canonicalize(raw) -> dict:
     if not isinstance(raw, dict):
         return {
             "outcome": "escalate",
-            "remedy_action": None,
             "reasoning": "The judge returned an unreadable answer.",
             "objection_grounded": False,
         }
     outcome = str(raw.get("outcome") or "").strip().lower()
+    if outcome == "allow_a":
+        outcome = "allow"
+    elif outcome in ("allow_b", "remedy"):
+        outcome = "escalate"
     if outcome not in OUTCOMES:
         outcome = "escalate"
     grounded = _as_bool(raw.get("objection_grounded"))
     reasoning = str(raw.get("reasoning") or "").strip() or "No reasoning given."
-    remedy = raw.get("remedy_action")
-    if not isinstance(remedy, dict):
-        remedy = None
-    else:
-        kind = str(remedy.get("kind") or "").strip().lower()
-        summary = str(remedy.get("summary") or "").strip()
-        if kind not in ("spend", "book", "message", "cancel") or not summary:
-            remedy = None
-        else:
-            cleaned = {"kind": kind, "summary": summary}
-            amount = _norm_amount(remedy.get("amount"))
-            if amount is not None:
-                cleaned["amount"] = amount
-            currency = remedy.get("currency")
-            if isinstance(currency, str) and currency.strip():
-                cleaned["currency"] = currency.strip()
-            remedy = cleaned
-    if outcome == "remedy" and remedy is None:
-        outcome = "escalate"
-        reasoning = "Remedy needs an executable action; escalating."
-    if outcome != "remedy":
-        remedy = None
     return {
         "outcome": outcome,
-        "remedy_action": remedy,
         "reasoning": reasoning,
         "objection_grounded": grounded,
     }
@@ -171,22 +140,11 @@ def _canonicalize(raw) -> dict:
 
 def _decision_key(res) -> tuple:
     if not isinstance(res, dict):
-        return ("escalate", False, None, None, None)
-    remedy = res.get("remedy_action")
-    kind = None
-    amount = None
-    currency = None
-    if isinstance(remedy, dict):
-        kind = remedy.get("kind")
-        amount = _norm_amount(remedy.get("amount"))
-        currency = remedy.get("currency")
-    return (
-        res.get("outcome"),
-        bool(res.get("objection_grounded")),
-        kind,
-        amount,
-        currency,
-    )
+        return ("escalate",)
+    outcome = res.get("outcome")
+    if outcome not in OUTCOMES:
+        outcome = "escalate"
+    return (outcome,)
 
 
 def _extract_json(s: str) -> str:

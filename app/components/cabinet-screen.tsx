@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { inboxForPrincipal } from "@/lib/protocol/actions";
 import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
 import { sweep } from "@/lib/protocol/sweep";
-import { lockedKinds, type HousePrincipal } from "@/lib/protocol/bundle";
+import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { CabinetWizard } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
@@ -14,10 +14,8 @@ import { RulesCard } from "@/app/components/rules-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { HouseSwitch } from "@/app/components/house-switch";
 import { MembersCard } from "@/app/components/members-card";
-import { TestClientsToggle } from "@/app/components/test-clients-toggle";
-import { TestRequestCard } from "@/app/components/test-request-card";
-import { markHarnessProposers } from "@/lib/protocol/house-clients";
-import { PagedList } from "@/app/components/paged-list";
+import { TestStageCard } from "@/app/components/test-stage-card";
+import { InboxFeed } from "@/app/components/inbox-feed";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
@@ -48,21 +46,21 @@ export async function CabinetScreen({
   tab?: string;
   t: Messages;
 }) {
-  await markHarnessProposers(principal.id);
   await sweep(principal.id, new Date(), { courts: 0 });
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
-  const showTest = principal.testClients;
-  const testIds = new Set(houseAgents.filter((agent) => agent.isGuardian).map((agent) => agent.id));
-  const isTestItem = (item: InboxItem) =>
-    item.test_pass || testIds.has(item.proposer_id) || item.objections.some((row) => testIds.has(row.objector_id));
-  const feedItems = showTest ? inbox.items : inbox.items.filter((item) => !isTestItem(item));
-  const visibleAgents = showTest ? houseAgents : houseAgents.filter((agent) => !agent.isGuardian);
+  const leftoverIds = new Set(houseAgents.filter((agent) => agent.isGuardian).map((agent) => agent.id));
+  const feedItems = inbox.items.filter(
+    (item) =>
+      !leftoverIds.has(item.proposer_id) && !item.objections.some((row) => leftoverIds.has(row.objector_id)),
+  );
+  const hideTest = feedItems.map((item) => item.test_pass);
+  const liveIds = liveAgentIds(feedItems.filter((item) => !item.test_pass));
+  const visibleAgents = houseAgents.filter((agent) => !agent.isGuardian);
   const door = await doorStatsFor(principal.id);
   const doorById = Object.fromEntries(door.map((row) => [row.agent_id, row]));
   const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
-  const liveIds = liveAgentIds(feedItems);
   const step = !principal.wizardRulesDone
     ? "rules"
     : !principal.wizardLockDone
@@ -153,60 +151,62 @@ export async function CabinetScreen({
           </nav>
           <div className="cabinet-scroll">
             <div data-cabinet-pane="inbox">
-              <div className="agent-chips-block">
-                {visibleAgents.length > 0 ? (
-                  <ul className="agent-chips">
-                    {visibleAgents.map((agent) => (
-                      <li
-                        key={agent.id}
-                        className={liveIds.has(agent.id) ? "agent-live" : "agent-wait"}
-                        title={doorTitle(doorById[agent.id], t.cabinet)}
-                      >
-                        {agent.name}
-                        {agent.isGuardian ? ` · ${t.cabinet.guardian}` : null}
-                        {doorChip(doorById[agent.id], t.cabinet)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {operate ? (
-                  <TestClientsToggle
+              <InboxFeed
+                chips={
+                  visibleAgents.length > 0 ? (
+                    <ul className="agent-chips">
+                      {visibleAgents.map((agent) => (
+                        <li
+                          key={agent.id}
+                          className={liveIds.has(agent.id) ? "agent-live" : "agent-wait"}
+                          title={[
+                            doorTitle(doorById[agent.id], t.cabinet),
+                            agent.wake === "callback"
+                              ? agent.callbackUrl && agent.sealedCallbackSecret
+                                ? t.connect.hookOk
+                                : t.connect.hookMissing
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        >
+                          {agent.name}
+                          {agent.wake === "callback"
+                            ? ` · ${t.connect.wakeCallback}`
+                            : agent.wake === "hosted"
+                              ? ` · ${t.connect.wakeHosted}`
+                              : ` · ${t.connect.wakeOutbound}`}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null
+                }
+                testPass={hideTest}
+                showToggle={hideTest.some(Boolean)}
+                empty={t.cabinet.emptyInbox}
+                showLabel={t.cabinet.testRecordsOn}
+                hideLabel={t.cabinet.testRecordsOff}
+                prevLabel={t.cabinet.pagePrev}
+                nextLabel={t.cabinet.pageNext}
+                pageOf={t.cabinet.pageOf}
+              >
+                {feedItems.map((item) => (
+                  <FeedRow
+                    key={item.id}
+                    item={item}
+                    names={names}
+                    leftoverIds={leftoverIds}
+                    t={t.cabinet}
+                    appeal={t.appeal}
                     token={token}
                     houseId={houseId}
-                    on={showTest}
-                    onLabel={t.cabinet.testRecordsOn}
-                    offLabel={t.cabinet.testRecordsOff}
+                    canAppeal={operate}
                     errorLabel={t.cabinet.error}
+                    now={now}
+                    locale={locale}
                   />
-                ) : null}
-              </div>
-              {feedItems.length === 0 ? (
-                <p className="empty">{t.cabinet.emptyInbox}</p>
-              ) : (
-                <PagedList
-                  className="feed"
-                  prevLabel={t.cabinet.pagePrev}
-                  nextLabel={t.cabinet.pageNext}
-                  pageOf={t.cabinet.pageOf}
-                >
-                  {feedItems.map((item) => (
-                    <FeedRow
-                      key={item.id}
-                      item={item}
-                      names={names}
-                      testIds={testIds}
-                      t={t.cabinet}
-                      appeal={t.appeal}
-                      token={token}
-                      houseId={houseId}
-                      canAppeal={operate}
-                      errorLabel={t.cabinet.error}
-                      now={now}
-                      locale={locale}
-                    />
-                  ))}
-                </PagedList>
-              )}
+                ))}
+              </InboxFeed>
             </div>
             <div data-cabinet-pane="treasury">
               <TreasuryCard
@@ -244,10 +244,9 @@ export async function CabinetScreen({
             ) : null}
             {operate ? (
               <div data-cabinet-pane="test">
-                <TestRequestCard
+                <TestStageCard
                   token={token}
                   houseId={houseId}
-                  kinds={lockedKinds(principal)}
                   t={t.cabinet}
                   errorLabel={t.cabinet.error}
                 />
@@ -276,7 +275,7 @@ export async function CabinetScreen({
 function FeedRow({
   item,
   names,
-  testIds,
+  leftoverIds,
   t,
   appeal,
   token,
@@ -288,7 +287,7 @@ function FeedRow({
 }: {
   item: InboxItem;
   names: Record<string, string>;
-  testIds: Set<string>;
+  leftoverIds: Set<string>;
   t: FeedCopy;
   appeal: Messages["appeal"];
   token: string;
@@ -298,14 +297,9 @@ function FeedRow({
   now: number;
   locale: string;
 }) {
-  const proposer = agentLine(item.proposer_id, names, testIds, t);
-  const kind = kindLabel(item.kind, t);
+  const proposer = agentLine(item.proposer_id, names, leftoverIds, t);
   const asked = formatAction(item.payload);
-  const firstObjection = item.objections[0];
-  const objector = firstObjection ? agentLine(firstObjection.objector_id, names, testIds, t) : null;
-  const counter = firstObjection ? formatAction(firstObjection.counter_action) : "";
-  const decided = decisionAction(item);
-  const decision = decisionLine(item, t, decided, now);
+  const decision = decisionLine(item, t);
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
   const outcome = item.verdict?.outcome;
   const courtTx = item.verdict?.tx || item.case?.tx;
@@ -313,8 +307,8 @@ function FeedRow({
   return (
     <li className="feed-item">
       <div className="feed-head">
-        <StatusPill tone={statusTone(item.status, held, item.may_act)}>
-          {statusLabel(item.status, t, held, item.may_act)}
+        <StatusPill tone={statusTone(item.status, held, item.may_act, item.phase)}>
+          {statusLabel(item.status, t, held, item.may_act, item.phase)}
         </StatusPill>
         <time className="feed-at" dateTime={item.created_at}>
           {formatAskedAt(item.created_at, locale)}
@@ -323,19 +317,26 @@ function FeedRow({
       <div className="feed-block">
         <p className="feed-label">{t.request}</p>
         <p>
-          {proposer} · {kind}
-          {asked ? `: ${asked}` : ""}
+          {proposer}
+          {asked ? ` · ${asked}` : ""}
         </p>
+        {item.revision > 1 ? <p className="hint">{t.revision.replace("{n}", String(item.revision))}</p> : null}
       </div>
-      {firstObjection ? (
-        <div className="feed-block">
-          <p className="feed-label">{t.objection}</p>
-          <p>
-            {objector}
-            {counter ? `: ${counter}` : ""}
-          </p>
-        </div>
-      ) : null}
+      {item.objections.map((row) => {
+        const objector = agentLine(row.objector_id, names, leftoverIds, t);
+        const text = typeof row.justification === "string" ? row.justification.trim() : "";
+        const counter = formatAction(row.counter_action);
+        return (
+          <div className="feed-block" key={row.id}>
+            <p className="feed-label">{t.objection}</p>
+            <p>
+              {objector}
+              {text ? `: ${text}` : ""}
+            </p>
+            {counter ? <p className="hint">{t.suggestion.replace("{summary}", counter)}</p> : null}
+          </div>
+        );
+      })}
       {decision ? (
         <div className="feed-block">
           <div className="feed-label-row">
@@ -346,7 +347,11 @@ function FeedRow({
           </div>
           <p>{decision}</p>
           {held ? <p className="hint">{t.holdAppeal}</p> : null}
-          {item.report ? <p className="hint">{reportLine(item.report.result, t)}</p> : null}
+          {item.report ? (
+            <p className="hint">{t.reportDid}</p>
+          ) : item.status === "permitted" ? (
+            <p className="hint">{reportAckLate(item) ? t.reportMiss : t.reportPending}</p>
+          ) : null}
           {item.verdict?.judge === "onchain" && courtTx ? (
             <p className="hint">
               {t.judgeOnchain} <TxLink tx={courtTx} />
@@ -375,19 +380,9 @@ function FeedRow({
   );
 }
 
-function agentLine(id: string, names: Record<string, string>, testIds: Set<string>, t: FeedCopy) {
+function agentLine(id: string, names: Record<string, string>, leftoverIds: Set<string>, t: FeedCopy) {
   const name = names[id] ?? id;
-  return testIds.has(id) ? `${name} · ${t.guardian}` : name;
-}
-
-function doorChip(stats: DoorStats | undefined, t: FeedCopy) {
-  if (!stats || stats.proposed === 0) return null;
-  const bits = [
-    t.doorLine.replace("{asked}", String(stats.proposed)).replace("{did}", String(stats.did)),
-  ];
-  if (stats.broke > 0) bits.push(t.doorBroke.replace("{n}", String(stats.broke)));
-  if (stats.pending > 0) bits.push(t.doorPending.replace("{n}", String(stats.pending)));
-  return <span className="agent-door"> · {bits.join(" · ")}</span>;
+  return leftoverIds.has(id) ? `${name} · ${t.guardian}` : name;
 }
 
 function doorTitle(stats: DoorStats | undefined, t: FeedCopy) {
@@ -410,30 +405,18 @@ function liveAgentIds(items: InboxItem[]) {
   return ids;
 }
 
-function reportLine(result: string, t: FeedCopy) {
-  if (result === "broke") return t.reportBroke;
-  if (result === "skipped") return t.reportSkipped;
-  return t.reportDid;
-}
-
-function kindLabel(kind: string, t: FeedCopy) {
-  if (kind === "book") return t.kindBook;
-  if (kind === "spend") return t.kindSpend;
-  if (kind === "message") return t.kindMessage;
-  if (kind === "cancel") return t.kindCancel;
-  return kind;
-}
-
 function outcomeLabel(outcome: string, t: FeedCopy) {
-  if (outcome === "allow_a") return t.outcomeAllowA;
-  if (outcome === "allow_b") return t.outcomeAllowB;
-  if (outcome === "remedy") return t.outcomeRemedy;
+  if (outcome === "allow" || outcome === "allow_a") return t.outcomeAllowA;
+  if (outcome === "deny") return t.outcomeDeny;
   return t.outcomeEscalate;
 }
 
-function statusLabel(status: string, t: FeedCopy, held = false, mayAct?: boolean) {
+function statusLabel(status: string, t: FeedCopy, held = false, mayAct?: boolean, phase?: string) {
   if (held) return t.statusHeld;
+  if (phase === "in_court") return t.statusInCourt;
   if (status === "open") return t.statusOpen;
+  if (status === "bargaining") return t.statusBargaining;
+  if (status === "withdrawn") return t.statusWithdrawn;
   if (status === "awaiting_ack") return t.statusAck;
   if (status === "permitted") return mayAct ? t.statusPermitted : t.statusDenied;
   if (status === "executed") return t.statusExecuted;
@@ -441,35 +424,26 @@ function statusLabel(status: string, t: FeedCopy, held = false, mayAct?: boolean
   return status;
 }
 
-function decisionLine(item: InboxItem, t: FeedCopy, decided: string, now: number) {
+function reportAckLate(item: InboxItem) {
+  if (!item.ack_until) return false;
+  return Date.parse(item.ack_until) <= Date.now();
+}
+
+function decisionLine(item: InboxItem, t: FeedCopy) {
   const verdict = item.verdict;
   if (!verdict) {
     if (item.status === "executed" || item.status === "permitted") return t.silence;
+    if (item.status === "withdrawn") return t.withdrawn;
+    if (item.case) return t.inCourt;
+    if (item.status === "bargaining") return t.bargaining;
     if (item.status === "open") {
-      // Objected and past the silence window: the court is the only thing left.
-      const deadlocked =
-        item.objections.length > 0 &&
-        (item.test_pass || new Date(item.silence_until).getTime() <= now);
-      return deadlocked ? t.inCourt : t.waiting;
+      return t.waiting;
     }
     return null;
   }
-  if (verdict.outcome === "allow_a") return t.allowA;
-  if (verdict.outcome === "escalate") return t.escalate;
-  if (verdict.outcome === "remedy") {
-    return t.remedy.replace("{summary}", decided || "—");
-  }
-  if (decided) return t.allowBCounter.replace("{summary}", decided);
-  return t.allowBBlock;
-}
-
-function decisionAction(item: InboxItem) {
-  const verdict = item.verdict;
-  if (!verdict) return "";
-  if (verdict.outcome === "allow_a") return formatAction(item.payload);
-  if (verdict.outcome === "remedy") return formatAction(verdict.remedy_action);
-  if (verdict.outcome === "allow_b") return formatAction(item.objections[0]?.counter_action);
-  return "";
+  if (verdict.outcome === "allow" || verdict.outcome === "allow_a") return t.allowA;
+  if (verdict.outcome === "deny") return t.deny;
+  return t.escalate;
 }
 
 function formatAction(payload: unknown) {

@@ -1,24 +1,27 @@
 import { bookAdapter, cancelAdapter, messageAdapter } from "./stubs";
 import { spendAdapter } from "./spend";
-import type { Adapter, AdapterContext, AdapterMap } from "./types";
-import type { ActionKind, ActionPayload } from "@/lib/protocol/types";
+import type { Adapter, AdapterContext } from "./types";
+import type { ActionPayload, KnownActionKind } from "@/lib/protocol/types";
 
-const adapters: AdapterMap = {
+const adapters: Record<KnownActionKind, Adapter> = {
   spend: spendAdapter,
   book: bookAdapter,
   message: messageAdapter,
   cancel: cancelAdapter,
 };
 
-export function adapterOf(kind: ActionKind): Adapter {
-  return adapters[kind];
+export function adapterOf(kind: string): Adapter {
+  if (kind === "spend" || kind === "book" || kind === "message" || kind === "cancel") {
+    return adapters[kind];
+  }
+  return messageAdapter;
 }
 
-/** Same `apply` shape for every kind. Spend is almost-real; the rest stay stubs. */
+/** Same `apply` shape for every kind. Spend is almost-real; unknown labels use the message stub. */
 export async function apply(
-  kind: ActionKind,
+  kind: string,
   payload: ActionPayload,
   ctx: AdapterContext,
 ): Promise<Record<string, unknown>> {
-  return adapters[kind].apply(payload, ctx);
+  return adapterOf(kind).apply(payload, ctx);
 }

@@ -110,7 +110,7 @@ function curlSample(origin: string, key: string) {
     `curl -s ${origin}/api/actions \\`,
     `  -H "Authorization: Bearer ${key}" \\`,
     `  -H "content-type: application/json" \\`,
-    `  -d '{"kind":"book","payload":{"kind":"book","summary":"Probe"},"justification":"HTTP loop"}'`,
+    `  -d '{"payload":{"summary":"Probe"},"justification":"HTTP loop"}'`,
   ].join("\n");
 }
 

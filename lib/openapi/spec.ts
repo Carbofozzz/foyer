@@ -1,4 +1,4 @@
-import { ACTION_KINDS, OUTCOMES } from "@/lib/protocol/types";
+import { ACTION_KINDS } from "@/lib/protocol/types";
 
 type Operation = {
   id: string;
@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.16.0",
+      version: "0.35.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -97,12 +97,11 @@ export function openApiSpec(origin: string) {
           type: "object",
           description: "What the agent may perform after a pass. Foyer does not pay or book.",
           properties: {
-            kind: { type: "string", enum: [...ACTION_KINDS] },
             summary: { type: "string", maxLength: 500 },
             amount: { type: "number", minimum: 0 },
             currency: { type: "string", maxLength: 8, pattern: "^[A-Za-z]{1,8}$" },
           },
-          required: ["kind", "summary"],
+          required: ["summary"],
         },
         EvidenceItem: {
           type: "object",
@@ -114,7 +113,12 @@ export function openApiSpec(origin: string) {
         },
         RegisterRequest: {
           type: "object",
-          properties: { name: { type: "string" } },
+          properties: {
+            name: { type: "string" },
+            wake: { type: "string", enum: ["outbound", "callback"] },
+            callback_url: { type: "string", description: "Required when wake is callback." },
+            callback_secret: { type: "string", description: "Optional; generated if omitted on callback." },
+          },
         },
         Agent: {
           type: "object",
@@ -123,6 +127,10 @@ export function openApiSpec(origin: string) {
             role: { type: "string" },
             name: { type: "string" },
             agent_key: { type: "string", description: "Returned once, on registration." },
+            wake: { type: "string", enum: ["outbound", "callback", "hosted"] },
+            callback_url: { type: "string", nullable: true },
+            hook_ok: { type: "boolean" },
+            callback_secret: { type: "string", description: "Returned once, when Foyer generated it." },
           },
           required: ["id", "role", "name"],
         },
@@ -138,7 +146,6 @@ export function openApiSpec(origin: string) {
         ProposeRequest: {
           type: "object",
           properties: {
-            kind: { type: "string", enum: [...ACTION_KINDS] },
             payload: { $ref: "#/components/schemas/ActionPayload" },
             justification: { type: "string", maxLength: 2000 },
             evidence: {
@@ -147,7 +154,7 @@ export function openApiSpec(origin: string) {
               items: { $ref: "#/components/schemas/EvidenceItem" },
             },
           },
-          required: ["kind", "payload", "justification"],
+          required: ["payload", "justification"],
         },
         ObjectionRequest: {
           type: "object",
@@ -161,34 +168,35 @@ export function openApiSpec(origin: string) {
         },
         ReportRequest: {
           type: "object",
-          description: "The agent says whether it performed the permitted payload.",
-          properties: {
-            did: { type: "boolean" },
-          },
-          required: ["did"],
+          description: "Proposer acks a final allow or deny. Empty body is fine.",
+          properties: {},
         },
         ActionReport: {
           type: "object",
           properties: {
-            did: { type: "boolean" },
-            result: { type: "string", enum: ["did", "skipped", "broke"] },
             at: { type: "string", format: "date-time" },
           },
-          required: ["did", "result"],
+          required: ["at"],
         },
         AppealRequest: {
           type: "object",
-          description: "Re-judge from the constitution snapshot, or set the outcome yourself.",
+          description: "Principal yes or no on the original proposal.",
           properties: {
-            note: { type: "string" },
-            outcome: { type: "string", enum: [...OUTCOMES] },
+            outcome: { type: "string", enum: ["allow", "deny"] },
           },
+          required: ["outcome"],
         },
         Verdict: {
           type: "object",
           properties: {
-            outcome: { type: "string", enum: [...OUTCOMES] },
-            remedy_action: { oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }] },
+            outcome: {
+              type: "string",
+              enum: ["allow", "deny", "escalate", "allow_a", "allow_b", "remedy"],
+            },
+            remedy_action: {
+              oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }],
+              description: "Archive only. New verdicts leave this null.",
+            },
             reasoning: { type: "string" },
             objection_grounded: { type: "boolean" },
             judge: { type: "string", enum: ["onchain", "offline"] },
@@ -204,12 +212,34 @@ export function openApiSpec(origin: string) {
           type: "object",
           properties: {
             id: { type: "string" },
-            kind: { type: "string", enum: [...ACTION_KINDS] },
             payload: { $ref: "#/components/schemas/ActionPayload" },
             status: {
               type: "string",
-              enum: ["open", "awaiting_ack", "permitted", "executed", "escalated", "cancelled"],
+              enum: ["open", "bargaining", "withdrawn", "awaiting_ack", "permitted", "executed", "escalated"],
             },
+            revision: { type: "integer" },
+            phase: {
+              type: "string",
+              enum: [
+                "collecting",
+                "bargaining",
+                "in_court",
+                "awaiting_ack",
+                "permitted",
+                "executed",
+                "escalated",
+                "withdrawn",
+              ],
+            },
+            proposer_can: {
+              type: "object",
+              properties: {
+                withdraw: { type: "boolean" },
+                revise: { type: "boolean" },
+                insist: { type: "boolean" },
+              },
+            },
+            bargain_until: { type: "string", format: "date-time", nullable: true },
             may_act: {
               type: "boolean",
               description: "True when the agent may perform permitted_payload with its own tools.",
@@ -220,7 +250,7 @@ export function openApiSpec(origin: string) {
             },
             report: {
               oneOf: [{ $ref: "#/components/schemas/ActionReport" }, { type: "null" }],
-              description: "What the agent said it did. Null until it reports.",
+              description: "Ack that the proposer read the final allow or deny. Null until they report.",
             },
             created_at: { type: "string", format: "date-time" },
             silence_until: { type: "string", format: "date-time" },
@@ -228,11 +258,11 @@ export function openApiSpec(origin: string) {
             held_until: {
               type: "string",
               format: "date-time",
-              description: "Set when an irreversible kind is waiting for the appeal window.",
+              description: "Unused. Always null.",
             },
             verdict: { oneOf: [{ $ref: "#/components/schemas/Verdict" }, { type: "null" }] },
           },
-          required: ["id", "kind", "status"],
+          required: ["id", "status"],
         },
         Inbox: {
           type: "object",
@@ -289,6 +319,34 @@ export function openApiSpec(origin: string) {
           created: true,
         }),
       },
+      "/api/actions/{id}/withdraw": {
+        parameters: [ID_PARAM],
+        post: operation({
+          id: "withdrawAction",
+          summary: "Proposer ends the action; no permit, no court",
+          auth: "agent",
+          ok: "Action",
+        }),
+      },
+      "/api/actions/{id}/revise": {
+        parameters: [ID_PARAM],
+        post: operation({
+          id: "reviseAction",
+          summary: "Proposer posts a new revision; checkers are woken again",
+          auth: "agent",
+          body: "ProposeRequest",
+          ok: "Action",
+        }),
+      },
+      "/api/actions/{id}/insist": {
+        parameters: [ID_PARAM],
+        post: operation({
+          id: "insistAction",
+          summary: "Proposer opens court; tick does not start court",
+          auth: "agent",
+          ok: "Action",
+        }),
+      },
       "/api/inbox": {
         get: operation({ id: "getInbox", summary: "Open actions for this agent; also advances the sweep", auth: "agent", ok: "Inbox" }),
       },
@@ -304,7 +362,7 @@ export function openApiSpec(origin: string) {
         parameters: [ID_PARAM],
         post: operation({
           id: "reportAction",
-          summary: "Agent reports whether it performed the permitted payload",
+          summary: "Proposer acks a final allow or deny",
           auth: "agent",
           body: "ReportRequest",
           ok: "Action",
@@ -313,10 +371,31 @@ export function openApiSpec(origin: string) {
       "/api/cases/{id}/appeal": {
         parameters: [ID_PARAM],
         post: operation({
-          id: "appealCase", summary: "Principal sets allow_a or allow_b on an escalated case",
+          id: "appealCase", summary: "Principal sets allow or deny on an escalated case",
           auth: "session",
           body: "AppealRequest",
           ok: "Verdict",
+        }),
+      },
+      "/api/cabinet/{token}/test": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        get: operation({
+          id: "getTestStage",
+          summary: "Cabinet test tab: live loop cards (who called what, court link)",
+          auth: "session",
+        }),
+        post: operation({
+          id: "runTestStage",
+          summary: "Propose, object, withdraw, revise, insist, decide, or report as a chosen house agent",
+          auth: "session",
+        }),
+      },
+      "/api/cabinet/{token}/test/inspect": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        get: operation({
+          id: "inspectTestStage",
+          summary: "Raw GET /actions/:id or /inbox as that agent would see them (this test action only)",
+          auth: "session",
         }),
       },
       "/api/cabinet/{token}/members": {

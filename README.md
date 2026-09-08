@@ -1,6 +1,6 @@
 # Foyer
 
-A court and gateway for agents of one principal. A constitution in plain language, a single exit to the world, a GenLayer verdict. Track: **Onchain Justice**. Host: **Vercel**.
+A coordination layer, court, and gateway for agents of one principal. A constitution in plain language, a single exit to the world, a GenLayer verdict when they cannot agree. Chat agents propose; a callback checker can be woken. Track: **Onchain Justice**. Host: **Vercel**.
 
 ## Run
 

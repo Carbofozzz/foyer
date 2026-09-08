@@ -8,23 +8,23 @@ Private notes (pitch, discussion dumps) live in `.local/` and are gitignored. Do
 
 ## Product
 
-Foyer is an **intra-principal** court and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance.
+Foyer is an **intra-principal** coordination layer, court, and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance. Chat agents propose; a callback checker can be woken. Hosting agents on Foyer is backlog. The longer direction is a full-time agent host, not only a court for chats you already have.
 
-Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence).
+Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence). Coordination happens before court.
 
 The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / `calendar` tools. After a pass the gateway **permits**; the agent acts and reports.
 
 ## Invariants
 
 - The gateway client is always an agent. The UI must not create a case around the API, and the gateway must never write an objection on an agent's behalf.
-- Court outcomes: `allow_a` | `allow_b` | `remedy` | `escalate`. No fifth outcome. `allow_b` executes the objector's `counter_action`, or nothing when the objection was a pure block.
-- `remedy` always carries an executable `remedy_action`. If the compromise cannot be written as an action, the outcome is `escalate`.
+- Court outcomes: `allow` | `deny` | `escalate` (yes / no / human). `allow` permits the original payload. `deny` permits nothing — never someone else's `counter_action`. Archive rows may still say `allow_a` / `allow_b` / `remedy`.
+- The court IC does not write a `remedy_action`. If the charter is silent or contradictory, the outcome is `escalate`.
 - A verdict also answers `objection_grounded`. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- A **product guardian** is another connected assistant that reads the constitution in its own model. Phrase-matching clients in `agents/` are **test-only** (first pass, spawn) — label them as test; free-form rules may never fire them. **Demo** is one shared look-only house at `/:locale/cabinet/demo`. Do not mix the three.
-- Hackathon adapters are stubs with a stable `adapters[kind].apply` interface (`spend` | `book` | `message` | `cancel`). Each kind declares `reversible`; irreversible executions wait for the appeal window.
+- A **product guardian** is another connected assistant that reads the constitution in its own model. **Demo** is one shared look-only house at `/:locale/cabinet/demo`. Do not mix the two.
+- Propose has no `kind`. Adapter stubs still exist for old spend/book/message/cancel rows; the live loop is permit-then-act.
 - Public product at **https://foyerapp.dev**. Next protocol change is [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md), not a new entity beside the gateway.
 
 ## Layout (create these when code starts)
@@ -32,12 +32,11 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 ```
 app/          Next.js App Router — observer UI + HTTP/MCP route handlers (Vercel)
 contracts/    Python Intelligent Contracts (GenLayer testnet, not on Vercel)
-agents/       reference / test protocol clients (Travel, Budget, Calendar, Security, …)
 ```
 
-Test clients and spawn are protocol clients with their own keys, invoked by a request or a tick. A product guardian is a connected assistant. State: Postgres.
+A product guardian is a connected assistant. State: Postgres.
 
-Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /actions/:id/objections`, `GET /inbox`, `POST /actions/:id/ack`, `GET /actions/:id`, `POST /cases/:id/appeal`, plus `POST /tick` for the scheduler.
+Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /actions/:id/objections`, `POST /actions/:id/withdraw`, `POST /actions/:id/revise`, `POST /actions/:id/insist`, `GET /inbox`, `POST /actions/:id/ack`, `GET /actions/:id`, `POST /cases/:id/appeal`, plus `GET`/`POST /tick` for the scheduler.
 
 ## Stack
 
@@ -117,4 +116,28 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-06: Court queue skips spawn / unowned leftover houses. Tick opens a court only for a signed-in house. Cabinet feed shows the request time.
 - 2026-09-06: Tick reads `get_verdict` with the house wallet. A finalized return with no JSON yet stays pending — it does not count as a tx error. A false offline escalate is replaced when the IC already has a verdict.
 - 2026-09-06: Cabinet decide form only on `escalated`. The principal picks `allow_a` or `allow_b`. No note, no GenLayer re-trial. `POST /api/cases/:id/appeal` is that override.
-- 2026-09-07: Docs: HACKATHON.md and IMPLEMENT.md merged into [`docs/INITIAL.md`](docs/INITIAL.md) (idea + shipped loop, no 14-day schedule). [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md) is the development plan (wake, bargain, court on insist, yes/no/human). Not implemented yet.
+- 2026-09-07: Docs: HACKATHON.md and IMPLEMENT.md merged into [`docs/INITIAL.md`](docs/INITIAL.md) (idea + shipped loop, no 14-day schedule). [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md) is the development plan (wake, bargain, court on insist, yes/no/human). Idea: coordinate agents; host bidirectional ones when the principal has none; longer arc is a full-time agent host. Not implemented yet.
+- 2026-09-07: Orchestrate O1 — schema: `agents.wake` (default `outbound`) + callback URL/secret; action revision / bargain fields; `wakes` table; objections unique on `(action, objector, revision)`. Types: `WAKE_KINDS`, `COURT_OUTCOMES` (`allow`/`deny`/`escalate`) next to live `OUTCOMES`. Loop still silence-to-court.
+- 2026-09-07: Orchestrate O2 — Connect two kinds: chat (`outbound`, MCP as today), hook (`callback`, URL required), Foyer host (`hosted` row, worker in O6). `POST /api/agents` writes the same. Chips show kind and hook health. OpenAPI `0.17.0`.
+- 2026-09-07: Orchestrate O3 — propose wakes callback agents with a signed POST; hosted rows are queued, not HTTP. Sweep retries pending wakes; silence-allow waits on required callbacks; a failed required wake escalates offline. Outbound chats are not POSTed. Auto-court from tick remains until O4. `FOYER_PUBLIC_URL` for cron `inbox_url`.
+- 2026-09-07: Orchestrate O4 — proposer `withdraw` / `revise` / `insist`. Silence + objections → `bargaining`; tick does not start court. Bargain timeout escalates to the human, never GenLayer. `insist` creates the case and submits. OpenAPI `0.18.0`.
+- 2026-09-07: Orchestrate O5 — IC answers `allow` / `deny` / `escalate` from a list of objections. Equivalence on outcome only. Permit never becomes a `counter_action`. Houses redeploy (`court_abi` 2); inflight cases keep `cases.contract`. Appeal is yes/no. OpenAPI `0.19.0`.
+- 2026-09-07: Orchestrate O6 skipped — live path is outbound + callback; no hosted worker. Stop minting `wake = hosted`; enqueue wakes only for callbacks; leftover hosted wakes drain. Hosting is INITIAL backlog. OpenAPI `0.20.0`.
+- 2026-09-07: Orchestrate O7 — cabinet feed lists every objection; counters are advice; verdict copy is yes/no/human. Demo archive rewritten (bargain, deny, allow, silence, escalate). Appeal stays yes/no. Test tab left for O8. OpenAPI `0.21.0`.
+- 2026-09-07: Orchestrate O8 — cabinet test tab is the live loop as connected house agents. Collect timer, objections, bargain; inspect is raw `GET /actions/:id` / inbox. Phrase-matchers stay out. OpenAPI `0.22.0`.
+- 2026-09-07: Test tab UX — propose form hides after send; growing step cards with per-agent API views; court explorer link; Stop returns to the form. Inbox inspect is this action only. OpenAPI `0.23.0`.
+- 2026-09-07: Test cards follow the live protocol: Foyer wake step, canonical snapshots (not a live GET), available MCP handles at that moment, GenLayer link under insist. Outbound has no poll interval — that hole is visible. OpenAPI `0.24.0`.
+- 2026-09-07: Connect prompt requires inbox poll every 30 s (chat is not woken). Test cards list available actions in words; request state opens a modal. OpenAPI `0.25.0`.
+- 2026-09-07: Test cards: Foyer notice is its own plaque; respond (agent + text) sits below while the window is open. Agent actions are compact buttons (live or disabled). Only request state returns JSON; inbox and rules open a note. OpenAPI `0.26.0`.
+- 2026-09-07: `kind` is any agent label, not spend/book/message/cancel only. House lock no longer rejects unknown kinds. Test form drops the type dropdown. OpenAPI `0.27.0`.
+- 2026-09-07: Propose drops `kind` entirely. Agent sends text; the column stays empty for new rows. OpenAPI `0.28.0`.
+- 2026-09-07: Test Foyer card lists only callback agents who were notified. Inbox poll copy stays on the proposer. Withdrawn card is “taken back”, with request state JSON.
+- 2026-09-07: Bargain timeout is not insist. Test cards draw court only when `insisted_at` is set; offline escalate (a case without insist) shows human-decide plus allow/deny. OpenAPI `0.29.0`.
+- 2026-09-07: Test cards: objection uses the same POST-method line as propose; initiator watches state; human-decide stays in history; refused ends the inbox poll (Connect rule). OpenAPI `0.30.0`.
+- 2026-09-07: Test cards are active or historical. Service plaques have no actions; participant history is title + initiator state; live withdraw/revise/insist only on the active plaque. Bargain is not blocked by an offline escalate case. OpenAPI `0.31.0`.
+- 2026-09-07: Human-decide card drops once a person sets allow/deny. Outcome copy names a human, not “you”. Poll stop cites `verdict.outcome`, not a invented refused. OpenAPI `0.32.0`.
+- 2026-09-07: After a pass the test tab waits for `report`. Missed report notifies the human (not yes/no). Phrase-matchers still auto-report; cabinet test does not. OpenAPI `0.33.0`.
+- 2026-09-07: `report` is an ack of the final allow or deny — no `did`. Window 5 minutes (`ack_until`). A miss notifies the owner that the agent ignored the flow; it does not re-judge the request. OpenAPI `0.34.0`.
+- 2026-09-07: Removed phrase-matching clients (`agents/`). No first pass, no auto-ack, no test-client toggle. Leftover `is_guardian` rows stay hidden. OpenAPI `0.35.0`.
+- 2026-09-08: Landing copy in plain language. Dropped the three Rules/Gateway/Court cards. Flow diagram is the full branching path (quiet pass, talk, court, human). No “Foyer does not pay” line.
+- 2026-09-08: Flow diagram is one rail instead of side-by-side forks — every row is a bullet plus a full-width card (`.flow-row` / `.flow-bullet`), numbered bullets mark the spine and hollow ones mark what can happen. Endings (`is-end`) are flat and tinted; the option that reaches court carries an accent left bar. The court node no longer repeats the three outcome pills — they head the three ending cards below it. `.flow-fork` / `.flow-branch` / `.flow-stem` / `.flow-num` are gone. The diagram has no `max-width` — it fills the content column like the cards below it. No copy or i18n change.

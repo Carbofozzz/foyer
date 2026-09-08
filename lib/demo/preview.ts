@@ -5,19 +5,18 @@ export const DEMO_TOKEN = "demo";
 export type DemoCase = {
   id: "a" | "b" | "c" | "d" | "e" | "f";
   kind: "book" | "message" | "spend";
-  outcome: "allow_a" | "allow_b" | "remedy" | "escalate";
-  clauses: Array<"save" | "promisesYes" | "securityYes" | "orgLegal">;
+  outcome: "allow" | "deny" | "escalate";
+  path: "silence" | "revise" | "insist";
 };
 
 export const DEMO_CASES: DemoCase[] = [
-  { id: "a", kind: "book", outcome: "remedy", clauses: ["save", "promisesYes"] },
-  { id: "b", kind: "book", outcome: "allow_b", clauses: ["save", "promisesYes"] },
-  { id: "c", kind: "message", outcome: "allow_b", clauses: ["save", "promisesYes", "securityYes"] },
-  { id: "d", kind: "message", outcome: "allow_b", clauses: ["orgLegal"] },
-  { id: "e", kind: "book", outcome: "allow_a", clauses: ["save", "promisesYes"] },
-  { id: "f", kind: "spend", outcome: "escalate", clauses: [] },
+  { id: "a", kind: "book", outcome: "deny", path: "insist" },
+  { id: "b", kind: "book", outcome: "allow", path: "revise" },
+  { id: "c", kind: "message", outcome: "deny", path: "insist" },
+  { id: "d", kind: "book", outcome: "allow", path: "insist" },
+  { id: "e", kind: "book", outcome: "allow", path: "silence" },
+  { id: "f", kind: "spend", outcome: "escalate", path: "insist" },
 ];
-
 
 const DEMO_ORIGIN = "https://foyerapp.dev";
 const DEMO_KEY = "agk_demo";
@@ -57,5 +56,8 @@ export function demoConnect() {
     mcp_url: `${DEMO_ORIGIN}/api/mcp`,
     mcp_config: mcpConfig(DEMO_ORIGIN, DEMO_KEY),
     prompt_lines: [...MCP_PROMPT_LINES],
+    wake: "outbound" as const,
+    callback_url: null,
+    hook_ok: false,
   };
 }

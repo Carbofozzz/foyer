@@ -34,7 +34,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
   try {
     if (isRecord(body) && typeof body.name === "string" && body.name.trim()) {
-      const issued = await issueConnectAgent(auth.principal, body.name);
+      const issued = await issueConnectAgent(auth.principal, body);
       await markConnectDone(auth.principal);
       const origin = publicOrigin(request);
       return jsonOk(

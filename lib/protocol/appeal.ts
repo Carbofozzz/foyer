@@ -6,7 +6,7 @@ import { ProtocolError } from "./errors";
 import { mintToken } from "./keys";
 import { isRecord } from "./parse";
 import { executeAfterAck } from "./execute";
-import type { Outcome, VerdictAnswer } from "./types";
+import type { CourtOutcome, VerdictAnswer } from "./types";
 
 export async function appealCase(
   principal: HousePrincipal,
@@ -28,8 +28,8 @@ export async function appealCase(
   const prior = bundle.verdict;
   if (!prior) throw new ProtocolError("conflict", "No verdict to replace", 409);
 
-  const manual = body.outcome === "allow_a" || body.outcome === "allow_b" ? (body.outcome as Outcome) : null;
-  if (!manual) throw new ProtocolError("bad_request", "outcome must be allow_a or allow_b", 400);
+  const manual = parseAppealOutcome(body.outcome);
+  if (!manual) throw new ProtocolError("bad_request", "outcome must be allow or deny", 400);
 
   const answer: VerdictAnswer = {
     outcome: manual,
@@ -63,4 +63,10 @@ export async function appealCase(
 export function parseAppealBody(raw: unknown): Record<string, unknown> {
   if (!isRecord(raw)) throw new ProtocolError("bad_request", "JSON object required", 400);
   return raw;
+}
+
+function parseAppealOutcome(value: unknown): CourtOutcome | null {
+  if (value === "allow" || value === "allow_a") return "allow";
+  if (value === "deny" || value === "allow_b") return "deny";
+  return null;
 }

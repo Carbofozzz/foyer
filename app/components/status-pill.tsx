@@ -11,19 +11,19 @@ export function StatusPill({ tone, children }: { tone: PillTone; children: React
 }
 
 /** Action status as shown at the top of a feed item. */
-export function statusTone(status: string, held = false, mayAct?: boolean): PillTone {
+export function statusTone(status: string, held = false, mayAct?: boolean, phase?: string): PillTone {
   if (held) return "info";
+  if (phase === "in_court") return "info";
   if (status === "permitted") return mayAct === false ? "info" : "ok";
   if (status === "executed") return "ok";
   if (status === "escalated") return "danger";
-  if (status === "awaiting_ack") return "warn";
+  if (status === "bargaining" || status === "awaiting_ack") return "warn";
   return "neutral";
 }
 
-/** The four court outcomes. */
+/** Live court outcomes (yes / no / human). Old allow_b / remedy read as human. */
 export function outcomeTone(outcome: string): PillTone {
-  if (outcome === "allow_a") return "ok";
-  if (outcome === "allow_b") return "info";
-  if (outcome === "remedy") return "warn";
+  if (outcome === "allow_a" || outcome === "allow") return "ok";
+  if (outcome === "deny") return "info";
   return "danger";
 }
