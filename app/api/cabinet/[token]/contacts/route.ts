@@ -14,7 +14,8 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const auth = needManage(await cabinetFromToken(token, request));
   if ("error" in auth) return auth.error;
   try {
-    return jsonOk(await contactsPayload(auth.principal));
+    const wake = new URL(request.url).searchParams.get("wake") === "1";
+    return jsonOk(await contactsPayload(auth.principal, { drain: wake }));
   } catch (error) {
     return protocolFail(error);
   }

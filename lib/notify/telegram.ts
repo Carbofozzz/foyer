@@ -1,5 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { and, eq, gt, or } from "drizzle-orm";
+import { and, eq, gt, ne, or, sql } from "drizzle-orm";
 import { principals, telegramBotState, telegramLinkTokens } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
@@ -70,9 +70,16 @@ export async function registerTelegramWebhook(origin?: string): Promise<void> {
   }
 }
 
+async function ensureTelegramLinkColumn(): Promise<void> {
+  await getDb().execute(
+    sql`ALTER TABLE telegram_link_tokens ADD COLUMN IF NOT EXISTS payload text NOT NULL DEFAULT ''`,
+  );
+}
+
 export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<string | null> {
   const username = botUsername();
   if (!botToken() || !username) return null;
+  await ensureTelegramLinkColumn().catch(() => undefined);
   const db = getDb();
   try {
     const [existing] = await db
@@ -131,23 +138,41 @@ export async function drainTelegramUpdates(): Promise<void> {
       response = await telegramGetUpdates(token, offset);
       body = await readTelegramBody(response);
     }
-    if (!response.ok || !body.ok || !Array.isArray(body.result)) return;
+    if (!response.ok || !body.ok || !Array.isArray(body.result) || body.result.length === 0) return;
     let maxId = Number.isFinite(last) ? last : 0;
     for (const update of body.result) {
       if (!update || typeof update !== "object") continue;
       const id = (update as { update_id?: unknown }).update_id;
       if (typeof id === "number" && id > maxId) maxId = id;
-      await handleTelegramUpdate(update);
     }
-    if (maxId > 0) {
-      await db
-        .insert(telegramBotState)
-        .values({ id: BOT_STATE_ID, lastUpdateId: String(maxId) })
-        .onConflictDoUpdate({ target: telegramBotState.id, set: { lastUpdateId: String(maxId) } });
+    if (maxId <= (Number.isFinite(last) ? last : 0)) return;
+    const claimed = await claimBotCursor(cursor ? String(last) : null, String(maxId));
+    if (!claimed) return;
+    for (const update of body.result) {
+      if (!update || typeof update !== "object") continue;
+      await handleTelegramUpdate(update);
     }
   } catch {
     // Do not fail Contacts.
   }
+}
+
+async function claimBotCursor(previous: string | null, next: string): Promise<boolean> {
+  const db = getDb();
+  if (previous == null) {
+    try {
+      await db.insert(telegramBotState).values({ id: BOT_STATE_ID, lastUpdateId: next });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const [row] = await db
+    .update(telegramBotState)
+    .set({ lastUpdateId: next })
+    .where(and(eq(telegramBotState.id, BOT_STATE_ID), eq(telegramBotState.lastUpdateId, previous)))
+    .returning({ id: telegramBotState.id });
+  return Boolean(row);
 }
 
 async function telegramGetUpdates(token: string, offset: number): Promise<Response> {
@@ -182,13 +207,15 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
 
   const start = text.trim().replace(/\u00a0/g, " ").match(/^\/start(?:@\S+)?(?:\s+(\S+))?$/i);
   if (!start) return;
+  const db = getDb();
+  const [already] = await db.select().from(principals).where(eq(principals.telegramChatId, chatId)).limit(1);
   const payload = decodeStartPayload(start[1]);
   if (!payload) {
+    if (already) return;
     await sendTelegram(chatId, notifyCopy("en").telegramNeedLink).catch(() => undefined);
     return;
   }
 
-  const db = getDb();
   const tokenHash = hashSecret(payload);
   const [row] = await db
     .select()
@@ -201,6 +228,7 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
     )
     .limit(1);
   if (!row) {
+    if (already) return;
     await sendTelegram(chatId, notifyCopy("en").telegramUnknown).catch(() => undefined);
     return;
   }
@@ -209,14 +237,15 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
   await db
     .update(principals)
     .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
-    .where(eq(principals.telegramChatId, chatId));
-  const [house] = await db.select().from(principals).where(eq(principals.id, row.principalId)).limit(1);
-  await db
+    .where(and(eq(principals.telegramChatId, chatId), ne(principals.id, row.principalId)));
+  const [claimed] = await db
     .update(principals)
     .set({ telegramChatId: chatId, telegramLinkedAt: new Date(), telegramHandle: handle })
-    .where(eq(principals.id, row.principalId));
+    .where(and(eq(principals.id, row.principalId), sql`${principals.telegramChatId} is distinct from ${chatId}`))
+    .returning({ id: principals.id, contactLocale: principals.contactLocale });
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, row.principalId));
-  const locale = house && isLocale(house.contactLocale) ? house.contactLocale : "en";
+  if (!claimed) return;
+  const locale = isLocale(claimed.contactLocale) ? claimed.contactLocale : "en";
   await sendTelegram(chatId, notifyCopy(locale).telegramLinked).catch(() => undefined);
 }
 

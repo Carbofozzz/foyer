@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from "wagmi";
@@ -158,6 +158,11 @@ function CabinetWizardModal({
   const [email, setEmail] = useState(initialEmail);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
   const [telegramLinked, setTelegramLinked] = useState(false);
+  const [telegramHandle, setTelegramHandle] = useState<string | null>(null);
+  const [telegramReady, setTelegramReady] = useState(false);
+  const [telegramConfigured, setTelegramConfigured] = useState<boolean | null>(null);
+  const linkedRef = useRef(false);
+  linkedRef.current = telegramLinked;
 
   useEffect(() => {
     if (followConstructor) setText(assembled);
@@ -165,25 +170,36 @@ function CabinetWizardModal({
 
   useEffect(() => {
     if (step !== "contacts") return;
-    function load() {
-      fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
+    function load(wake: boolean) {
+      const q = wake ? "?wake=1" : "";
+      fetch(`/api/cabinet/${token}/contacts${q}`, { headers: cabinetHeaders(houseId) })
         .then((response) => {
           if (!response.ok) throw new Error("fail");
-          return response.json() as Promise<{ data: { telegram?: boolean; telegram_url?: string | null } }>;
+          return response.json() as Promise<{
+            data: {
+              telegram?: boolean;
+              telegram_url?: string | null;
+              telegram_handle?: string | null;
+              telegram_configured?: boolean;
+            };
+          }>;
         })
         .then((payload) => {
           setTelegramLinked(Boolean(payload.data.telegram));
           setTelegramUrl(payload.data.telegram_url ?? null);
+          setTelegramHandle(payload.data.telegram_handle ?? null);
+          setTelegramConfigured(payload.data.telegram_configured !== false);
+          setTelegramReady(true);
         })
         .catch(() => undefined);
     }
-    load();
+    load(false);
     function onVis() {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") load(!linkedRef.current);
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
-    const tick = window.setInterval(load, 2000);
+    const tick = window.setInterval(() => load(!linkedRef.current), 4000);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
@@ -379,19 +395,25 @@ function CabinetWizardModal({
                 autoComplete="email"
               />
             </label>
-            <div className="contact-channel">
-              <p className="contact-channel-label">{cabinet.contactsTelegram}</p>
-              {telegramLinked ? <p className="hint">{cabinet.contactsTelegramLinked}</p> : null}
-              {!telegramLinked && telegramUrl ? (
-                <div className="wallet-actions">
-                  <a className="ghost" href={telegramUrl} target="_blank" rel="noreferrer">
-                    {wizard.telegram}
-                  </a>
-                </div>
-              ) : null}
-              {!telegramLinked && telegramUrl ? <p className="hint">{cabinet.contactsTelegramWait}</p> : null}
-              {!telegramLinked && !telegramUrl ? <p className="hint">{wizard.telegramSoon}</p> : null}
-            </div>
+            <label>
+              {cabinet.contactsTelegram}
+              <input
+                type="text"
+                value={telegramLinked ? formatTelegramHandle(telegramHandle) : ""}
+                readOnly
+                autoComplete="off"
+              />
+            </label>
+            {telegramReady && telegramLinked ? <p className="hint">{cabinet.contactsTelegramLinked}</p> : null}
+            {telegramReady && !telegramLinked && telegramUrl ? <p className="hint">{cabinet.contactsTelegramWait}</p> : null}
+            {telegramReady && telegramConfigured === false ? <p className="hint">{wizard.telegramSoon}</p> : null}
+            {telegramReady && !telegramLinked && telegramUrl ? (
+              <div className="wallet-actions">
+                <a className="ghost" href={telegramUrl} target="_blank" rel="noreferrer">
+                  {wizard.telegram}
+                </a>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -414,6 +436,13 @@ function CabinetWizardModal({
       </div>
     </div>
   );
+}
+
+function formatTelegramHandle(raw: string | null) {
+  const name = (raw ?? "").trim();
+  if (!name) return "";
+  if (name.includes(" ")) return name;
+  return name.startsWith("@") ? name : `@${name}`;
 }
 
 function WizardFundStep({
