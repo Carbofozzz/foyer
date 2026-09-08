@@ -145,3 +145,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-08: Notify-the-human plan in [`docs/NOTIFY.md`](docs/NOTIFY.md): verified email then Telegram, decide-link on `escalated`, send from `sweep()`. Inventory of escalate stages vs the landing flow. Not implemented yet.
 - 2026-09-08: N1 email — confirm tokens, Contacts tab, `sweep()` sends one escalate letter to a verified owner email (Telegram skips mail). Decide page `/:locale/decide/:token` is allow/deny without wallet login. OpenAPI `0.37.0`. Telegram stays disabled.
 - 2026-09-08: N2 Telegram — start-link from Contacts/wizard, webhook `POST /api/telegram`, `telegram_chat_id` + linked-at. Escalate ping goes to Telegram when linked, otherwise verified email. OpenAPI `0.38.0`.
+- 2026-09-09: Telegram link — hex `?start=` payload (no bare t.me), `getUpdates` after `deleteWebhook` on 409 so `/start` is not dropped, webhook handler is not rate-limited.

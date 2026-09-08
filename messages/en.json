@@ -159,6 +159,7 @@
     "contactsTelegramAccount": "Account: {name}",
     "contactsTelegramUnlink": "Disconnect Telegram",
     "contactsTelegramOff": "Telegram is not configured on this deploy.",
+    "contactsTelegramWait": "In Telegram tap Start, then come back here.",
     "testLead": "Send a request as one assistant. Others may object while the timer runs. Then the one who asked can revise, withdraw, or insist.",
     "testEmpty": "Issue a key on Connect first. This tab uses those assistants, not phrase-matching test clients.",
     "testProposer": "Who asks",

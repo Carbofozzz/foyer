@@ -178,8 +178,17 @@ function CabinetWizardModal({
         .catch(() => undefined);
     }
     load();
-    const tick = window.setInterval(load, 4000);
-    return () => window.clearInterval(tick);
+    function onVis() {
+      if (document.visibilityState === "visible") load();
+    }
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    const tick = window.setInterval(load, 2000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+      window.clearInterval(tick);
+    };
   }, [step, token, houseId]);
 
   function goNext() {
@@ -380,6 +389,7 @@ function CabinetWizardModal({
                   </a>
                 </div>
               ) : null}
+              {!telegramLinked && telegramUrl ? <p className="hint">{cabinet.contactsTelegramWait}</p> : null}
               {!telegramLinked && !telegramUrl ? <p className="hint">{wizard.telegramSoon}</p> : null}
             </div>
           </div>

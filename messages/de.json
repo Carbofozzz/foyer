@@ -264,7 +264,8 @@
     "contactsTelegramLinked": "Telegram ist verbunden. Eskalationen gehen dorthin, nicht per E-Mail.",
     "contactsTelegramAccount": "Konto: {name}",
     "contactsTelegramUnlink": "Telegram trennen",
-    "contactsTelegramOff": "Telegram ist auf diesem Deploy nicht eingerichtet."
+    "contactsTelegramOff": "Telegram ist auf diesem Deploy nicht eingerichtet.",
+    "contactsTelegramWait": "Tippen Sie in Telegram auf Start und kommen Sie zurück."
   },
   "wizard": {
     "title": "Haus einrichten",

@@ -264,7 +264,8 @@
     "contactsTelegramLinked": "Telegram está enlazado. Las escaladas van ahí, no al correo.",
     "contactsTelegramAccount": "Cuenta: {name}",
     "contactsTelegramUnlink": "Desconectar Telegram",
-    "contactsTelegramOff": "Telegram no está configurado en este deploy."
+    "contactsTelegramOff": "Telegram no está configurado en este deploy.",
+    "contactsTelegramWait": "En Telegram pulsa Start y vuelve aquí."
   },
   "wizard": {
     "title": "Preparar la casa",

@@ -264,7 +264,8 @@
     "contactsTelegramLinked": "Telegram bağlı. Yükseltmeler oraya gider, e-postaya değil.",
     "contactsTelegramAccount": "Hesap: {name}",
     "contactsTelegramUnlink": "Telegram’ı kopar",
-    "contactsTelegramOff": "Bu dağıtımda Telegram yok."
+    "contactsTelegramOff": "Bu dağıtımda Telegram yok.",
+    "contactsTelegramWait": "Telegram’da Start’a dokunun, sonra buraya dönün."
   },
   "wizard": {
     "title": "Evi kur",
