@@ -10,6 +10,7 @@ type ContactsData = {
   telegram: boolean;
   telegram_handle?: string | null;
   telegram_url?: string | null;
+  telegram_configured?: boolean;
 };
 
 export function ContactsCard({
@@ -36,6 +37,7 @@ export function ContactsCard({
   const [telegram, setTelegram] = useState(Boolean(preview?.telegram));
   const [telegramHandle, setTelegramHandle] = useState<string | null>(preview?.telegram_handle ?? null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(preview?.telegram_url ?? null);
+  const [configured, setConfigured] = useState<boolean | null>(preview ? Boolean(preview.telegram_configured) : null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
@@ -48,6 +50,8 @@ export function ContactsCard({
       setTelegram(data.telegram);
       setTelegramHandle(data.telegram_handle ?? null);
       setTelegramUrl(data.telegram_url ?? null);
+      setConfigured(data.telegram_configured !== false);
+      setError(false);
     }
     function load() {
       fetch(`/api/cabinet/${token}/contacts`, { headers: cabinetHeaders(houseId) })
@@ -56,7 +60,7 @@ export function ContactsCard({
           return response.json() as Promise<{ data: ContactsData }>;
         })
         .then((payload) => apply(payload.data))
-        .catch(() => undefined);
+        .catch(() => setError(true));
     }
     load();
     function onVis() {
@@ -180,7 +184,7 @@ export function ContactsCard({
             </a>
           </div>
         ) : null}
-        {!telegram && !telegramUrl ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
+        {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
       </div>
       {hint ? <p className="hint">{hint}</p> : null}
       {error ? <p className="error">{errorLabel}</p> : null}

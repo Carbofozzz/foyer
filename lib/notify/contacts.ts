@@ -8,7 +8,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { notifyCopy, sendMail } from "./mail";
-import { mintTelegramStartUrl, drainTelegramUpdates } from "./telegram";
+import { mintTelegramStartUrl, drainTelegramUpdates, telegramConfigured } from "./telegram";
 
 const CONFIRM_MS = 48 * 60 * 60 * 1000;
 
@@ -110,8 +110,14 @@ export async function contactsPayload(principal: HousePrincipal) {
   const [fresh] = await getDb().select().from(principals).where(eq(principals.id, principal.id)).limit(1);
   const row = fresh ?? principal;
   const view = contactsView(row);
+  const configured = telegramConfigured();
+  let telegram_url: string | null = null;
+  if (!view.telegram && configured) {
+    telegram_url = await mintTelegramStartUrl(row);
+  }
   return {
     ...view,
-    telegram_url: view.telegram ? null : await mintTelegramStartUrl(row),
+    telegram_configured: configured,
+    telegram_url,
   };
 }

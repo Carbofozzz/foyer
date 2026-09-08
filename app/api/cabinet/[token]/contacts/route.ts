@@ -13,7 +13,11 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const { token } = await context.params;
   const auth = needManage(await cabinetFromToken(token, request));
   if ("error" in auth) return auth.error;
-  return jsonOk(await contactsPayload(auth.principal));
+  try {
+    return jsonOk(await contactsPayload(auth.principal));
+  } catch (error) {
+    return protocolFail(error);
+  }
 }
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {

@@ -74,21 +74,25 @@ export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<s
   const username = botUsername();
   if (!botToken() || !username) return null;
   const db = getDb();
-  const [existing] = await db
-    .select()
-    .from(telegramLinkTokens)
-    .where(and(eq(telegramLinkTokens.principalId, principal.id), gt(telegramLinkTokens.expiresAt, new Date())))
-    .limit(1);
-  if (existing?.payload) return `https://t.me/${username}?start=${existing.payload}`;
-  const raw = mintToken("tgl");
-  await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principal.id));
-  await db.insert(telegramLinkTokens).values({
-    tokenHash: hashSecret(raw),
-    principalId: principal.id,
-    payload: raw,
-    expiresAt: new Date(Date.now() + LINK_MS),
-  });
-  return `https://t.me/${username}?start=${raw}`;
+  try {
+    const [existing] = await db
+      .select()
+      .from(telegramLinkTokens)
+      .where(and(eq(telegramLinkTokens.principalId, principal.id), gt(telegramLinkTokens.expiresAt, new Date())))
+      .limit(1);
+    if (existing?.payload) return `https://t.me/${username}?start=${existing.payload}`;
+    const raw = mintToken("tgl");
+    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principal.id));
+    await db.insert(telegramLinkTokens).values({
+      tokenHash: hashSecret(raw),
+      principalId: principal.id,
+      payload: raw,
+      expiresAt: new Date(Date.now() + LINK_MS),
+    });
+    return `https://t.me/${username}?start=${raw}`;
+  } catch {
+    return `https://t.me/${username}`;
+  }
 }
 
 export async function unlinkTelegram(principalId: string): Promise<void> {
@@ -111,29 +115,33 @@ function telegramHandleFromMessage(message: { from?: { username?: unknown; first
 export async function drainTelegramUpdates(): Promise<void> {
   const token = botToken();
   if (!token) return;
-  const db = getDb();
-  const [cursor] = await db.select().from(telegramBotState).where(eq(telegramBotState.id, BOT_STATE_ID)).limit(1);
-  const offset = cursor ? Number(cursor.lastUpdateId) + 1 : 0;
-  const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
-  url.searchParams.set("timeout", "0");
-  url.searchParams.set("allowed_updates", JSON.stringify(["message"]));
-  if (offset > 0) url.searchParams.set("offset", String(offset));
-  const response = await fetch(url);
-  if (!response.ok) return;
-  const body = (await response.json()) as { ok?: boolean; result?: unknown };
-  if (!body.ok || !Array.isArray(body.result)) return;
-  let maxId = cursor ? Number(cursor.lastUpdateId) : 0;
-  for (const update of body.result) {
-    if (!update || typeof update !== "object") continue;
-    const id = (update as { update_id?: unknown }).update_id;
-    if (typeof id === "number" && id > maxId) maxId = id;
-    await handleTelegramUpdate(update);
-  }
-  if (maxId > 0) {
-    await db
-      .insert(telegramBotState)
-      .values({ id: BOT_STATE_ID, lastUpdateId: String(maxId) })
-      .onConflictDoUpdate({ target: telegramBotState.id, set: { lastUpdateId: String(maxId) } });
+  try {
+    const db = getDb();
+    const [cursor] = await db.select().from(telegramBotState).where(eq(telegramBotState.id, BOT_STATE_ID)).limit(1);
+    const offset = cursor ? Number(cursor.lastUpdateId) + 1 : 0;
+    const url = new URL(`https://api.telegram.org/bot${token}/getUpdates`);
+    url.searchParams.set("timeout", "0");
+    url.searchParams.set("allowed_updates", JSON.stringify(["message"]));
+    if (offset > 0) url.searchParams.set("offset", String(offset));
+    const response = await fetch(url);
+    if (!response.ok) return;
+    const body = (await response.json()) as { ok?: boolean; result?: unknown };
+    if (!body.ok || !Array.isArray(body.result)) return;
+    let maxId = cursor ? Number(cursor.lastUpdateId) : 0;
+    for (const update of body.result) {
+      if (!update || typeof update !== "object") continue;
+      const id = (update as { update_id?: unknown }).update_id;
+      if (typeof id === "number" && id > maxId) maxId = id;
+      await handleTelegramUpdate(update);
+    }
+    if (maxId > 0) {
+      await db
+        .insert(telegramBotState)
+        .values({ id: BOT_STATE_ID, lastUpdateId: String(maxId) })
+        .onConflictDoUpdate({ target: telegramBotState.id, set: { lastUpdateId: String(maxId) } });
+    }
+  } catch {
+    // Linking still works via webhook; do not fail Contacts.
   }
 }
 
