@@ -38,7 +38,8 @@ export function ContactsCard({
   const [telegramHandle, setTelegramHandle] = useState<string | null>(preview?.telegram_handle ?? null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(preview?.telegram_url ?? null);
   const [configured, setConfigured] = useState<boolean | null>(preview ? Boolean(preview.telegram_configured) : null);
-  const [pending, setPending] = useState(false);
+  const [emailPending, setEmailPending] = useState(false);
+  const [telegramPending, setTelegramPending] = useState(false);
   const [error, setError] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [waitTelegram, setWaitTelegram] = useState(false);
@@ -82,7 +83,7 @@ export function ContactsCard({
   }, [preview, locked, token, houseId]);
 
   async function save() {
-    setPending(true);
+    setEmailPending(true);
     setError(false);
     setHint(null);
     const response = await fetch(`/api/cabinet/${token}/contacts`, {
@@ -90,7 +91,7 @@ export function ContactsCard({
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({ email, locale }),
     });
-    setPending(false);
+    setEmailPending(false);
     if (!response.ok) {
       setError(true);
       return;
@@ -107,14 +108,14 @@ export function ContactsCard({
   }
 
   async function resend() {
-    setPending(true);
+    setEmailPending(true);
     setError(false);
     const response = await fetch(`/api/cabinet/${token}/contacts`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({ resend: true, locale }),
     });
-    setPending(false);
+    setEmailPending(false);
     if (!response.ok) {
       setError(true);
       return;
@@ -123,14 +124,14 @@ export function ContactsCard({
   }
 
   async function unlink() {
-    setPending(true);
+    setTelegramPending(true);
     setError(false);
     const response = await fetch(`/api/cabinet/${token}/contacts`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({ unlink_telegram: true }),
     });
-    setPending(false);
+    setTelegramPending(false);
     if (!response.ok) {
       setError(true);
       return;
@@ -158,11 +159,11 @@ export function ContactsCard({
         {email ? <p className="hint">{verified ? t.contactsVerified : t.contactsUnverified}</p> : null}
         {canEdit && !locked ? (
           <div className="wallet-actions">
-            <button type="button" className="primary" disabled={pending} aria-busy={pending} onClick={() => void save()}>
-              {pending ? t.contactsSaving : t.contactsSave}
+            <button type="button" className="primary" disabled={emailPending} aria-busy={emailPending} onClick={() => void save()}>
+              {emailPending ? t.contactsSaving : t.contactsSave}
             </button>
             {email && !verified ? (
-              <button type="button" className="ghost" disabled={pending} onClick={() => void resend()}>
+              <button type="button" className="ghost" disabled={emailPending} onClick={() => void resend()}>
                 {t.contactsResend}
               </button>
             ) : null}
@@ -188,7 +189,7 @@ export function ContactsCard({
         {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
         {telegram && canEdit && !locked ? (
           <div className="wallet-actions">
-            <button type="button" className="ghost" disabled={pending} onClick={() => void unlink()}>
+            <button type="button" className="ghost" disabled={telegramPending} aria-busy={telegramPending} onClick={() => void unlink()}>
               {t.contactsTelegramUnlink}
             </button>
           </div>

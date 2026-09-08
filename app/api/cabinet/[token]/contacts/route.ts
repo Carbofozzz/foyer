@@ -38,7 +38,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     if (body.unlink_telegram === true) {
       await unlinkTelegram(auth.principal.id);
       const [fresh] = await getDb().select().from(principals).where(eq(principals.id, auth.principal.id)).limit(1);
-      return jsonOk(fresh ? await contactsPayload(fresh) : { ok: true });
+      return jsonOk(fresh ? await contactsPayload(fresh, { drain: false }) : { ok: true });
     }
     if (body.resend === true) {
       if (!auth.principal.contactEmail || auth.principal.emailVerifiedAt) {
@@ -49,7 +49,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     }
     const saved = await saveHouseEmail(auth.principal, body.email, locale, origin);
     const [fresh] = await getDb().select().from(principals).where(eq(principals.id, auth.principal.id)).limit(1);
-    return jsonOk({ ...saved, ...(fresh ? await contactsPayload(fresh) : {}) });
+    return jsonOk({ ...saved, ...(fresh ? await contactsPayload(fresh, { drain: false }) : {}) });
   } catch (error) {
     return protocolFail(error);
   }

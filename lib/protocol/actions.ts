@@ -13,7 +13,7 @@ export async function proposeAction(
   auth: HouseAuth,
   body: Record<string, unknown>,
   now: Date,
-  options?: { origin?: string },
+  options?: { origin?: string; testPass?: boolean },
 ) {
   const payload = parsePayload(body.payload ?? body);
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
@@ -33,14 +33,17 @@ export async function proposeAction(
     evidence,
     status: "open",
     silenceUntil: new Date(now.getTime() + auth.principal.silenceWindowSec * 1000),
+    testPass: Boolean(options?.testPass),
   });
-  await enqueueWakes({
-    actionId: id,
-    principalId: auth.principal.id,
-    proposerId: auth.agent.id,
-    revision: 1,
-    origin: options?.origin,
-  });
+  if (!options?.testPass) {
+    await enqueueWakes({
+      actionId: id,
+      principalId: auth.principal.id,
+      proposerId: auth.agent.id,
+      revision: 1,
+      origin: options?.origin,
+    });
+  }
   const bundle = await loadActionBundle(id);
   if (!bundle) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(bundle);
