@@ -25,6 +25,7 @@ import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
 import { canManage, canOperate, type HouseListing } from "@/lib/protocol/members";
 import type { MemberRole } from "@/lib/protocol/types";
+import { notifyReasonKey } from "@/lib/notify/reasons";
 
 type FeedCopy = Messages["cabinet"];
 type InboxItem = Awaited<ReturnType<typeof inboxForPrincipal>>["items"][number];
@@ -197,6 +198,7 @@ export async function CabinetScreen({
                     names={names}
                     leftoverIds={leftoverIds}
                     t={t.cabinet}
+                    notify={t.notify}
                     appeal={t.appeal}
                     token={token}
                     houseId={houseId}
@@ -289,6 +291,7 @@ function FeedRow({
   names,
   leftoverIds,
   t,
+  notify,
   appeal,
   token,
   houseId,
@@ -301,6 +304,7 @@ function FeedRow({
   names: Record<string, string>;
   leftoverIds: Set<string>;
   t: FeedCopy;
+  notify: Messages["notify"];
   appeal: Messages["appeal"];
   token: string;
   houseId?: string;
@@ -311,7 +315,7 @@ function FeedRow({
 }) {
   const proposer = agentLine(item.proposer_id, names, leftoverIds, t);
   const asked = formatAction(item.payload);
-  const decision = decisionLine(item, t);
+  const decision = decisionLine(item, t, notify);
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
   const outcome = item.verdict?.outcome;
   const courtTx = item.verdict?.tx || item.case?.tx;
@@ -334,7 +338,7 @@ function FeedRow({
         {t.courtTx} <TxLink tx={item.case.tx} />
       </>,
     );
-  } else if (item.verdict) {
+  } else if (item.verdict && showOfflineCourtNote(item)) {
     notes.push(t.judgeOffline);
   }
 
@@ -450,12 +454,22 @@ function statusLabel(status: string, t: FeedCopy, held = false, mayAct?: boolean
   return status;
 }
 
+function showOfflineCourtNote(item: InboxItem): boolean {
+  const verdict = item.verdict;
+  if (!verdict) return false;
+  if (verdict.outcome === "allow" || verdict.outcome === "allow_a" || verdict.outcome === "deny") return false;
+  const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
+  if (key === "hookFailed" || key === "bargainTimeout") return false;
+  if (key === "noFee" || key === "submitFail" || key === "txError") return false;
+  return true;
+}
+
 function reportAckLate(item: InboxItem) {
   if (!item.ack_until) return false;
   return Date.parse(item.ack_until) <= Date.now();
 }
 
-function decisionLine(item: InboxItem, t: FeedCopy) {
+function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) {
   const verdict = item.verdict;
   if (!verdict) {
     if (item.status === "executed" || item.status === "permitted") return t.silence;
@@ -469,6 +483,12 @@ function decisionLine(item: InboxItem, t: FeedCopy) {
   }
   if (verdict.outcome === "allow" || verdict.outcome === "allow_a") return t.allowA;
   if (verdict.outcome === "deny") return t.deny;
+  const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
+  if (key === "hookFailed") return notify.hookFailed;
+  if (key === "bargainTimeout") return notify.bargainTimeout;
+  if (key === "noFee") return notify.noFee;
+  if (key === "submitFail") return notify.submitFail;
+  if (key === "txError") return notify.txError;
   return t.escalate;
 }
 
