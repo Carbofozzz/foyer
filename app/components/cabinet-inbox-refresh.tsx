@@ -2,12 +2,19 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { cabinetHeaders } from "@/app/lib/cabinet-request";
 
-/** Reload the activity feed when that cabinet tab is selected or the window is focused. */
-export function CabinetInboxRefresh() {
+/** After the cabinet paints, run hook/mail sweep in the background and reload the feed. */
+export function CabinetInboxRefresh({ token, houseId }: { token: string; houseId?: string }) {
   const router = useRouter();
 
   useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/cabinet/${token}/sweep`, { method: "POST", headers: cabinetHeaders(houseId) })
+      .catch(() => undefined)
+      .then(() => {
+        if (!cancelled) router.refresh();
+      });
     function inboxChecked() {
       const radio = document.getElementById("cabinet-tab-inbox");
       return radio instanceof HTMLInputElement && radio.checked;
@@ -23,11 +30,12 @@ export function CabinetInboxRefresh() {
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
     return () => {
+      cancelled = true;
       radios.forEach((node) => node.removeEventListener("change", refreshIfInbox));
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
     };
-  }, [router]);
+  }, [router, token, houseId]);
 
   return null;
 }

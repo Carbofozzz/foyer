@@ -9,6 +9,7 @@ import { PagedList } from "@/app/components/paged-list";
 import { addressExplorerUrl, asHexAddress, GENLAYER_CHAIN_ID, ownerKey, txExplorerUrl } from "@/lib/gen/chain";
 import { parseGen, shortGen } from "@/lib/gen/amount";
 import type { Messages } from "@/lib/i18n/load";
+import { formatWhen } from "@/lib/i18n/when";
 import { HOUSE_EVENT } from "@/lib/wallet/events";
 
 type Transfer = {
@@ -33,6 +34,7 @@ type WalletView = {
 export function TreasuryCard({
   token,
   houseId,
+  locale = "en",
   canDeposit = true,
   canManage = true,
   locked = false,
@@ -42,6 +44,7 @@ export function TreasuryCard({
 }: {
   token: string;
   houseId?: string;
+  locale?: string;
   canDeposit?: boolean;
   canManage?: boolean;
   locked?: boolean;
@@ -301,11 +304,15 @@ export function TreasuryCard({
         <PagedList className="tx-list" prevLabel={t.pagePrev} nextLabel={t.pageNext} pageOf={t.pageOf}>
           {data.transfers.map((row) => (
             <li key={row.id}>
-              <span>{kindLabel(row.kind)}</span>
-              <span title={row.case_id ?? (row.kind === "court" ? undefined : row.amount)}>
-                {row.case_id ? shortId(row.case_id) : row.kind === "court" ? "—" : `${shortGen(row.amount)} GEN`}
+              <span className="tx-kind">{kindLabel(row.kind)}</span>
+              <span className={`tx-amount tx-${row.kind}`} title={row.kind === "court" ? undefined : row.amount}>
+                {row.kind === "court" ? "" : `${row.kind === "withdraw" ? "−" : "+"}${shortGen(row.amount)} GEN`}
               </span>
-              <TxLink tx={row.tx} />
+              <span className="tx-meta">
+                <time dateTime={row.created_at}>{formatWhen(row.created_at, locale)}</time>
+                {row.case_id ? <span className="tx-case">{shortId(row.case_id)}</span> : null}
+                <TxLink tx={row.tx} />
+              </span>
             </li>
           ))}
         </PagedList>

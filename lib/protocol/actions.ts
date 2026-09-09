@@ -141,13 +141,17 @@ export async function inboxForPrincipal(principalId: string) {
     .where(eq(actions.principalId, principalId))
     .orderBy(desc(actions.createdAt));
   const items = [];
-  for (const row of rows) {
-    const bundle = await loadActionBundle(row.id);
-    if (!bundle) continue;
-    items.push({
-      type: "action" as const,
-      ...serializeAction(bundle),
-    });
+  const chunk = 8;
+  for (let i = 0; i < rows.length; i += chunk) {
+    const slice = rows.slice(i, i + chunk);
+    const loaded = await Promise.all(slice.map((row) => loadActionBundle(row.id)));
+    for (const bundle of loaded) {
+      if (!bundle) continue;
+      items.push({
+        type: "action" as const,
+        ...serializeAction(bundle),
+      });
+    }
   }
   return { items };
 }

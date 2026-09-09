@@ -3,7 +3,7 @@ import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { REASON_BARGAIN_TIMEOUT } from "@/lib/notify/reasons";
 import { enqueueWakes, escalateOffline } from "@/lib/notify/wake";
-import { openCourt } from "./court";
+import { scheduleOpenCourt } from "./court";
 import { ProtocolError } from "./errors";
 import { MAX_REVISION } from "./types";
 import { loadActionBundle, serializeAction, type HouseAuth, type HousePrincipal } from "./bundle";
@@ -103,7 +103,7 @@ export async function insistAction(auth: HouseAuth, actionId: string, now: Date)
   await db.update(actions).set({ insistedAt: now }).where(eq(actions.id, actionId));
   const [fresh] = await db.select().from(actions).where(eq(actions.id, actionId)).limit(1);
   if (!fresh) throw new ProtocolError("internal", "Failed to load action", 500);
-  await openCourt(fresh, auth.principal, now);
+  scheduleOpenCourt(fresh, auth.principal, now);
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next);

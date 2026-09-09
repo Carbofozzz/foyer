@@ -18,7 +18,7 @@ import { syncEscalateMail } from "@/lib/notify/outbox";
 export async function sweep(
   principalId: string,
   now: Date,
-  options?: { courts?: number; origin?: string; wakes?: boolean },
+  options?: { courts?: number; origin?: string; wakes?: boolean; outbox?: boolean },
 ): Promise<{ advanced: number }> {
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
@@ -82,7 +82,9 @@ export async function sweep(
     }
   }
 
-  advanced += await syncEscalateMail(principalId, origin);
+  if (options?.outbox !== false) {
+    advanced += await syncEscalateMail(principalId, origin);
+  }
 
   return { advanced };
 }

@@ -9,11 +9,6 @@ import { isRecord } from "@/lib/protocol/parse";
 import { asHexAddress } from "@/lib/gen/chain";
 import { normalizeCourtOutcome } from "@/lib/protocol/verdict";
 
-export type JudgeExtra = {
-  prior_verdict?: VerdictAnswer | null;
-  appeal_note?: string;
-};
-
 export function resolveChain() {
   const raw = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase();
   if (raw === "studiodevnet" || raw === "studionetdev" || raw === "studio-dev" || raw === "studiodev") {
@@ -62,12 +57,11 @@ export async function submitJudgeWrite(
   contractAddress: string,
   caseId: string,
   input: JudgeInput,
-  extra?: JudgeExtra,
 ): Promise<string | null> {
   const address = asAddress(contractAddress);
   if (!address) return null;
   try {
-    return await writeJudge(accountKey, address, caseId, input, extra);
+    return await writeJudge(accountKey, address, caseId, input);
   } catch {
     return null;
   }
@@ -212,7 +206,6 @@ async function writeJudge(
   address: Address,
   caseId: string,
   input: JudgeInput,
-  extra?: JudgeExtra,
 ): Promise<string | null> {
   const client = clientFor(accountKey);
   if (!client) return null;
@@ -225,8 +218,6 @@ async function writeJudge(
       JSON.stringify(input.proposed_action),
       JSON.stringify(input.objections),
       JSON.stringify(input.evidence),
-      extra?.prior_verdict ? JSON.stringify(extra.prior_verdict) : "",
-      extra?.appeal_note ?? "",
     ] as CalldataEncodable[],
   };
   const estimate = await client.estimateTransactionFeesForWrite(write);

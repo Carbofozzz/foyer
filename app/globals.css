@@ -167,11 +167,13 @@ a {
   margin-top: 0.4rem;
 }
 
+/* The sign-in button stands on the page — a card around one button read as a stray box. */
 .home-gate {
   display: inline-flex;
   align-items: center;
   width: auto;
   max-width: 100%;
+  margin: 1.3rem 0 1.7rem;
 }
 
 .wallet-toolbar {
@@ -261,8 +263,22 @@ a {
   display: none;
 }
 
+/* The endings are the page's last three-column row: no rail, so they line up
+   with the cards under the diagram. */
 .flow-row.is-last {
+  grid-template-columns: minmax(0, 1fr);
   padding-bottom: 0;
+  padding-top: 0.15rem;
+}
+
+.flow-row.is-last .flow-bullet {
+  display: none;
+}
+
+/* Nothing to connect to below the court, so the rail stops there. */
+.flow-row:has(+ .flow-row.is-last)::before,
+.flow-row:has(+ .flow-row.is-last)::after {
+  display: none;
 }
 
 /* Pulse travelling down that segment of the rail. */
@@ -544,17 +560,23 @@ textarea {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.7rem;
 }
 
 .feed-item {
-  border-top: 1px solid var(--line);
-  padding-top: 0.85rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  /* Warm fill so one record reads as one object on the white panel. */
+  background: color-mix(in srgb, var(--paper) 38%, transparent);
+  padding: 0.75rem 0.9rem 0.8rem;
+  transition:
+    background var(--ease),
+    border-color var(--ease);
 }
 
-.feed-item:first-child {
-  border-top: 0;
-  padding-top: 0;
+.feed-item:hover {
+  background: color-mix(in srgb, var(--paper) 68%, transparent);
+  border-color: var(--line);
 }
 
 .feed-label {
@@ -563,6 +585,14 @@ textarea {
   text-transform: uppercase;
   font-size: 0.72rem;
   margin: 0 0 0.25rem;
+}
+
+/* A name typed by the owner keeps its own case inside an uppercase label. */
+.feed-label-name {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.86rem;
+  color: var(--ink);
 }
 
 .feed-label-row {
@@ -622,16 +652,12 @@ textarea {
   --tone: var(--muted);
 }
 
-.feed-item > .pill,
-.feed-head {
-  margin-bottom: 0.55rem;
-}
-
 .feed-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .feed-at {
@@ -650,8 +676,85 @@ textarea {
   margin-top: 0.85rem;
 }
 
+/* The appeal form is the only plain block left inside a record. */
+.feed-item > .feed-block {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--hairline);
+}
+
 .feed-item p {
-  margin: 0.15rem 0;
+  margin: 0;
+}
+
+/* What was asked — the headline of a record. */
+.feed-ask {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.feed-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.feed-who {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* Objections hang off a rail under the request. */
+.feed-thread {
+  margin-top: 0.65rem;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--line);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.feed-thread ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.feed-thread li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.feed-voice {
+  font-weight: 500;
+}
+
+.feed-verdict {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.feed-verdict-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.feed-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 button[type="submit"],
@@ -983,6 +1086,27 @@ button.wallet-balance:disabled {
   font-size: 0.92rem;
 }
 
+.contact-when {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1.35rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-when ul {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.contact-when li {
+  padding-inline: 0.15rem;
+}
+
 .wallet-field {
   display: grid;
   gap: 0.4rem;
@@ -994,15 +1118,53 @@ button.wallet-balance:disabled {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.35rem;
 }
 
 .tx-list li {
   display: grid;
-  grid-template-columns: 5.5rem 1fr auto;
-  gap: 0.45rem;
-  font-size: 0.82rem;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 0.75rem;
+  row-gap: 0.1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
+}
+
+.tx-list li:first-child {
+  border-top: 0;
+}
+
+.tx-kind {
+  font-weight: 500;
+}
+
+.tx-amount {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tx-amount.tx-deposit {
+  color: var(--ok);
+}
+
+/* Date, case and hash under the row. */
+.tx-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  min-width: 0;
+}
+
+.tx-meta .tx-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tx-link {
@@ -1033,7 +1195,10 @@ button.wallet-balance:disabled {
   line-height: 1.3;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  /* Centred so a taller strip keeps the label in the middle of its pill. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background var(--ease), color var(--ease), box-shadow var(--ease);
 }
 
@@ -1067,11 +1232,26 @@ button.wallet-balance:disabled {
   white-space: pre-wrap;
   overflow: visible;
   max-height: none;
+  /* Prose in a snippet wraps on spaces; only an unbreakable token (a URL) splits. */
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .cabinet-tabs {
   align-self: stretch;
   max-width: 100%;
+  /* Narrow screens scroll the tab bar instead of wrapping it into a blob. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cabinet-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cabinet-tabs .segment {
+  white-space: nowrap;
 }
 
 .cabinet-tab-radio {
@@ -1652,10 +1832,6 @@ label.segment {
     grid-template-columns: 1fr;
   }
 
-  .tx-list li {
-    grid-template-columns: 1fr auto;
-  }
-
   .wallet-id {
     flex-wrap: wrap;
   }
@@ -1666,13 +1842,18 @@ label.segment {
     max-width: 100%;
   }
 
-  .segment,
   button[type="submit"],
   .primary,
   button.ghost,
   a.primary,
   a.ghost {
     min-height: 2.6rem;
+  }
+
+  /* A segment is one cell of a pill strip, not a standalone button: a button’s
+     touch height would blow the strip up and push the label off centre. */
+  .segment {
+    min-height: 2rem;
   }
 }
 

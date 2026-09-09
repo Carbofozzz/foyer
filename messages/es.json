@@ -58,6 +58,7 @@
     "statusEscalated": "Te necesita",
     "request": "Petición",
     "objection": "Objeción",
+    "objections": "Objeciones",
     "decision": "Decisión",
     "kindBook": "reserva",
     "kindSpend": "pago",
@@ -145,6 +146,13 @@
     "tabTest": "Prueba",
     "tabContacts": "Contactos",
     "contactsLead": "Escribimos aquí solo cuando una petición necesita tu sí o no.",
+    "contactsWhen": "Escribimos en estos casos",
+    "contactsWhenHook": "Un asistente obligatorio no respondió.",
+    "contactsWhenBargain": "Quien pidió no respondió a una objeción.",
+    "contactsWhenNoFee": "La cartera de la casa no pudo pagar la tasa del tribunal.",
+    "contactsWhenSubmit": "No se pudo enviar la transacción del tribunal.",
+    "contactsWhenTx": "La transacción del tribunal falló demasiadas veces.",
+    "contactsWhenCourt": "El tribunal te pidió decidir.",
     "contactsEmail": "Correo",
     "contactsVerified": "Confirmado. Usamos esto para el correo de sí o no.",
     "contactsUnverified": "Aún no confirmado. Revisa el correo o reenvía.",
@@ -550,7 +558,40 @@
   "footer": {
     "copy": "© 2026 Foyer",
     "powered": "Con tecnología de",
-    "links": "Legal"
+    "links": "Sitio"
+  },
+  "roadmap": {
+    "open": "Hoja de ruta",
+    "kicker": "Hoja de ruta",
+    "title": "Lo que aún no está",
+    "lead": "Lo que queremos después. No es un calendario ni una promesa.",
+    "hint": "Lo que hay hoy se ve en el panel.",
+    "items": [
+      {
+        "title": "Agentes alojados con hooks",
+        "body": "Foyer haría correr un comprobador de la casa, con un hook — para que no tengas que levantar tu propio servidor."
+      },
+      {
+        "title": "Firmas, versiones, ventanas",
+        "body": "Cada petición va firmada, para ver que la envió de verdad ese asistente. Puedes fijar qué versión del agente se admite. Puedes decir cuánto tiempo hay para objetar y cuánto tiene quien pidió para responder tras una objeción."
+      },
+      {
+        "title": "Más formas de avisar a una persona",
+        "body": "Cuando hace falta un sí o no humano: SMS, WhatsApp y similares. Y enviar ese aviso a varios operadores de la casa, no solo al titular."
+      },
+      {
+        "title": "Pagar tasas sin solo GEN",
+        "body": "Recargar las tasas del tribunal con otros tokens, o con dinero real en suscripción."
+      },
+      {
+        "title": "Pacto y tribunal para casos raros",
+        "body": "Ampliar la conversación y el tribunal para que las situaciones poco habituales también tengan camino — no solo el proponer, objetar, insistir de siempre."
+      },
+      {
+        "title": "Cerrojos a través de Foyer",
+        "body": "Tus propias manos: bloqueos y controles en Foyer, para que los agentes no puedan saltarse la casa y actuar por su cuenta."
+      }
+    ]
   },
   "legal": {
     "kicker": "Legal",

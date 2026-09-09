@@ -38,5 +38,5 @@ export const MCP_PROMPT_LINES = [
   "Propose, object, read inbox, ack, withdraw, revise, insist, and report only through Foyer tools.",
   `After you propose or object, call inbox at least every ${MCP_INBOX_POLL_SEC} seconds until verdict.outcome is allow or deny, or status is withdrawn. Chat runtimes are not woken — this poll is how you learn.`,
   "When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.",
-  "Cite the house constitution in every justification. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
+  "Cite the house constitution in every justification. If you cite a web page, include the http(s) URL in the text or as evidence { type: \"link\", value }. The court fetches those pages. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
 ];

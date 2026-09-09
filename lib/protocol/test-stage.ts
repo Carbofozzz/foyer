@@ -8,7 +8,6 @@ import { insistAction, reviseAction, withdrawAction } from "./bargain";
 import { appealCase } from "./appeal";
 import { reportAction } from "./report";
 import { lockedKinds, serializeAction, type HousePrincipal } from "./bundle";
-import { openCourt, stepHouseCourt } from "./court";
 import { executeAfterAck } from "./execute";
 import { ProtocolError } from "./errors";
 import { isRecord } from "./parse";
@@ -616,10 +615,6 @@ export async function loadTestStage(principal: HousePrincipal, origin?: string) 
   const [actor] = await getDb().select().from(agents).where(eq(agents.id, row.proposerId)).limit(1);
   if (!actor) {
     return { agents: houseAgents, kinds, silence_window_sec: principal.silenceWindowSec, current: null };
-  }
-  if (row.insistedAt) {
-    await openCourt(row, principal, new Date());
-    await stepHouseCourt(principal, new Date());
   }
   let serialized = await getAction({ agent: actor, principal }, actionId);
   const settled = serialized.verdict?.outcome;

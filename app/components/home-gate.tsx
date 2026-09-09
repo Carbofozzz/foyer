@@ -14,7 +14,7 @@ export function HomeGate({
   initialAddress: string | null;
 }) {
   return (
-    <div className="card home-gate">
+    <div className="home-gate">
       <WalletButton
         locale={locale}
         signOutLabel={t.signOut}

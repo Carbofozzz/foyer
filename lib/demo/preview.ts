@@ -7,15 +7,17 @@ export type DemoCase = {
   kind: "book" | "message" | "spend";
   outcome: "allow" | "deny" | "escalate";
   path: "silence" | "revise" | "insist";
+  /** Fixed request time — the demo is an archive, not a live house. */
+  at: string;
 };
 
 export const DEMO_CASES: DemoCase[] = [
-  { id: "a", kind: "book", outcome: "deny", path: "insist" },
-  { id: "b", kind: "book", outcome: "allow", path: "revise" },
-  { id: "c", kind: "message", outcome: "deny", path: "insist" },
-  { id: "d", kind: "book", outcome: "allow", path: "insist" },
-  { id: "e", kind: "book", outcome: "allow", path: "silence" },
-  { id: "f", kind: "spend", outcome: "escalate", path: "insist" },
+  { id: "a", kind: "book", outcome: "deny", path: "insist", at: "2026-09-01T00:05:00.000Z" },
+  { id: "b", kind: "book", outcome: "allow", path: "revise", at: "2026-08-31T18:40:00.000Z" },
+  { id: "c", kind: "message", outcome: "deny", path: "insist", at: "2026-08-31T16:20:00.000Z" },
+  { id: "d", kind: "book", outcome: "allow", path: "insist", at: "2026-08-30T12:10:00.000Z" },
+  { id: "e", kind: "book", outcome: "allow", path: "silence", at: "2026-08-29T09:30:00.000Z" },
+  { id: "f", kind: "spend", outcome: "escalate", path: "insist", at: "2026-08-28T15:05:00.000Z" },
 ];
 
 const DEMO_ORIGIN = "https://foyerapp.dev";

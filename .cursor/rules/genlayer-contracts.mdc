@@ -7,11 +7,11 @@ alwaysApply: false
 # GenLayer contracts
 
 - Write Intelligent Contracts in Python for GenLayer testnet.
-- Validators answer: given constitution, proposed_action, objection (with optional `counter_action`), evidence — `allow_a` | `allow_b` | `remedy` | `escalate`. JSON `{ "outcome", "remedy_action", "reasoning", "objection_grounded" }`.
-- `remedy` must return an executable `remedy_action` (`kind` + payload). If none can be written, answer `escalate`.
-- If the constitution is silent or articles contradict, only `escalate`.
-- Appeal is the same question plus `prior_verdict` and `appeal_note`, judged against the constitution **snapshot** stored on the case.
-- Equivalence compares `outcome`, `objection_grounded`, and `remedy_action` (kind + normalized payload). Never compare `reasoning`.
+- `judge` takes constitution, proposed_action, a JSON list of objections (optional `counter_action` is advice only), and evidence. Answers `allow` | `deny` | `escalate`. JSON `{ "outcome", "reasoning", "objection_grounded" }`. No `prior_verdict` / `appeal_note`.
+- http(s) URLs in the proposal, objections, or evidence are fetched inside the nondet block with `gl.nondet.web.get` (fallback `render` text) and the page text is appended to the prompt. Equivalence stays on `outcome` only — do not `strict_eq` the page body.
+- Do not write a `remedy_action`. Permit is the original payload, nothing, or the principal.
+- If the constitution is silent or articles contradict, only `escalate`. A principal override is offline yes/no, not a second IC write.
+- Equivalence compares `outcome` only. Never compare `reasoning`.
 - Do not invent an EVM-only wait path for GenLayer txs. Use `genlayer-js` / official IC patterns.
 - One deployed Intelligent Contract per house (`principals.court_contract`). Do not share one court address across houses.
 - The house pays fees from its own wallet (`principals.wallet_address` + sealed key). The IC is judge-only: no deposit, lock, burn, or debit.

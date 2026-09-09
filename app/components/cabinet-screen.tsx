@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { eq } from "drizzle-orm";
 import { agents } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
@@ -6,6 +7,7 @@ import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
 import { sweep } from "@/lib/protocol/sweep";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
+import { formatWhen } from "@/lib/i18n/when";
 import { CabinetSetup } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
@@ -48,7 +50,7 @@ export async function CabinetScreen({
   tab?: string;
   t: Messages;
 }) {
-  await sweep(principal.id, new Date(), { courts: 0 });
+  await sweep(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
@@ -139,7 +141,7 @@ export async function CabinetScreen({
             defaultChecked={item.id === currentTab}
           />
         ))}
-        <CabinetInboxRefresh />
+        <CabinetInboxRefresh token={token} houseId={houseId} />
           <nav className="cabinet-tabs segmented" aria-label={t.cabinet.tabs}>
             {tabItems.map((item) => (
               <label key={item.id} className="segment" htmlFor={`cabinet-tab-${item.id}`}>
@@ -210,6 +212,7 @@ export async function CabinetScreen({
               <TreasuryCard
                 token={token}
                 houseId={houseId}
+                locale={locale}
                 canDeposit={operate}
                 canManage={manage}
                 t={t.cabinet}
@@ -312,6 +315,28 @@ function FeedRow({
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
   const outcome = item.verdict?.outcome;
   const courtTx = item.verdict?.tx || item.case?.tx;
+  const notes: ReactNode[] = [];
+  if (held) notes.push(t.holdAppeal);
+  if (item.report) {
+    notes.push(t.reportDid);
+  } else if (item.status === "permitted") {
+    notes.push(reportAckLate(item) ? t.reportMiss : t.reportPending);
+  }
+  if (item.verdict?.judge === "onchain" && courtTx) {
+    notes.push(
+      <>
+        {t.judgeOnchain} <TxLink tx={courtTx} />
+      </>,
+    );
+  } else if (item.case?.tx) {
+    notes.push(
+      <>
+        {t.courtTx} <TxLink tx={item.case.tx} />
+      </>,
+    );
+  } else if (item.verdict) {
+    notes.push(t.judgeOffline);
+  }
 
   return (
     <li className="feed-item">
@@ -320,57 +345,49 @@ function FeedRow({
           {statusLabel(item.status, t, held, item.may_act, item.phase)}
         </StatusPill>
         <time className="feed-at" dateTime={item.created_at}>
-          {formatAskedAt(item.created_at, locale)}
+          {formatWhen(item.created_at, locale)}
         </time>
       </div>
-      <div className="feed-block">
-        <p className="feed-label">{t.request}</p>
-        <p>
+      <div className="feed-ask">
+        <p className="feed-who">
           {proposer}
-          {asked ? ` · ${asked}` : ""}
+          {item.revision > 1 ? ` · ${t.revision.replace("{n}", String(item.revision))}` : ""}
         </p>
-        {item.revision > 1 ? <p className="hint">{t.revision.replace("{n}", String(item.revision))}</p> : null}
+        <p className="feed-title">{asked || t.request}</p>
       </div>
-      {item.objections.map((row) => {
-        const objector = agentLine(row.objector_id, names, leftoverIds, t);
-        const text = typeof row.justification === "string" ? row.justification.trim() : "";
-        const counter = formatAction(row.counter_action);
-        return (
-          <div className="feed-block" key={row.id}>
-            <p className="feed-label">{t.objection}</p>
-            <p>
-              {objector}
-              {text ? `: ${text}` : ""}
-            </p>
-            {counter ? <p className="hint">{t.suggestion.replace("{summary}", counter)}</p> : null}
-          </div>
-        );
-      })}
+      {item.objections.length > 0 ? (
+        <div className="feed-thread">
+          <p className="feed-label">{item.objections.length > 1 ? t.objections : t.objection}</p>
+          <ul>
+            {item.objections.map((row) => {
+              const objector = agentLine(row.objector_id, names, leftoverIds, t);
+              const text = typeof row.justification === "string" ? row.justification.trim() : "";
+              const counter = formatAction(row.counter_action);
+              return (
+                <li key={row.id}>
+                  <p>
+                    <span className="feed-voice">{objector}</span>
+                    {text ? <span className="feed-said"> — {text}</span> : null}
+                  </p>
+                  {counter ? <p className="hint">{t.suggestion.replace("{summary}", counter)}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
       {decision ? (
-        <div className="feed-block">
-          <div className="feed-label-row">
-            <p className="feed-label">{t.decision}</p>
-            {outcome ? (
-              <StatusPill tone={outcomeTone(outcome)}>{outcomeLabel(outcome, t)}</StatusPill>
-            ) : null}
+        <div className="feed-verdict">
+          <div className="feed-verdict-row">
+            {outcome ? <StatusPill tone={outcomeTone(outcome)}>{outcomeLabel(outcome, t)}</StatusPill> : null}
+            <p>{decision}</p>
           </div>
-          <p>{decision}</p>
-          {held ? <p className="hint">{t.holdAppeal}</p> : null}
-          {item.report ? (
-            <p className="hint">{t.reportDid}</p>
-          ) : item.status === "permitted" ? (
-            <p className="hint">{reportAckLate(item) ? t.reportMiss : t.reportPending}</p>
-          ) : null}
-          {item.verdict?.judge === "onchain" && courtTx ? (
-            <p className="hint">
-              {t.judgeOnchain} <TxLink tx={courtTx} />
-            </p>
-          ) : item.case?.tx ? (
-            <p className="hint">
-              {t.courtTx} <TxLink tx={item.case.tx} />
-            </p>
-          ) : item.verdict ? (
-            <p className="hint">{t.judgeOffline}</p>
+          {notes.length > 0 ? (
+            <ul className="feed-notes">
+              {notes.map((note, index) => (
+                <li key={index}>{note}</li>
+              ))}
+            </ul>
           ) : null}
         </div>
       ) : null}
@@ -469,12 +486,6 @@ function formatAction(payload: unknown) {
     summary = summary ? `${summary}, ${money}` : money;
   }
   return summary.replace(/\s*\(compromise\)\s*/i, "").trim();
-}
-
-function formatAskedAt(iso: string, locale: string) {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return iso;
-  return new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(at);
 }
 
 function TxLink({ tx }: { tx: string }) {
