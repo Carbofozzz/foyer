@@ -41,6 +41,11 @@ export async function loadActionBundle(actionId: string) {
     objections: currentObjections,
     courtCase,
     verdict: verdictList[0] ?? null,
+    priorVerdict: (() => {
+      const latest = verdictList[0];
+      if (!latest?.appealOf) return null;
+      return verdictList.find((row) => row.id === latest.appealOf) ?? null;
+    })(),
     acks: ackRows,
     executions: execRows,
     report: reportRows[0] ?? null,
@@ -127,6 +132,8 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
           judge: verdict.judge,
           tx: verdict.tx,
           appeal_of: verdict.appealOf,
+          prior_reasoning: bundle.priorVerdict?.reasoning ?? null,
+          prior_judge: bundle.priorVerdict?.judge ?? null,
           escalate_external: verdict.escalateExternal,
         }
       : null,
