@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.38.0",
+      version: "0.39.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -222,6 +222,8 @@ export function openApiSpec(origin: string) {
               description: "Archive only. New verdicts leave this null.",
             },
             reasoning: { type: "string" },
+            prior_reasoning: { oneOf: [{ type: "string" }, { type: "null" }] },
+            prior_judge: { oneOf: [{ type: "string", enum: ["onchain", "offline"] }, { type: "null" }] },
             objection_grounded: { type: "boolean" },
             judge: { type: "string", enum: ["onchain", "offline"] },
             tx: { oneOf: [{ type: "string" }, { type: "null" }] },

@@ -481,6 +481,8 @@ function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) 
     }
     return null;
   }
+  const human = humanDecisionLine(item, t);
+  if (human) return human;
   if (verdict.outcome === "allow" || verdict.outcome === "allow_a") return t.allowA;
   if (verdict.outcome === "deny") return t.deny;
   const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
@@ -490,6 +492,30 @@ function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) 
   if (key === "submitFail") return notify.submitFail;
   if (key === "txError") return notify.txError;
   return t.escalate;
+}
+
+function humanDecisionLine(item: InboxItem, t: FeedCopy): string | null {
+  const verdict = item.verdict;
+  if (!verdict?.appeal_of) return null;
+  if (verdict.outcome !== "allow" && verdict.outcome !== "allow_a" && verdict.outcome !== "deny") return null;
+  const done = verdict.outcome === "deny" ? t.humanDenied : t.humanAllowed;
+  const priorReason = typeof verdict.prior_reasoning === "string" ? verdict.prior_reasoning : "";
+  const priorJudge = typeof verdict.prior_judge === "string" ? verdict.prior_judge : "offline";
+  if (!priorReason && !verdict.prior_judge) return done;
+  const key = notifyReasonKey(priorReason, priorJudge);
+  const why =
+    key === "hookFailed"
+      ? t.humanWhyHook
+      : key === "bargainTimeout"
+        ? t.humanWhyBargain
+        : key === "noFee"
+          ? t.humanWhyNoFee
+          : key === "submitFail"
+            ? t.humanWhySubmit
+            : key === "txError"
+              ? t.humanWhyTx
+              : t.humanWhyCourt;
+  return `${why} ${done}`;
 }
 
 function formatAction(payload: unknown) {
