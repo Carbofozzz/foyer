@@ -21,7 +21,7 @@ export const principals = pgTable("principals", {
   testClients: boolean("test_clients").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
-  /** 0 = four-outcome IC. 2 = allow/deny/escalate with an objections list. */
+  /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. */
   courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),

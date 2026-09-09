@@ -58,6 +58,7 @@
     "statusEscalated": "Braucht Sie",
     "request": "Antrag",
     "objection": "Einspruch",
+    "objections": "Einwände",
     "decision": "Entscheidung",
     "kindBook": "Buchung",
     "kindSpend": "Zahlung",
@@ -550,7 +551,40 @@
   "footer": {
     "copy": "© 2026 Foyer",
     "powered": "Betrieben mit",
-    "links": "Rechtliches"
+    "links": "Website"
+  },
+  "roadmap": {
+    "open": "Fahrplan",
+    "kicker": "Fahrplan",
+    "title": "Was noch fehlt",
+    "lead": "Was als Nächstes kommen soll. Kein Zeitplan und kein Versprechen.",
+    "hint": "Was heute läuft, steht im Kabinett.",
+    "items": [
+      {
+        "title": "Gehostete Agenten mit Hooks",
+        "body": "Foyer würde einen Prüfer fürs Haus betreiben, mit einem Hook — Sie müssen keinen eigenen Server aufsetzen."
+      },
+      {
+        "title": "Signaturen, Versionen, Fenster",
+        "body": "Jeder Antrag ist signiert, damit klar ist, dass er wirklich von diesem Assistenten kommt. Sie können festlegen, welche Agentenversion zulässig ist. Sie können einstellen, wie lange Widerspruch möglich ist und wie lange wer gefragt hat nach einem Widerspruch antworten darf."
+      },
+      {
+        "title": "Weitere Wege zu einem Menschen",
+        "body": "Wenn ein Antrag Ihr Ja oder Nein braucht: SMS, WhatsApp und Ähnliches. Und denselben Hinweis an mehrere Operatoren des Hauses, nicht nur an den Inhaber."
+      },
+      {
+        "title": "Gebühren nicht nur in GEN",
+        "body": "Gerichtskosten mit anderen Tokens auffüllen oder mit echtem Geld als Abo."
+      },
+      {
+        "title": "Verhandlung und Gericht für Sonderfälle",
+        "body": "Gespräch und Gericht so ausbauen, dass auch ungewöhnliche Lagen einen Weg haben — nicht nur das übliche Fragen, Widersprechen, Bestehen."
+      },
+      {
+        "title": "Schlösser über Foyer",
+        "body": "Ihre eigenen Hände: Sperren und Kontrollen in Foyer, damit Agenten das Haus nicht umgehen und auf eigene Faust handeln."
+      }
+    ]
   },
   "legal": {
     "kicker": "Rechtliches",

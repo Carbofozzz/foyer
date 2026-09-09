@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { actions, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
@@ -8,7 +9,6 @@ import {
   inspectJudgeTx,
   readJudgeVerdict,
   submitJudgeWrite,
-  type JudgeExtra,
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
 import { executeAfterAck } from "./execute";
@@ -16,6 +16,7 @@ import type { EvidenceItem, JudgeInput, ObjectionOpinion, VerdictAnswer } from "
 import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
 import { asEvidence, asPayload } from "./parse";
+import { urlsIn } from "./links";
 import { normalizeCourtOutcome } from "./verdict";
 import { REASON_NO_FEE, REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
 
@@ -136,6 +137,16 @@ export async function openCourt(action: ActionRow, principal: HousePrincipal, no
   await submitForCase(row, principal, action, now);
 }
 
+/** Submit after the HTTP response. Do not block insist on GenLayer deploy/write. */
+export function scheduleOpenCourt(action: ActionRow, principal: HousePrincipal, now: Date): void {
+  const run = () => openCourt(action, principal, now).catch(() => undefined);
+  try {
+    after(run);
+  } catch {
+    void run();
+  }
+}
+
 async function findInflightCase(principalId: string): Promise<CaseRow | null> {
   const db = getDb();
   const [row] = await db
@@ -249,8 +260,7 @@ async function submitForCase(
     return;
   }
 
-  const extra = await appealExtra(row.id);
-  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action), extra);
+  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action));
   if (!hash) {
     await noteSubmitFail(row, principal, now);
     return;
@@ -284,31 +294,23 @@ export async function buildJudgeInput(row: CaseRow, action: ActionRow): Promise<
     ...actionEvidence(action),
     ...current.flatMap((item) => asEvidence(item.evidence)),
   ];
+  const cited = urlsIn(
+    action.justification,
+    actionPayload(action),
+    opinions,
+    evidence,
+  );
+  const have = new Set(evidence.map((item) => item.value));
+  for (const url of cited) {
+    if (have.has(url)) continue;
+    evidence.push({ type: "link", value: url });
+    have.add(url);
+  }
   return {
     constitution: row.constitutionSnapshot,
     proposed_action: actionPayload(action),
     objections: opinions,
     evidence,
-  };
-}
-
-async function appealExtra(caseId: string): Promise<JudgeExtra | undefined> {
-  const db = getDb();
-  const [prior] = await db
-    .select()
-    .from(verdicts)
-    .where(eq(verdicts.caseId, caseId))
-    .orderBy(desc(verdicts.createdAt))
-    .limit(1);
-  if (!prior) return undefined;
-  return {
-    prior_verdict: {
-      outcome: normalizeCourtOutcome(prior.outcome) ?? "escalate",
-      remedy_action: null,
-      reasoning: prior.reasoning,
-      objection_grounded: prior.objectionGrounded,
-    },
-    appeal_note: "",
   };
 }
 
@@ -370,40 +372,4 @@ async function applyVerdict(
     .where(eq(actions.id, row.actionId))
     .limit(1);
   if (action?.testPass) await executeAfterAck(row.actionId);
-}
-
-/** Public submit for a principal appeal. Saves the hash; tick applies the IC JSON. */
-export async function submitAppealTx(
-  principal: HousePrincipal,
-  row: CaseRow,
-  action: ActionRow,
-  extra: JudgeExtra,
-  now: Date,
-): Promise<string | null> {
-  if (row.tx) {
-    const [matched] = await getDb()
-      .select({ id: verdicts.id })
-      .from(verdicts)
-      .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, row.tx)))
-      .limit(1);
-    if (!matched) return row.tx;
-  }
-  const wallet = await ensureHouseWallet(principal);
-  if ((await ensureCourtFunds(wallet.address)) < COURT_FLOOR_WEI) {
-    await applyVerdict(row, principal, now, NO_FEE, "offline", null);
-    return null;
-  }
-  const contractAddress = await ensureHouseCourt(principal);
-  if (!contractAddress) {
-    await noteSubmitFail(row, principal, now);
-    return null;
-  }
-  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action), extra);
-  if (!hash) {
-    await noteSubmitFail(row, principal, now);
-    return null;
-  }
-  await getDb().update(cases).set({ tx: hash, status: "open", contract: contractAddress }).where(eq(cases.id, row.id));
-  await recordCourtTx(principal, hash, contractAddress);
-  return hash;
 }

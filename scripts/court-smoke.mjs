@@ -106,8 +106,6 @@ const write = {
       },
     ]),
     JSON.stringify([{ type: "text", value: "Presentation at 9:00 the next morning" }]),
-    "",
-    "",
   ],
 };
 mark = Date.now();

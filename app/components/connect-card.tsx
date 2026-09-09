@@ -290,7 +290,7 @@ export function ConnectCard({
       {current ? (
         <div className="connect-current">
           <p className="feed-label">
-            {t.pick} {current.name}
+            {t.pick} <span className="feed-label-name">{current.name}</span>
             <span className="agent-door">
               {" "}
               · {wakeLabel(current.wake, t)}

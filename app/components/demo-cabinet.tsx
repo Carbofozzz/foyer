@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
+import { formatWhen } from "@/lib/i18n/when";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
@@ -75,13 +76,14 @@ export function DemoCabinet({
               pageOf={t.cabinet.pageOf}
             >
               {DEMO_CASES.map((row) => (
-                <DemoFeedRow key={row.id} row={row} cabinet={t.cabinet} replay={t.replay} />
+                <DemoFeedRow key={row.id} row={row} locale={locale} cabinet={t.cabinet} replay={t.replay} />
               ))}
             </PagedList>
           </div>
           <div data-cabinet-pane="treasury">
             <TreasuryCard
               token={DEMO_TOKEN}
+              locale={locale}
               locked
               preview={DEMO_TREASURY}
               t={t.cabinet}
@@ -128,10 +130,12 @@ export function DemoCabinet({
 
 function DemoFeedRow({
   row,
+  locale,
   cabinet,
   replay,
 }: {
   row: DemoCase;
+  locale: Locale;
   cabinet: Messages["cabinet"];
   replay: Messages["replay"];
 }) {
@@ -142,30 +146,44 @@ function DemoFeedRow({
   const tone =
     row.outcome === "escalate" ? statusTone("escalated") : statusTone("permitted", false, !denied);
 
+  const objections = demoObjections(story);
+
   return (
     <li className="feed-item">
-      <StatusPill tone={tone}>{status}</StatusPill>
-      <div className="feed-block">
-        <p className="feed-label">{cabinet.request}</p>
-        <p>
-          {story.proposer} · {kindLabel(row.kind, cabinet)}: {story.asked}
+      <div className="feed-head">
+        <StatusPill tone={tone}>{status}</StatusPill>
+        <time className="feed-at" dateTime={row.at}>
+          {formatWhen(row.at, locale)}
+        </time>
+      </div>
+      <div className="feed-ask">
+        <p className="feed-who">
+          {story.proposer} · {kindLabel(row.kind, cabinet)}
         </p>
+        <p className="feed-title">{story.asked}</p>
         {row.path === "revise" ? <p className="hint">{cabinet.revised.replace("{summary}", story.decided)}</p> : null}
       </div>
-      {demoObjections(story).map((item) => (
-        <div className="feed-block" key={`${item.name}-${item.counter}`}>
-          <p className="feed-label">{cabinet.objection}</p>
-          <p>{item.name}</p>
-          {item.counter ? <p className="hint">{cabinet.suggestion.replace("{summary}", item.counter)}</p> : null}
+      {objections.length > 0 ? (
+        <div className="feed-thread">
+          <p className="feed-label">{objections.length > 1 ? cabinet.objections : cabinet.objection}</p>
+          <ul>
+            {objections.map((item) => (
+              <li key={`${item.name}-${item.counter}`}>
+                <p className="feed-voice">{item.name}</p>
+                {item.counter ? <p className="hint">{cabinet.suggestion.replace("{summary}", item.counter)}</p> : null}
+              </li>
+            ))}
+          </ul>
         </div>
-      ))}
-      <div className="feed-block">
-        <div className="feed-label-row">
-          <p className="feed-label">{cabinet.decision}</p>
+      ) : null}
+      <div className="feed-verdict">
+        <div className="feed-verdict-row">
           <StatusPill tone={outcomeTone(row.outcome)}>{outcomeLabel(row.outcome, cabinet)}</StatusPill>
+          <p>{decisionCopy(row, cabinet)}</p>
         </div>
-        <p>{decisionCopy(row, cabinet)}</p>
-        <p className="hint">{resultCopy(row, replay)}</p>
+        <ul className="feed-notes">
+          <li>{resultCopy(row, replay)}</li>
+        </ul>
       </div>
     </li>
   );

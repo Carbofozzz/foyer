@@ -1,14 +1,18 @@
-# v0.5.0
+# v0.7.0
 # { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 import json
+import re
 
 import genlayer as gl
 
 OUTCOMES = ("allow", "deny", "escalate")
+MAX_URLS = 8
+MAX_PAGE = 6000
+URL_RE = re.compile(r"https?://[^\s<>\"'\\]+", re.I)
 
 PROMPT = """You are the court for one principal. Agents of that person or company share a wallet and a name, but not a goal.
 
-Given constitution, proposed_action, a JSON list of objections (who, text, optional counter_action as advice only), and evidence. Answer only whether the original proposal may proceed.
+Given constitution, proposed_action, a JSON list of objections (who, text, optional counter_action as advice only), evidence, and fetched pages for any http(s) links those agents cited. Answer only whether the original proposal may proceed.
 
 Rules:
 - allow: permit the proposer's current payload as written. The proposal follows the constitution better than rejecting it.
@@ -16,7 +20,6 @@ Rules:
 - escalate: the constitution is silent or its articles contradict. The principal decides yes or no on that same payload.
 - objection_grounded: true if at least one objection had grounds in the constitution.
 - Do not pick a winning objector. Do not write a remedy_action. Do not invent a fourth outcome.
-- If this is an appeal, judge against the constitution snapshot (the constitution field). Use prior_verdict and appeal_note as extra evidence.
 
 Return ONLY JSON:
 {
@@ -47,12 +50,11 @@ class Court(gl.contract.Contract):
         proposed_action: str,
         objections: str,
         evidence: str,
-        prior_verdict: str,
-        appeal_note: str,
     ):
         self._only_admin()
 
         def leader_fn():
+            fetched = _fetch_cited_pages(proposed_action, objections, evidence)
             prompt = (
                 PROMPT
                 + f"""
@@ -68,11 +70,8 @@ objections:
 evidence:
 {evidence}
 
-prior_verdict:
-{prior_verdict}
-
-appeal_note:
-{appeal_note}
+fetched_pages:
+{fetched}
 """
             )
             raw = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -153,3 +152,85 @@ def _extract_json(s: str) -> str:
     if start != -1 and end != -1 and start < end:
         return s[start : end + 1]
     return ""
+
+
+def _clean_url(raw: str) -> str:
+    url = raw.strip().rstrip("),.;:!?]>}")
+    if not url.lower().startswith(("http://", "https://")):
+        return ""
+    if len(url) > 2000:
+        return ""
+    return url
+
+
+def _urls_in(*blobs: str) -> list:
+    found = []
+    seen = set()
+    for blob in blobs:
+        for match in URL_RE.findall(blob or ""):
+            url = _clean_url(match)
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            found.append(url)
+            if len(found) >= MAX_URLS:
+                return found
+        if len(found) >= MAX_URLS:
+            return found
+    try:
+        items = json.loads(blobs[-1] if blobs else "[]")
+    except Exception:
+        items = []
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("type") or "").lower() != "link":
+                continue
+            url = _clean_url(str(item.get("value") or ""))
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            found.append(url)
+            if len(found) >= MAX_URLS:
+                break
+    return found[:MAX_URLS]
+
+
+def _response_text(response) -> str:
+    if response is None:
+        return ""
+    if isinstance(response, str):
+        return response
+    body = getattr(response, "body", None)
+    if body is None:
+        return str(response)
+    if isinstance(body, bytes):
+        return body.decode("utf-8", errors="replace")
+    if isinstance(body, str):
+        return body
+    return str(body)
+
+
+def _fetch_url(url: str) -> str:
+    try:
+        text = _response_text(gl.nondet.web.get(url)).strip()
+        if not text:
+            rendered = gl.nondet.web.render(url, mode="text")
+            text = rendered if isinstance(rendered, str) else str(rendered)
+            text = text.strip()
+        if len(text) > MAX_PAGE:
+            return text[:MAX_PAGE] + "\n…"
+        return text or "(empty)"
+    except Exception as exc:
+        return f"(could not fetch: {exc})"
+
+
+def _fetch_cited_pages(proposed_action: str, objections: str, evidence: str) -> str:
+    pages = []
+    for url in _urls_in(proposed_action, objections, evidence):
+        pages.append({"url": url, "content": _fetch_url(url)})
+    if not pages:
+        return "(none)"
+    return json.dumps(pages, ensure_ascii=False)
+

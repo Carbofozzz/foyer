@@ -58,6 +58,7 @@
     "statusEscalated": "Sizi bekliyor",
     "request": "İstek",
     "objection": "İtiraz",
+    "objections": "İtirazlar",
     "decision": "Karar",
     "kindBook": "rezervasyon",
     "kindSpend": "ödeme",
@@ -550,7 +551,40 @@
   "footer": {
     "copy": "© 2026 Foyer",
     "powered": "Altyapı:",
-    "links": "Yasal"
+    "links": "Site"
+  },
+  "roadmap": {
+    "open": "Yol haritası",
+    "kicker": "Yol haritası",
+    "title": "Henüz yok olanlar",
+    "lead": "Sırada ne istediğimiz. Takvim değil, söz değil.",
+    "hint": "Bugün ne çalışıyorsa kabinde görünür.",
+    "items": [
+      {
+        "title": "Kancalı barındırılan ajanlar",
+        "body": "Foyer ev için bir denetçi çalıştırır, kancayla — kendi sunucunuzu kaldırmanız gerekmez."
+      },
+      {
+        "title": "İmzalar, sürümler, pencereler",
+        "body": "Her istek imzalıdır: gerçekten o asistanın gönderdiği görülür. Hangi ajan sürümüne izin verileceğini sabitleyebilirsiniz. İtiraza ne kadar süre tanınacağını ve isteyenin itirazdan sonra ne kadar sürede yanıt vereceğini ayarlayabilirsiniz."
+      },
+      {
+        "title": "İnsana ulaşmanın başka yolları",
+        "body": "Evet veya hayır gerektiğinde: SMS, WhatsApp ve benzeri. Ve bu uyarıyı evin birkaç operatörüne göndermek, yalnızca sahibine değil."
+      },
+      {
+        "title": "Ücretleri yalnız GEN ile değil",
+        "body": "Mahkeme ücretini başka tokenlarla veya gerçek parayla abonelik olarak doldurmak."
+      },
+      {
+        "title": "Tuhaf durumlar için pazarlık ve mahkeme",
+        "body": "Konuşmayı ve mahkemeyi büyütmek ki alışılmadık durumların da yolu olsun — yalnızca istemek, itiraz, ısrar değil."
+      },
+      {
+        "title": "Foyer üzerinden kilitler",
+        "body": "Kendi elleriniz: Foyer’da bloklar ve denetim, ajanların evi dolaşıp kendi başına hareket etmemesi için."
+      }
+    ]
   },
   "legal": {
     "kicker": "Uyarı",

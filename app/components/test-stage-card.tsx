@@ -128,7 +128,7 @@ export function TestStageCard({
       (current.action.phase === "in_court" || current.action.insisted_at) &&
       !current.events.some((row) => row.court_href),
   );
-  const polling = watching && Boolean(stage?.current?.live) && !pending;
+  const polling = watching && Boolean(stage?.current?.live);
 
   useEffect(() => {
     if (!polling) return;
@@ -178,6 +178,15 @@ export function TestStageCard({
   async function post(body: Record<string, unknown>) {
     setPending(true);
     setError(null);
+    if (body.op === "insist" && stage?.current) {
+      setStage({
+        ...stage,
+        current: {
+          ...stage.current,
+          action: { ...stage.current.action, insisted_at: new Date().toISOString() },
+        },
+      });
+    }
     const response = await fetch(`/api/cabinet/${token}/test`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
@@ -189,6 +198,7 @@ export function TestStageCard({
     setPending(false);
     if (!response.ok || !payload?.data) {
       setError(payload?.error?.message ?? errorLabel);
+      void load().catch(() => undefined);
       return;
     }
     setStage(payload.data);

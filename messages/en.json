@@ -58,6 +58,7 @@
     "statusEscalated": "Needs you",
     "request": "Request",
     "objection": "Objection",
+    "objections": "Objections",
     "decision": "Decision",
     "kindBook": "booking",
     "kindSpend": "payment",
@@ -550,7 +551,40 @@
   "footer": {
     "copy": "© 2026 Foyer",
     "powered": "Powered by",
-    "links": "Legal"
+    "links": "Site"
+  },
+  "roadmap": {
+    "open": "Roadmap",
+    "kicker": "Roadmap",
+    "title": "What is not built yet",
+    "lead": "What we want next. Not a schedule and not a promise.",
+    "hint": "The live cabinet is what ships today.",
+    "items": [
+      {
+        "title": "Hosted agents with hooks",
+        "body": "Foyer would run a checker for the house, with a hook — so you do not have to stand up your own server."
+      },
+      {
+        "title": "Signatures, versions, windows",
+        "body": "Each request is signed, so the house can see it really came from that assistant. You can pin which version of an agent is allowed. You can set how long others may object, and how long the one who asked may answer after an objection."
+      },
+      {
+        "title": "More ways to reach a person",
+        "body": "When a request needs a human yes or no: SMS, WhatsApp, and similar. Also send that ping to several operators of the house, not only the owner."
+      },
+      {
+        "title": "Pay fees without only GEN",
+        "body": "Top up court fees with other tokens, or with real money as a subscription."
+      },
+      {
+        "title": "Bargain and court for odd cases",
+        "body": "Grow the talk and the court so unusual situations have a path too — not only the usual propose, object, insist."
+      },
+      {
+        "title": "Locks through Foyer",
+        "body": "Your own hands: blocks and checks in Foyer, so agents cannot go around the house and act on their own."
+      }
+    ]
   },
   "legal": {
     "kicker": "Legal",

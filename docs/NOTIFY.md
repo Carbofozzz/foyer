@@ -28,7 +28,7 @@ Landing rail ([flow diagram](../app/components/flow-diagram.tsx)): ask → wait 
 |---|---|---|---|---|---|
 | 1 | Wait (silence window closed) | POST to a required hook URL never returned **2xx** (`fetch` `ok`, 200–299). Timeout, network error, missing hook secret, or non-2xx after retries → wake `failed`. Pending retries do not close the window. | `sweep` → `requiredWakeGate` → `escalateUnreachable` | `offline` | Hook POST did not return 2xx |
 | 2 | Talk (bargain) | `bargain_until` passed and the proposer did **not** `insist` (and did not withdraw). | `timeoutBargains` → `escalateOffline` | `offline` | Bargain timed out |
-| 3 | Court never ran | After insist: wallet below fee floor. | `submitForCase` / `submitAppealTx` → `NO_FEE` | `offline` | Could not pay the court |
+| 3 | Court never ran | After insist: wallet below fee floor. | `submitForCase` → `NO_FEE` | `offline` | Could not pay the court |
 | 4 | Court never ran | After insist: submit/RPC fails `COURT_TX_ERROR_LIMIT` times (default 3). | `noteSubmitFail` → `SUBMIT_FAIL` | `offline` | Court tx could not be sent |
 | 5 | Court ran, no usable verdict | Finalized with error / no consensus, same error limit. | `markTxFailed` → `ERROR_ESCALATE` | `offline` | Court tx failed too often |
 | 6 | Court (landing “ask you”) | IC returns `escalate` (charter silent or contradictory). | `advanceCase` → `applyVerdict` on-chain | `onchain` | Court asked you |
