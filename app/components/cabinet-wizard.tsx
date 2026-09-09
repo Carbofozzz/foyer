@@ -8,6 +8,7 @@ import { assembleCharter, type HouseKind, type PricePreference } from "@/lib/i18
 import type { Messages } from "@/lib/i18n/load";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { ConnectIssueFields } from "@/app/components/connect-card";
+import { ContactsWhenList } from "@/app/components/contacts-card";
 import { notifyHouseChanged } from "@/lib/wallet/events";
 import { asHexAddress, GENLAYER_CHAIN_ID, ownerKey } from "@/lib/gen/chain";
 import { parseGen, shortGen } from "@/lib/gen/amount";
@@ -414,6 +415,7 @@ function CabinetWizardModal({
                 </a>
               </div>
             ) : null}
+            <ContactsWhenList t={cabinet} />
           </div>
         ) : null}
 

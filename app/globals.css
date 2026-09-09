@@ -1086,6 +1086,27 @@ button.wallet-balance:disabled {
   font-size: 0.92rem;
 }
 
+.contact-when {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1.35rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-when ul {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.contact-when li {
+  padding-inline: 0.15rem;
+}
+
 .wallet-field {
   display: grid;
   gap: 0.4rem;

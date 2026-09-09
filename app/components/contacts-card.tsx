@@ -210,6 +210,23 @@ export function ContactsCard({
       </div>
       {hint ? <p className="hint">{hint}</p> : null}
       {error ? <p className="error">{errorLabel}</p> : null}
+      <ContactsWhenList t={t} />
+    </div>
+  );
+}
+
+export function ContactsWhenList({ t }: { t: Messages["cabinet"] }) {
+  return (
+    <div className="contact-when">
+      <p className="feed-label">{t.contactsWhen}</p>
+      <ul>
+        <li>{t.contactsWhenHook}</li>
+        <li>{t.contactsWhenBargain}</li>
+        <li>{t.contactsWhenNoFee}</li>
+        <li>{t.contactsWhenSubmit}</li>
+        <li>{t.contactsWhenTx}</li>
+        <li>{t.contactsWhenCourt}</li>
+      </ul>
     </div>
   );
 }
