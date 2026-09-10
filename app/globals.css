@@ -1309,6 +1309,8 @@ label.segment {
 .feed-toolbar {
   display: flex;
   justify-content: flex-end;
+  align-items: baseline;
+  gap: 0.85rem;
   margin: 0;
   flex: 0 0 auto;
 }
@@ -1321,6 +1323,10 @@ label.segment {
   color: var(--muted);
   cursor: pointer;
   box-shadow: none;
+}
+
+.feed-toolbar .quiet.is-on {
+  color: var(--ink);
 }
 
 .feed-toolbar .quiet:hover:not(:disabled) {

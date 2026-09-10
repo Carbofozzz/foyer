@@ -1,10 +1,10 @@
-import { and, eq, lte } from "drizzle-orm";
-import { actions, principals } from "@/lib/db/schema";
+import { and, eq, inArray, lte, ne } from "drizzle-orm";
+import { actions, cases, notifications, principals, wakes } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { recordTimeoutAcks } from "./actions";
 import { enterBargain, timeoutBargains } from "./bargain";
 import { engagedIds, loadActionBundle } from "./bundle";
-import { stepHouseCourt } from "./court";
+import { stepHouseCourt, findHouseNeedingCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
 import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
@@ -87,6 +87,88 @@ export async function sweep(
   }
 
   return { advanced };
+}
+
+const LIVE_STATUSES = ["open", "bargaining", "awaiting_ack", "escalated"] as const;
+
+/** Houses with work for tick: live actions, pending wakes, unsent notify, or an open court. */
+export async function findHousesNeedingSweep(): Promise<string[]> {
+  const db = getDb();
+  const ids = new Set<string>();
+  const add = (rows: { id: string }[]) => {
+    for (const row of rows) ids.add(row.id);
+  };
+  add(
+    await db
+      .selectDistinct({ id: actions.principalId })
+      .from(actions)
+      .where(inArray(actions.status, [...LIVE_STATUSES])),
+  );
+  add(
+    await db
+      .selectDistinct({ id: actions.principalId })
+      .from(wakes)
+      .innerJoin(actions, eq(wakes.actionId, actions.id))
+      .where(eq(wakes.status, "pending")),
+  );
+  add(
+    await db
+      .selectDistinct({ id: actions.principalId })
+      .from(notifications)
+      .innerJoin(actions, eq(notifications.actionId, actions.id))
+      .where(inArray(notifications.status, ["pending", "failed"])),
+  );
+  add(
+    await db
+      .selectDistinct({ id: actions.principalId })
+      .from(cases)
+      .innerJoin(actions, eq(cases.actionId, actions.id))
+      .where(ne(cases.status, "judged")),
+  );
+  const court = await findHouseNeedingCourt(new Date());
+  if (court) ids.add(court);
+  return [...ids];
+}
+
+export async function houseNeedsSweep(principalId: string): Promise<boolean> {
+  const db = getDb();
+  const [live] = await db
+    .select({ id: actions.id })
+    .from(actions)
+    .where(and(eq(actions.principalId, principalId), inArray(actions.status, [...LIVE_STATUSES])))
+    .limit(1);
+  if (live) return true;
+  const [wake] = await db
+    .select({ id: wakes.id })
+    .from(wakes)
+    .innerJoin(actions, eq(wakes.actionId, actions.id))
+    .where(and(eq(actions.principalId, principalId), eq(wakes.status, "pending")))
+    .limit(1);
+  if (wake) return true;
+  const [note] = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .innerJoin(actions, eq(notifications.actionId, actions.id))
+    .where(and(eq(actions.principalId, principalId), inArray(notifications.status, ["pending", "failed"])))
+    .limit(1);
+  if (note) return true;
+  const [court] = await db
+    .select({ id: cases.id })
+    .from(cases)
+    .innerJoin(actions, eq(cases.actionId, actions.id))
+    .where(and(eq(actions.principalId, principalId), ne(cases.status, "judged")))
+    .limit(1);
+  return Boolean(court);
+}
+
+/** Skip the heavy path when this house has nothing on the clock. */
+export async function sweepIfBusy(
+  principalId: string,
+  now: Date,
+  options?: { courts?: number; origin?: string; wakes?: boolean; outbox?: boolean },
+): Promise<{ advanced: number }> {
+  if (!(await houseNeedsSweep(principalId))) return { advanced: 0 };
+  return sweep(principalId, now, options);
 }
 
 export { findHouseNeedingCourt } from "./court";

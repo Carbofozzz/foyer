@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
+import { useCabinetTab } from "@/app/lib/use-cabinet-tab";
 import type { Messages } from "@/lib/i18n/load";
 import { MCP_INBOX_POLL_SEC } from "@/lib/mcp/config";
 import { REPORT_ACK_SEC } from "@/lib/protocol/types";
@@ -88,6 +89,7 @@ export function TestStageCard({
   errorLabel: string;
 }) {
   const router = useRouter();
+  const testTab = useCabinetTab("test");
   const [stage, setStage] = useState<StagePayload | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [watching, setWatching] = useState(false);
@@ -110,6 +112,7 @@ export function TestStageCard({
   }, [token, houseId]);
 
   useEffect(() => {
+    if (!testTab) return;
     load()
       .then((data) => {
         setProposer((id) => id || data.agents[0]?.id || "");
@@ -120,7 +123,7 @@ export function TestStageCard({
         setError(errorLabel);
         setLoaded(true);
       });
-  }, [load, errorLabel]);
+  }, [testTab, load, errorLabel]);
 
   const current = watching ? (stage?.current ?? null) : null;
   const waitingCourtTx = Boolean(
@@ -128,7 +131,7 @@ export function TestStageCard({
       (current.action.phase === "in_court" || current.action.insisted_at) &&
       !current.events.some((row) => row.court_href),
   );
-  const polling = watching && Boolean(stage?.current?.live);
+  const polling = testTab && watching && Boolean(stage?.current?.live);
 
   useEffect(() => {
     if (!polling) return;

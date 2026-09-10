@@ -11,7 +11,7 @@ import { lockedKinds, serializeAction, type HousePrincipal } from "./bundle";
 import { executeAfterAck } from "./execute";
 import { ProtocolError } from "./errors";
 import { isRecord } from "./parse";
-import { sweep } from "./sweep";
+import { sweep, sweepIfBusy } from "./sweep";
 import { MAX_REVISION } from "./types";
 
 type SerializedAction = ReturnType<typeof serializeAction>;
@@ -596,7 +596,7 @@ async function buildEvents(
 }
 
 export async function loadTestStage(principal: HousePrincipal, origin?: string) {
-  await sweep(principal.id, new Date(), { courts: 0, origin, wakes: false });
+  await sweepIfBusy(principal.id, new Date(), { courts: 0, origin, wakes: false });
   const houseAgents = await listStageAgents(principal.id);
   const kinds = lockedKinds(principal);
   const actionId = await latestTestActionId(principal.id);

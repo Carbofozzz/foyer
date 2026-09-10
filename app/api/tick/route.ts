@@ -1,7 +1,5 @@
-import { principals } from "@/lib/db/schema";
-import { getDb } from "@/lib/db";
 import { bearerToken, jsonError, jsonOk } from "@/lib/protocol/http";
-import { findHouseNeedingCourt, sweep } from "@/lib/protocol/sweep";
+import { findHouseNeedingCourt, findHousesNeedingSweep, sweep } from "@/lib/protocol/sweep";
 import { publicOrigin } from "@/lib/mcp/config";
 import { deployEnv } from "@/lib/ops/client";
 import { writeRequestLog } from "@/lib/ops/log";
@@ -27,15 +25,14 @@ async function runTick(request: Request) {
   }
 
   const startedAt = new Date();
-  const db = getDb();
   try {
-    const houses = await db.select({ id: principals.id }).from(principals);
+    const houses = await findHousesNeedingSweep();
     const now = new Date();
     const dueId = await findHouseNeedingCourt(now);
     let advanced = 0;
-    for (const house of houses) {
-      if (house.id === dueId) continue;
-      const result = await sweep(house.id, now, { courts: 0, origin: publicOrigin(request) });
+    for (const id of houses) {
+      if (id === dueId) continue;
+      const result = await sweep(id, now, { courts: 0, origin: publicOrigin(request) });
       advanced += result.advanced;
     }
     if (dueId) {

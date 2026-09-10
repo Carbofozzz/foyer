@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
+import { useCabinetTab } from "@/app/lib/use-cabinet-tab";
 import type { Messages } from "@/lib/i18n/load";
 
 type ContactsData = {
@@ -45,9 +46,10 @@ export function ContactsCard({
   const [waitTelegram, setWaitTelegram] = useState(false);
   const linkedRef = useRef(Boolean(preview?.telegram));
   linkedRef.current = telegram;
+  const contactsTab = useCabinetTab("contacts");
 
   useEffect(() => {
-    if (preview || locked) return;
+    if (preview || locked || !contactsTab) return;
     function apply(data: ContactsData) {
       setEmail(data.email ?? "");
       setVerified(data.email_verified);
@@ -70,17 +72,37 @@ export function ContactsCard({
     }
     load(true);
     function onVis() {
-      if (document.visibilityState === "visible") load(true);
+      if (document.visibilityState === "visible" && !linkedRef.current) load(true);
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
-    const tick = window.setInterval(() => load(!linkedRef.current), 4000);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
-      window.clearInterval(tick);
     };
-  }, [preview, locked, token, houseId]);
+  }, [preview, locked, contactsTab, token, houseId]);
+
+  useEffect(() => {
+    if (preview || locked || !contactsTab || telegram || !waitTelegram) return;
+    const tick = window.setInterval(() => {
+      fetch(`/api/cabinet/${token}/contacts?wake=1`, { headers: cabinetHeaders(houseId) })
+        .then((response) => {
+          if (!response.ok) throw new Error("fail");
+          return response.json() as Promise<{ data: ContactsData }>;
+        })
+        .then((payload) => {
+          setEmail(payload.data.email ?? "");
+          setVerified(payload.data.email_verified);
+          setTelegram(payload.data.telegram);
+          setTelegramHandle(payload.data.telegram_handle ?? null);
+          setTelegramUrl(payload.data.telegram_url ?? null);
+          setConfigured(payload.data.telegram_configured !== false);
+          if (payload.data.telegram) setWaitTelegram(false);
+        })
+        .catch(() => setError(true));
+    }, 4000);
+    return () => window.clearInterval(tick);
+  }, [preview, locked, contactsTab, telegram, waitTelegram, token, houseId]);
 
   async function save() {
     setEmailPending(true);
