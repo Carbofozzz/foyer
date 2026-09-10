@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { jsonError, jsonOk, bearerToken } from "@/lib/protocol/http";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { requireAgent } from "@/lib/protocol/auth";
-import { sweep } from "@/lib/protocol/sweep";
+import { sweepIfBusy } from "@/lib/protocol/sweep";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 import { isRecord, parseAgentWake } from "@/lib/protocol/parse";
@@ -15,7 +15,7 @@ import { connectPublicFields } from "@/lib/protocol/house-clients";
 export async function GET(request: Request) {
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;
-  await sweep(auth.principal.id, new Date());
+  await sweepIfBusy(auth.principal.id, new Date());
   const db = getDb();
   const rows = await db
     .select()

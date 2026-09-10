@@ -196,17 +196,20 @@ function CabinetWizardModal({
     }
     load(false);
     function onVis() {
-      if (document.visibilityState === "visible") load(!linkedRef.current);
+      if (document.visibilityState === "visible" && !linkedRef.current) load(true);
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
-    const tick = window.setInterval(() => load(!linkedRef.current), 4000);
+    const tick =
+      telegramLinked
+        ? null
+        : window.setInterval(() => load(!linkedRef.current), 4000);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
-      window.clearInterval(tick);
+      if (tick) window.clearInterval(tick);
     };
-  }, [step, token, houseId]);
+  }, [step, token, houseId, telegramLinked]);
 
   function goNext() {
     setError(null);

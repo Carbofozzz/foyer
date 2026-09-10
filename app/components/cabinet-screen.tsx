@@ -4,7 +4,7 @@ import { agents } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { inboxForPrincipal } from "@/lib/protocol/actions";
 import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
-import { sweep } from "@/lib/protocol/sweep";
+import { sweepIfBusy } from "@/lib/protocol/sweep";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { formatWhen } from "@/lib/i18n/when";
@@ -51,7 +51,7 @@ export async function CabinetScreen({
   tab?: string;
   t: Messages;
 }) {
-  await sweep(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
+  await sweepIfBusy(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
@@ -183,10 +183,14 @@ export async function CabinetScreen({
                   ) : null
                 }
                 testPass={hideTest}
+                needsDecide={feedItems.map((item) => item.status === "escalated")}
                 showToggle={hideTest.some(Boolean)}
                 empty={t.cabinet.emptyInbox}
+                emptyNeedsYou={t.cabinet.emptyNeedsYou}
                 showLabel={t.cabinet.testRecordsOn}
                 hideLabel={t.cabinet.testRecordsOff}
+                needsYouLabel={t.cabinet.inboxNeedsYou}
+                allEventsLabel={t.cabinet.inboxAllEvents}
                 prevLabel={t.cabinet.pagePrev}
                 nextLabel={t.cabinet.pageNext}
                 pageOf={t.cabinet.pageOf}

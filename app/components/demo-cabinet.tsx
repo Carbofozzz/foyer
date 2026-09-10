@@ -6,7 +6,7 @@ import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
-import { PagedList } from "@/app/components/paged-list";
+import { InboxFeed } from "@/app/components/inbox-feed";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { DEMO_CASES, DEMO_TOKEN, DEMO_TREASURY, demoConnect, type DemoCase } from "@/lib/demo/preview";
 
@@ -60,17 +60,25 @@ export function DemoCabinet({
         </nav>
         <div className="cabinet-scroll">
           <div data-cabinet-pane="inbox">
-            <div className="agent-chips-block">
-              <ul className="agent-chips">
-                {chips.map((chip) => (
-                  <li key={chip.name} className={chip.asked > 0 ? "agent-live" : "agent-wait"}>
-                    {chip.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <PagedList
-              className="feed"
+            <InboxFeed
+              chips={
+                <ul className="agent-chips">
+                  {chips.map((chip) => (
+                    <li key={chip.name} className={chip.asked > 0 ? "agent-live" : "agent-wait"}>
+                      {chip.name}
+                    </li>
+                  ))}
+                </ul>
+              }
+              testPass={DEMO_CASES.map(() => false)}
+              needsDecide={DEMO_CASES.map((row) => row.outcome === "escalate")}
+              showToggle={false}
+              empty={t.cabinet.emptyInbox}
+              emptyNeedsYou={t.cabinet.emptyNeedsYou}
+              showLabel={t.cabinet.testRecordsOn}
+              hideLabel={t.cabinet.testRecordsOff}
+              needsYouLabel={t.cabinet.inboxNeedsYou}
+              allEventsLabel={t.cabinet.inboxAllEvents}
               prevLabel={t.cabinet.pagePrev}
               nextLabel={t.cabinet.pageNext}
               pageOf={t.cabinet.pageOf}
@@ -78,7 +86,7 @@ export function DemoCabinet({
               {DEMO_CASES.map((row) => (
                 <DemoFeedRow key={row.id} row={row} locale={locale} cabinet={t.cabinet} replay={t.replay} />
               ))}
-            </PagedList>
+            </InboxFeed>
           </div>
           <div data-cabinet-pane="treasury">
             <TreasuryCard

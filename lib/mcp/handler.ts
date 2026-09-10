@@ -4,7 +4,7 @@ import { insistAction, reviseAction, withdrawAction } from "@/lib/protocol/barga
 import { reportAction, reportBody } from "@/lib/protocol/report";
 import type { HouseAuth } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
-import { sweep } from "@/lib/protocol/sweep";
+import { sweepIfBusy } from "@/lib/protocol/sweep";
 import { ABUSE } from "@/lib/protocol/abuse";
 import { isRecord } from "@/lib/protocol/parse";
 import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
@@ -127,7 +127,6 @@ export async function handleMcpGet(request: Request): Promise<Response> {
   if ("error" in auth && auth.error) {
     return withCors(auth.error);
   }
-  await sweep(auth.principal.id, new Date(), { origin: publicOrigin(request) });
   return withCors(
     Response.json({
       data: {
@@ -188,7 +187,13 @@ async function readRpc(request: Request): Promise<{ rpc: Rpc } | { error: Respon
 }
 
 async function dispatch(auth: HouseAuth, method: string, params: unknown, origin: string) {
-  await sweep(auth.principal.id, new Date(), { origin });
+  const quiet =
+    method === "initialize" ||
+    method === "notifications/initialized" ||
+    method === "initialized" ||
+    method === "ping" ||
+    method === "tools/list";
+  if (!quiet) await sweepIfBusy(auth.principal.id, new Date(), { origin });
   if (method === "initialize") {
     return {
       protocolVersion: "2024-11-05",
