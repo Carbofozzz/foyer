@@ -141,7 +141,7 @@ function CabinetWizardModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const [kind, setKind] = useState<HouseKind>(houseType);
+  const kind = houseType;
   const [spendLimit, setSpendLimit] = useState("500");
   const [price, setPrice] = useState<PricePreference>("save");
   const [human, setHuman] = useState("");
@@ -249,7 +249,7 @@ function CabinetWizardModal({
     const response = await fetch(`/api/cabinet/${token}/wizard`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ constitution: text, type: kind, email, agent, locale }),
+      body: JSON.stringify({ constitution: text, email, agent, locale }),
     });
     setPending(false);
     if (!response.ok) {
@@ -286,32 +286,17 @@ function CabinetWizardModal({
           <div className="stack">
             <h3>{wizard.rulesTitle}</h3>
             <p className="hint">{wizard.rulesLead}</p>
-            <div className="form-grid">
-              <label>
-                {wizard.qType}
-                <select
-                  value={kind}
-                  onChange={(event) => {
-                    setKind(event.target.value as HouseKind);
-                    setFollowConstructor(true);
-                  }}
-                >
-                  <option value="personal">{wizard.typePersonal}</option>
-                  <option value="org">{wizard.typeOrg}</option>
-                </select>
-              </label>
-              <label>
-                {wizard.qSpend}
-                <input
-                  value={spendLimit}
-                  onChange={(event) => {
-                    setSpendLimit(event.target.value);
-                    setFollowConstructor(true);
-                  }}
-                  inputMode="numeric"
-                />
-              </label>
-            </div>
+            <label>
+              {wizard.qSpend}
+              <input
+                value={spendLimit}
+                onChange={(event) => {
+                  setSpendLimit(event.target.value);
+                  setFollowConstructor(true);
+                }}
+                inputMode="numeric"
+              />
+            </label>
             {kind === "personal" ? (
               <fieldset className="wizard-choice">
                 <legend>{wizard.qPrice}</legend>

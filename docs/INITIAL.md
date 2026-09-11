@@ -4,7 +4,7 @@ Intra-principal court and gateway. Track: **Onchain Justice**.
 
 This file is the product as it exists: the idea, the running implementation, and a short backlog. Further protocol change is [ORCHESTRATE.md](ORCHESTRATE.md). If this file and the code disagree, follow the code, then update this file in the same change.
 
-Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md).
+Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md).
 
 ---
 
@@ -134,6 +134,7 @@ Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history)
 
 - Wallet login; house treasury is a different address, topped up from the signed-in wallet (Studio faucet below the floor).
 - Owner edits the charter. Operator can appeal / connect / deposit. Observer reads. Owner alone withdraws, invites, writes the charter.
+- Company house is not a wizard choice. Direction: [ORG.md](ORG.md) — employees are chats (MCP), corp services are hooks, only admins need a Foyer login.
 - Connect: name an assistant, issue a key, one MCP block + prompt lines (including: poll inbox at least every 30 s after propose). Chat = outbound. A checker needs a hook URL. No auto-mint Travel.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
@@ -143,7 +144,7 @@ Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution tex
 
 ### Onboarding
 
-1. Sign in with the wallet (one wallet, one house). Personal or org in the wizard.
+1. Sign in with the wallet (one wallet, one house). Wizard does not pick company vs personal.
 2. Constitution from a short constructor (editable).
 3. Optional first assistant. Chat = MCP paste after save. A checker needs a hook URL.
 4. Optional house top-up (your wallet or Studio faucet) and a contact email.
@@ -215,7 +216,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
-- Org: optional notice fan-out to operators; who withdraws vs who only reads is already in members.
+- Org: People tab and roles ship; notify fan-out and the rest of the company house are [ORG.md](ORG.md).
 - **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.
 
 ---

@@ -83,6 +83,7 @@ export function MembersCard({
   const body = (
     <>
       <p className="hint">{t.membersLead}</p>
+      <p className="hint">{t.membersRoles}</p>
       {items ? (
         <ul className="member-list">
           {items.map((item) => (
