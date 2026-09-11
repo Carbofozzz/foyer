@@ -12,6 +12,7 @@ export function WalletButton({
   connectLabel,
   signingInLabel,
   cabinetLabel,
+  adminLabel,
   initialAddress,
 }: {
   locale: string;
@@ -19,6 +20,7 @@ export function WalletButton({
   connectLabel: string;
   signingInLabel?: string;
   cabinetLabel?: string;
+  adminLabel?: string;
   initialAddress?: string | null;
 }) {
   const { address, isConnected } = useAccount();
@@ -26,14 +28,21 @@ export function WalletButton({
   const { signMessageAsync } = useSignMessage();
   const [sessionAddr, setSessionAddr] = useState<string | null>(initialAddress ?? null);
   const [sessionReady, setSessionReady] = useState(initialAddress !== undefined);
+  const [admin, setAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     function load() {
       fetch("/api/me")
-        .then((response) => response.json() as Promise<{ data: { address: string | null } }>)
-        .then((payload) => setSessionAddr(payload.data.address))
-        .catch(() => setSessionAddr(null))
+        .then((response) => response.json() as Promise<{ data: { address: string | null; admin?: boolean } }>)
+        .then((payload) => {
+          setSessionAddr(payload.data.address);
+          setAdmin(Boolean(payload.data.admin));
+        })
+        .catch(() => {
+          setSessionAddr(null);
+          setAdmin(false);
+        })
         .finally(() => setSessionReady(true));
     }
     load();
@@ -65,7 +74,10 @@ export function WalletButton({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message, signature }),
       });
-      if (verifyResponse.ok) notifyAuthChanged();
+      if (verifyResponse.ok) {
+        notifyAuthChanged();
+        if (window.location.pathname.includes("/cabinet/admin")) window.location.reload();
+      }
     } finally {
       setBusy(false);
     }
@@ -83,6 +95,11 @@ export function WalletButton({
               {cabinetLabel ? (
                 <a className="primary" href={`/${locale}/cabinet`}>
                   {cabinetLabel}
+                </a>
+              ) : null}
+              {adminLabel && admin ? (
+                <a className="ghost" href={`/${locale}/cabinet/admin`}>
+                  {adminLabel}
                 </a>
               ) : null}
               <span className="mono muted">{account?.displayName ?? shortAddr(sessionAddr)}</span>

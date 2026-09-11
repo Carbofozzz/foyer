@@ -21,6 +21,7 @@ export function HomeGate({
         connectLabel={t.signIn}
         signingInLabel={t.signingIn}
         cabinetLabel={t.openCabinet}
+        adminLabel={t.openAdmin}
         initialAddress={initialAddress}
       />
     </div>

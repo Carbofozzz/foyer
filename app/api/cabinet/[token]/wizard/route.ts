@@ -19,12 +19,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   if (!isRecord(body) || typeof body.constitution !== "string") {
     return jsonError("bad_request", "constitution is required", 400);
   }
-  const type = body.type === "org" || body.type === "personal" ? body.type : undefined;
   const locale = typeof body.locale === "string" && isLocale(body.locale) ? body.locale : "en";
   try {
     await finishWizard(auth.principal, {
       constitution: body.constitution,
-      type,
       email: body.email,
       locale,
       origin: publicOrigin(request),
