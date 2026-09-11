@@ -137,6 +137,7 @@ Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history)
 - Connect: name an assistant, issue a key, one MCP block + prompt lines (including: poll inbox at least every 30 s after propose). Chat = outbound. A checker needs a hook URL. No auto-mint Travel.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
+- Ops: `/:locale/cabinet/admin` for the wallet in `FOYER_ADMIN_ADDRESS` (same session). Waitlist emails, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house. No keys, no charter. Unset env → 404.
 
 Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution text the principal typed is not auto-translated.
 

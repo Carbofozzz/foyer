@@ -124,6 +124,7 @@ export async function CabinetScreen({
                 locale={locale}
                 signOutLabel={t.cabinet.signOut}
                 connectLabel={t.home.signIn}
+                adminLabel={t.home.openAdmin}
                 initialAddress={viewerAddress ?? principal.ownerAddress}
               />
             ) : null}
