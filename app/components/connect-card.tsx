@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { CopyButton } from "@/app/components/copy-button";
 import { TechCard } from "@/app/components/tech-card";
+import { useCabinetTab } from "@/app/lib/use-cabinet-tab";
 import type { Messages } from "@/lib/i18n/load";
 import type { WakeKind } from "@/lib/protocol/types";
+import { HOUSE_EVENT } from "@/lib/wallet/events";
 
 type IssuedAgent = {
   id: string;
@@ -163,6 +165,7 @@ export function ConnectCard({
   preview?: ConnectPayload | null;
 }) {
   const router = useRouter();
+  const connectTab = useCabinetTab("connect");
   const [agents, setAgents] = useState<IssuedAgent[]>(() => (preview ? [agentFromPreview(preview)] : []));
   const [promptLines, setPromptLines] = useState<string[]>(() => preview?.prompt_lines ?? []);
   const [selected, setSelected] = useState<string>(() => (preview ? "demo" : ""));
@@ -174,11 +177,12 @@ export function ConnectCard({
   const [pending, setPending] = useState(false);
   const [loaded, setLoaded] = useState(Boolean(preview));
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (preview) {
       setAgents([agentFromPreview(preview)]);
       setPromptLines(preview.prompt_lines);
       setSelected("demo");
+      setLoaded(true);
       return;
     }
     fetch(`/api/cabinet/${token}/connect`, { headers: cabinetHeaders(houseId) })
@@ -191,7 +195,9 @@ export function ConnectCard({
       .then((payload) => {
         setAgents(payload.data.agents);
         setPromptLines(payload.data.prompt_lines);
-        setSelected(payload.data.agents[0]?.id ?? "");
+        setSelected((id) =>
+          payload.data.agents.some((row) => row.id === id) ? id : (payload.data.agents[0]?.id ?? ""),
+        );
         setLoaded(true);
       })
       .catch(() => {
@@ -199,6 +205,20 @@ export function ConnectCard({
         setLoaded(true);
       });
   }, [preview, token, houseId, errorLabel]);
+
+  useEffect(() => {
+    if (preview) {
+      load();
+      return;
+    }
+    if (!connectTab) return;
+    load();
+    function onHouse() {
+      load();
+    }
+    window.addEventListener(HOUSE_EVENT, onHouse);
+    return () => window.removeEventListener(HOUSE_EVENT, onHouse);
+  }, [preview, connectTab, load]);
 
   const current = agents.find((row) => row.id === selected) ?? agents[0] ?? null;
 
