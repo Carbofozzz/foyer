@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, gt, ne, or, sql } from "drizzle-orm";
-import { principals, telegramBotState, telegramLinkTokens } from "@/lib/db/schema";
+import { principals, telegramBotState, telegramLinkTokens, houseContacts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
@@ -79,25 +79,30 @@ async function ensureTelegramLinkColumn(): Promise<void> {
   await getDb().execute(
     sql`ALTER TABLE telegram_link_tokens ADD COLUMN IF NOT EXISTS payload text NOT NULL DEFAULT ''`,
   );
+  await getDb().execute(sql`ALTER TABLE telegram_link_tokens ADD COLUMN IF NOT EXISTS contact_id text`);
 }
 
-export async function mintTelegramStartUrl(principal: HousePrincipal): Promise<string | null> {
+export async function mintTelegramStartUrl(principal: HousePrincipal, contactId?: string): Promise<string | null> {
   const username = botUsername();
   if (!botToken() || !username) return null;
   await ensureTelegramLinkColumn().catch(() => undefined);
   const db = getDb();
   try {
+    const match = contactId
+      ? and(eq(telegramLinkTokens.principalId, principal.id), eq(telegramLinkTokens.contactId, contactId))
+      : and(eq(telegramLinkTokens.principalId, principal.id), sql`${telegramLinkTokens.contactId} is null`);
     const [existing] = await db
       .select()
       .from(telegramLinkTokens)
-      .where(and(eq(telegramLinkTokens.principalId, principal.id), gt(telegramLinkTokens.expiresAt, new Date())))
+      .where(and(match, gt(telegramLinkTokens.expiresAt, new Date())))
       .limit(1);
     if (existing?.payload) return `https://t.me/${username}?start=${existing.payload}`;
     const raw = randomBytes(16).toString("hex");
-    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principal.id));
+    await db.delete(telegramLinkTokens).where(match);
     await db.insert(telegramLinkTokens).values({
       tokenHash: hashSecret(raw),
       principalId: principal.id,
+      contactId: contactId ?? null,
       payload: raw,
       expiresAt: new Date(Date.now() + LINK_MS),
     });
@@ -113,7 +118,9 @@ export async function unlinkTelegram(principalId: string): Promise<void> {
     .update(principals)
     .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
     .where(eq(principals.id, principalId));
-  await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, principalId));
+  await db.delete(telegramLinkTokens).where(
+    and(eq(telegramLinkTokens.principalId, principalId), sql`${telegramLinkTokens.contactId} is null`),
+  );
 }
 
 function telegramHandleFromMessage(message: { from?: { username?: unknown; first_name?: unknown } }): string | null {
@@ -239,6 +246,47 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
   }
 
   const handle = telegramHandleFromMessage(message as { from?: { username?: unknown; first_name?: unknown } });
+  if (row.contactId) {
+    const { ensureHouseContactsSchema, assertUniqueHouseContact } = await import("./house-contacts");
+    await ensureHouseContactsSchema();
+    const [house] = await db.select({ contactLocale: principals.contactLocale }).from(principals).where(eq(principals.id, row.principalId)).limit(1);
+    const locale = isLocale(house?.contactLocale) ? house.contactLocale : "en";
+    try {
+      await assertUniqueHouseContact(row.principalId, { exceptId: row.contactId, telegramChatId: chatId });
+    } catch {
+      await sendTelegram(chatId, notifyCopy(locale).telegramTaken).catch(() => undefined);
+      return;
+    }
+    await db
+      .update(houseContacts)
+      .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
+      .where(
+        and(
+          eq(houseContacts.principalId, row.principalId),
+          eq(houseContacts.telegramChatId, chatId),
+          ne(houseContacts.id, row.contactId),
+        ),
+      );
+    await db
+      .update(principals)
+      .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
+      .where(eq(principals.telegramChatId, chatId));
+    const [claimed] = await db
+      .update(houseContacts)
+      .set({ telegramChatId: chatId, telegramLinkedAt: new Date(), telegramHandle: handle })
+      .where(eq(houseContacts.id, row.contactId))
+      .returning({ id: houseContacts.id });
+    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.contactId, row.contactId));
+    if (!claimed) return;
+    await sendTelegram(chatId, notifyCopy(locale).telegramLinked).catch(() => undefined);
+    return;
+  }
+  const { ensureHouseContactsSchema } = await import("./house-contacts");
+  await ensureHouseContactsSchema();
+  await db
+    .update(houseContacts)
+    .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
+    .where(eq(houseContacts.telegramChatId, chatId));
   await db
     .update(principals)
     .set({ telegramChatId: null, telegramLinkedAt: null, telegramHandle: null })
@@ -248,7 +296,9 @@ export async function handleTelegramUpdate(body: unknown): Promise<void> {
     .set({ telegramChatId: chatId, telegramLinkedAt: new Date(), telegramHandle: handle })
     .where(and(eq(principals.id, row.principalId), sql`${principals.telegramChatId} is distinct from ${chatId}`))
     .returning({ id: principals.id, contactLocale: principals.contactLocale });
-  await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, row.principalId));
+  await db.delete(telegramLinkTokens).where(
+    and(eq(telegramLinkTokens.principalId, row.principalId), sql`${telegramLinkTokens.contactId} is null`),
+  );
   if (!claimed) return;
   const locale = isLocale(claimed.contactLocale) ? claimed.contactLocale : "en";
   await sendTelegram(chatId, notifyCopy(locale).telegramLinked).catch(() => undefined);

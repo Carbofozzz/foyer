@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.44.0",
+      version: "0.45.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -207,6 +207,37 @@ export function openApiSpec(origin: string) {
             telegram: { type: "boolean" },
             telegram_handle: { oneOf: [{ type: "string" }, { type: "null" }] },
             telegram_url: { oneOf: [{ type: "string" }, { type: "null" }] },
+            telegram_configured: { type: "boolean" },
+            targets: {
+              type: "array",
+              description: "Org people. Policy is optional, one per person.",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  label: { type: "string" },
+                  email: { oneOf: [{ type: "string" }, { type: "null" }] },
+                  email_verified: { type: "boolean" },
+                  telegram: { type: "boolean" },
+                  telegram_handle: { oneOf: [{ type: "string" }, { type: "null" }] },
+                  telegram_url: { oneOf: [{ type: "string" }, { type: "null" }] },
+                  policy: {
+                    oneOf: [
+                      { type: "null" },
+                      {
+                        type: "object",
+                        properties: {
+                          kind: { type: "string", enum: ["all", "points", "objector"] },
+                          reasons: { type: "array", items: { type: "string" } },
+                          objector_id: { oneOf: [{ type: "string" }, { type: "null" }] },
+                        },
+                      },
+                    ],
+                  },
+                },
+                required: ["id", "label", "email", "email_verified", "telegram"],
+              },
+            },
           },
           required: ["email", "email_verified", "telegram"],
         },
@@ -469,13 +500,13 @@ export function openApiSpec(origin: string) {
         parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
         get: operation({
           id: "getContacts",
-          summary: "House owner email and whether it is confirmed",
+          summary: "Owner email/Telegram, or org people plus their notify policies",
           auth: "session",
           ok: "Contacts",
         }),
         post: operation({
           id: "saveContacts",
-          summary: "Save email, resend confirm, or unlink Telegram",
+          summary: "Save owner email, or org people and one notify policy per person",
           auth: "session",
         }),
       },

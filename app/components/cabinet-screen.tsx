@@ -256,6 +256,7 @@ export async function CabinetScreen({
                   houseId={houseId}
                   locale={locale}
                   canEdit={manage}
+                  houseType={principal.type === "org" ? "org" : "personal"}
                   t={t.cabinet}
                   errorLabel={t.cabinet.error}
                 />

@@ -7,6 +7,19 @@ export const REASON_TX_ERROR = "The court transaction finalized with an error to
 
 export type NotifyReasonKey = "hookFailed" | "bargainTimeout" | "noFee" | "submitFail" | "txError" | "courtAsked";
 
+export const NOTIFY_REASON_KEYS: readonly NotifyReasonKey[] = [
+  "hookFailed",
+  "bargainTimeout",
+  "noFee",
+  "submitFail",
+  "txError",
+  "courtAsked",
+];
+
+export function isNotifyReason(raw: unknown): raw is NotifyReasonKey {
+  return typeof raw === "string" && (NOTIFY_REASON_KEYS as readonly string[]).includes(raw);
+}
+
 export function notifyReasonKey(reasoning: string, judge: string): NotifyReasonKey {
   if (reasoning === REASON_HOOK_FAILED) return "hookFailed";
   if (reasoning === REASON_BARGAIN_TIMEOUT) return "bargainTimeout";

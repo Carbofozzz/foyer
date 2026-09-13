@@ -35,6 +35,43 @@ export const principals = pgTable("principals", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Org person we can reach. Routing lives on house_contact_policies. */
+export const houseContacts = pgTable(
+  "house_contacts",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    label: text("label").notNull().default(""),
+    email: text("email"),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    telegramChatId: text("telegram_chat_id"),
+    telegramHandle: text("telegram_handle"),
+    telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_contacts_principal").on(table.principalId)],
+);
+
+/** One notify policy per org person. */
+export const houseContactPolicies = pgTable(
+  "house_contact_policies",
+  {
+    id: text("id").primaryKey(),
+    contactId: text("contact_id")
+      .notNull()
+      .unique()
+      .references(() => houseContacts.id),
+    /** all | points | objector */
+    kind: text("kind").notNull(),
+    reasons: jsonb("reasons").$type<string[]>().notNull().default([]),
+    objectorId: text("objector_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_contact_policies_contact").on(table.contactId)],
+);
+
 export const agents = pgTable("agents", {
   id: text("id").primaryKey(),
   principalId: text("principal_id")
@@ -297,6 +334,7 @@ export const emailConfirmTokens = pgTable("email_confirm_tokens", {
   principalId: text("principal_id")
     .notNull()
     .references(() => principals.id),
+  contactId: text("contact_id"),
   email: text("email").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -307,6 +345,7 @@ export const telegramLinkTokens = pgTable("telegram_link_tokens", {
   principalId: text("principal_id")
     .notNull()
     .references(() => principals.id),
+  contactId: text("contact_id"),
   payload: text("payload").notNull().default(""),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

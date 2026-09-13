@@ -108,11 +108,11 @@ On Connect, each agent has a prompt (`agents.system_prompt`). The field is prefi
 
 Done: CEO chat and junior chat can have different instructions without a second constitution. Gateway still does not object. OpenAPI `0.44.0`.
 
-### Org 3 — Contacts on the org house
+### Org 3 — Contacts on the org house — shipped
 
-Table (or rows) for notify targets on a principal: email / Telegram, not `house_members`. Admin CRUD on the org cabinet. [NOTIFY.md](NOTIFY.md) `sweep` send: if the house has this list, use it; **else** today’s owner email/Telegram. Personal houses with no list: zero behavior change.
+Two jobs on the org Contacts tab: **people** (`house_contacts`: name, email, Telegram) and **policies** (`house_contact_policies`, at most one per person). Email and Telegram are unique per org. A person with no policy gets no letter. Policy kinds: every escalate point; chosen points; chosen points only if a named house agent objected. `sweep` fans out to reachable people whose policy matches that ping. Personal house Contacts unchanged.
 
-Done: org can ping people who never sign in. One admin, zero operators, still works.
+Done: people and routing are separate; routing is not a blast and not “who is in the fight” by default. OpenAPI `0.45.0`.
 
 ### Org 4 — Decide without extra operators
 

@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { emailConfirmTokens, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
@@ -9,6 +9,7 @@ import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { notifyCopy, sendMail } from "./mail";
 import { mintTelegramStartUrl, drainTelegramUpdates, telegramConfigured } from "./telegram";
+import { listHouseContacts, listHouseDesks, confirmContactEmail } from "./house-contacts";
 
 const CONFIRM_MS = 48 * 60 * 60 * 1000;
 
@@ -54,7 +55,9 @@ export async function queueConfirmEmail(principal: HousePrincipal, origin?: stri
   if (!email) return;
   const raw = mintToken("emc");
   const db = getDb();
-  await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.principalId, principal.id));
+  await db.delete(emailConfirmTokens).where(
+    and(eq(emailConfirmTokens.principalId, principal.id), sql`${emailConfirmTokens.contactId} is null`),
+  );
   await db.insert(emailConfirmTokens).values({
     tokenHash: hashSecret(raw),
     principalId: principal.id,
@@ -77,6 +80,8 @@ export async function queueConfirmEmail(principal: HousePrincipal, origin?: stri
 }
 
 export async function confirmEmailToken(raw: string): Promise<{ ok: boolean }> {
+  const { ensureHouseContactsSchema } = await import("./house-contacts");
+  await ensureHouseContactsSchema();
   const tokenHash = hashSecret(raw);
   const db = getDb();
   const [row] = await db
@@ -85,6 +90,11 @@ export async function confirmEmailToken(raw: string): Promise<{ ok: boolean }> {
     .where(and(eq(emailConfirmTokens.tokenHash, tokenHash), gt(emailConfirmTokens.expiresAt, new Date())))
     .limit(1);
   if (!row) throw new ProtocolError("not_found", "Unknown or expired link", 404);
+  if (row.contactId) {
+    await confirmContactEmail(row.contactId, row.email);
+    await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.contactId, row.contactId));
+    return { ok: true };
+  }
   await db
     .update(principals)
     .set({
@@ -92,7 +102,9 @@ export async function confirmEmailToken(raw: string): Promise<{ ok: boolean }> {
       emailVerifiedAt: new Date(),
     })
     .where(eq(principals.id, row.principalId));
-  await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.principalId, row.principalId));
+  await db.delete(emailConfirmTokens).where(
+    and(eq(emailConfirmTokens.principalId, row.principalId), sql`${emailConfirmTokens.contactId} is null`),
+  );
   return { ok: true };
 }
 
@@ -112,12 +124,14 @@ export async function contactsPayload(principal: HousePrincipal, opts?: { drain?
   const view = contactsView(row);
   const configured = telegramConfigured();
   let telegram_url: string | null = null;
-  if (!view.telegram && configured) {
+  if (row.type !== "org" && !view.telegram && configured) {
     telegram_url = await mintTelegramStartUrl(row);
   }
   return {
     ...view,
     telegram_configured: configured,
     telegram_url,
+    targets: row.type === "org" ? await listHouseContacts(row.id) : [],
+    desks: row.type === "org" ? await listHouseDesks(row.id) : [],
   };
 }

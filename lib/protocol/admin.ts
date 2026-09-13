@@ -10,6 +10,8 @@ import {
   enrollments,
   executions,
   houseMembers,
+  houseContacts,
+  houseContactPolicies,
   notifications,
   objections,
   principals,
@@ -25,6 +27,7 @@ import { ownerKey } from "@/lib/gen/chain";
 import { ProtocolError } from "./errors";
 import { readSession } from "./session";
 import { parseWaitlistEmail } from "./waitlist";
+import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
 
 export type AdminWaitlistRow = {
   email: string;
@@ -270,6 +273,17 @@ export async function deleteHouse(houseId: string) {
   await db.delete(enrollments).where(eq(enrollments.principalId, id));
   await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.principalId, id));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, id));
+  await ensureHouseContactsSchema();
+  const people = await db.select({ id: houseContacts.id }).from(houseContacts).where(eq(houseContacts.principalId, id));
+  if (people.length > 0) {
+    await db.delete(houseContactPolicies).where(
+      inArray(
+        houseContactPolicies.contactId,
+        people.map((row) => row.id),
+      ),
+    );
+  }
+  await db.delete(houseContacts).where(eq(houseContacts.principalId, id));
   await db.delete(walletTransfers).where(eq(walletTransfers.principalId, id));
   await db.delete(houseMembers).where(eq(houseMembers.principalId, id));
   await db.delete(spendReceipts).where(eq(spendReceipts.principalId, id));

@@ -1107,6 +1107,73 @@ button.wallet-balance:disabled {
   font-size: 0.92rem;
 }
 
+.contact-pair {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.1rem 0 1.2rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-pair h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.contact-pair.is-new {
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card, #fff) 88%, var(--hairline));
+}
+
+.contact-cover {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.contact-people .contact-cell-link {
+  display: inline;
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.contact-people .contact-cell-link:hover,
+.contact-people .contact-cell-link:focus-visible {
+  background: none;
+  color: var(--ink);
+}
+
+.contact-add-row {
+  display: grid;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+@media (min-width: 640px) {
+  .contact-add-row {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.contact-cover legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .contact-when {
   display: grid;
   gap: 0.45rem;
