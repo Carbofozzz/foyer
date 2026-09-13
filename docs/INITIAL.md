@@ -134,7 +134,7 @@ Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history)
 
 - Wallet login; house treasury is a different address, topped up from the signed-in wallet (Studio faucet below the floor).
 - Owner edits the charter. Operator can appeal / connect / deposit. Observer reads. Owner alone withdraws, invites, writes the charter.
-- Company house is not a wizard choice. Direction: [ORG.md](ORG.md) — employees are chats (MCP), corp services are hooks, only admins need a Foyer login.
+- Company house is not a wizard choice. Direction and slices: [ORG.md](ORG.md) — extra principal under the same account; extend the live house, do not fork it.
 - Connect: name an assistant, issue a key, one MCP block + prompt lines (including: poll inbox at least every 30 s after propose). Chat = outbound. A checker needs a hook URL. No auto-mint Travel.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
@@ -216,7 +216,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
-- Org: People tab and roles ship; notify fan-out and the rest of the company house are [ORG.md](ORG.md).
+- Org: leftover People tab only. Implementation slices in [ORG.md](ORG.md).
 - **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.
 
 ---

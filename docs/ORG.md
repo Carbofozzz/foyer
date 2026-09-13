@@ -6,6 +6,8 @@ Org is **not** “every employee signs into Foyer.” Most people with a corpora
 
 This file is the product we want. The live app is still a personal house ([INITIAL.md](INITIAL.md)). The wizard does not switch type. Protocol change stays [ORCHESTRATE.md](ORCHESTRATE.md).
 
+**Extend, do not fork.** Org must not change the personal login, wizard, propose/object/bargain/insist, court, or `sweep`. New tables, routes, and cabinet panes may exist; they sit **beside** the current house. A user who never opens an org sees today’s flow and today’s code paths. If a change would rewrite `ensureHouseForOwner`, agent keys, or default `/cabinet`, it is the wrong change.
+
 ---
 
 ## Model
@@ -20,6 +22,28 @@ This file is the product we want. The live app is still a personal house ([INITI
 The gateway client is always an agent. A human never proposes. An employee who never logs in is still in the loop: their chat is.
 
 Silence among chats is still consent. An org house without at least one hook does not run unattended — same as personal.
+
+---
+
+## Account vs house (do not flip type)
+
+Do **not** turn the personal house into a company. Sign-in still means: this wallet has a **personal** house. An organization is an **extra principal** under the same account — later a paid add-on. One user, two (or more) cabinets. Switch already exists: `/cabinet` is yours; `/cabinet?house=` is another house you may open.
+
+That keeps the live construction:
+
+| Keep | Why |
+|---|---|
+| `ensureHouseForOwner` → one personal row | Login, wizard, treasury payer stay as today. |
+| `owner_address` unique on the **personal** house | `findHouseByOwner` and default `/cabinet` stay unambiguous. |
+| Agent key names **one** house | Personal chats and corp chats never share a key. |
+| One IC + one house wallet **per** principal | Org fees and verdicts do not land on the personal treasury. |
+| Gateway / court / `sweep` unchanged | Org is another house in the same protocol, not a fork. |
+
+How to attach the org without breaking uniqueness: the company row is `type = org` with **`owner_address` null** (or not the unique personal slot). The creating wallet is `house_members.role = owner`. `listHousesFor` already unions memberships — it will show the org next to “yours.” `accessFor` already opens `?house=` for members.
+
+Paid later: gate **create org house**, not a type dropdown. Personal stays free. Do not migrate leftover `org` flags on personal rows; leave them or set back to `personal`.
+
+Helpers (split rights, contacts, decide) live **on the org house**. They are not extra logins for every employee. Employees remain outbound agents on that org principal.
 
 ---
 
@@ -60,38 +84,74 @@ Same loop: propose → object → bargain → insist → court → report. Permi
 
 ---
 
-## Build order (when we pick org up)
+## Implementation plan
 
-Keep tools-and-keys. No UI-opened cases. Gateway never objects.
+Do not start a later slice before the previous one is done. After each slice: this file, [INITIAL.md](INITIAL.md) (one bullet), `AGENTS.md` log. **Forbidden in every slice:** edits to propose/object/bargain/insist, `contracts/court.py` outcomes, `sweep()` control flow, `ensureHouseForOwner`, unique personal `owner_address`, default `/cabinet` without `?house=`, wizard type dropdown.
 
-### First slice
+Demo, spawn, and a user with only a personal house must behave as today.
 
-- House flag `org` (admin-only or ops), not a confusing wizard dropdown.
-- **Per-agent prompt** in Connect (stored, copyable). Different desks, different limits in the text the model sees.
-- **Contacts list** separate from login: add emails / Telegram for notify. Operators optional.
-- Human-decide still works with **one** admin and **no** extra operators.
+### Org 1 — Second principal
 
-### Next
+Create an org house under the signed-in account. Personal login unchanged.
 
-- Configurable cabinet rights (edit prompts / treasury / decide / read) instead of three fixed roles.
-- Charter clauses the court can apply **per proposer** (spend cap by agent, who may book). Propose stays without `kind`; identity is the agent key.
-- Route escalate: notify set vs decide set; optional “this fight → this person.”
-- Audit export.
+- `POST /api/orgs` (session). Insert `principals` with `type=org`, `owner_address` **null**, own court wallet. Insert `house_members` owner = session address.
+- `listHousesFor`: include that membership (already does). Default `/cabinet` still `findHouseByOwner` (personal).
+- **HouseSwitch:** personal `own` → `/cabinet`. Org, even if you created it → `/cabinet?house=`. Today `own` always drops `?house=` — that would hide the org. Fix only the switch, not `openCabinet("me")`.
+- Cabinet: “Add organization” (name). No billing yet.
+- Leftover personal rows with `type=org`: leave or set `personal`. Do not use them as the new org.
 
-### Later
+Done: one wallet, two cabinets; personal flow untouched. OpenAPI bump.
 
-- Hosted corp checkers ([INITIAL](INITIAL.md) hosted backlog).
-- Access hook to IdP.
-- Departments as views, not a second gateway.
-- Seat keys that die when the desk is removed — employees still never need a Foyer login.
+### Org 2 — Per-agent prompt
 
-Out: every employee must connect a wallet; DAO votes; a court with a counterparty; Foyer executing Stripe; a second money path.
+On Connect, store a prompt per agent (`agents.system_prompt` or equivalent). Copy into the Connect snippet. Different desks, different text. Optional on personal houses (additive column; empty = today’s three lines only).
+
+Done: org admin can issue “CEO chat” vs “junior chat” without a second constitution. Gateway still does not object.
+
+### Org 3 — Contacts on the org house
+
+Table (or rows) for notify targets on a principal: email / Telegram, not `house_members`. Admin CRUD on the org cabinet. [NOTIFY.md](NOTIFY.md) `sweep` send: if the house has this list, use it; **else** today’s owner email/Telegram. Personal houses with no list: zero behavior change.
+
+Done: org can ping people who never sign in. One admin, zero operators, still works.
+
+### Org 4 — Decide without extra operators
+
+Human yes/no stays `POST /api/cases/:id/appeal` and decide-link. Org may mint decide tokens to contacts from Org 3 (email link), not only the owner wallet. Personal: unchanged.
+
+Done: workforce still has no Foyer login; a named human can still decide.
+
+### Org 5 — Split cabinet rights
+
+Replace the coarse People tab **on org houses only**. Capabilities: prompts/keys, treasury, decide, read. Personal houses do not grow this tab. Invite to cabinet is optional helpers with a wallet — not employees.
+
+Done: two admins can split work; employees remain agents.
+
+### Org 6 — Hierarchy the court can see
+
+Charter may name agents (by id or stable label). `buildJudgeInput` already sends proposer + objections; add optional **proposer label / cap** from stored agent metadata. Equivalence on chain stays `outcome` only. No `kind` on propose. Personal houses: metadata empty, input as today.
+
+Done: IC can tell CEO desk from intern without a protocol fork.
+
+### Org 7 — Route the fight
+
+Optional map: objector-set or hook role → notify/decide target. Default: Org 3 list / owner. Personal: skip the map.
+
+### Org 8 — Paid create
+
+Gate Org 1 behind billing (or an env allow-list until then). Personal stays free.
+
+### Later (not this plan’s critical path)
+
+Hosted corp checkers, IdP access hook, departments as views, seat keys that die with the desk, audit export.
+
+Out: every employee must connect a wallet; DAO; stranger court; Foyer executes Stripe; second money path; `if (org)` inside propose/court/`sweep`.
 
 ---
 
 ## Invariants
 
-- One house, one treasury, one court IC. Org adds who **runs** the house and how **agents** are labeled, not a second protocol.
+- One protocol for every house. Org is another principal under the account, not a mode of the personal house.
+- Additive: org code must not change personal login, wizard, or the live loop. No `if org` in propose/court/`sweep`.
 - Chats ≈ people at desks. Hooks ≈ shared services.
 - Foyer login is for admins (and optional helpers), not for the workforce.
 - Track remains Onchain Justice.
