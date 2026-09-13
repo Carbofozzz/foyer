@@ -7,6 +7,7 @@ import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { isOrgHouse } from "@/lib/protocol/types";
+import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { notifyCopy, sendMail } from "./mail";
 import { mintTelegramStartUrl, drainTelegramUpdates, telegramConfigured } from "./telegram";
 import { listHouseContacts, listHouseDesks, confirmContactEmail } from "./house-contacts";

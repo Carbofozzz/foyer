@@ -15,6 +15,7 @@ import {
   unlinkHouseContactTelegram,
 } from "@/lib/notify/house-contacts";
 import { isLocale } from "@/lib/i18n/config";
+import { isRecord } from "@/lib/protocol/parse";
 import { isOrgHouse } from "@/lib/protocol/types";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
