@@ -3,6 +3,7 @@ import { principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { saveHouseEmail } from "@/lib/notify/contacts";
 import type { KnownActionKind, PrincipalType } from "./types";
+import { isOrgHouse } from "./types";
 import { ProtocolError } from "./errors";
 import type { HousePrincipal } from "./bundle";
 
@@ -52,6 +53,9 @@ export async function finishWizard(
   principal: HousePrincipal,
   input: { constitution: string; type?: PrincipalType; email?: unknown; locale?: string; origin?: string },
 ) {
+  if (isOrgHouse(principal)) {
+    throw new ProtocolError("forbidden", "Organization houses do not use setup", 403);
+  }
   const text = input.constitution.trim();
   if (!text) throw new ProtocolError("bad_request", "constitution is required", 400);
   const db = getDb();
@@ -63,7 +67,7 @@ export async function finishWizard(
       wizardLockDone: true,
       wizardConnectDone: true,
       wizardHarnessDone: true,
-      ...(input.type === "org" || input.type === "personal" ? { type: input.type } : {}),
+      ...(input.type === "personal" ? { type: input.type } : {}),
     })
     .where(eq(principals.id, principal.id));
   if (input.email !== undefined) {

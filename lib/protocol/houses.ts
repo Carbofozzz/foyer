@@ -123,6 +123,10 @@ export async function createOrgHouse(ownerAddress: string, rawName: string) {
     cabinetTokenHash: hashSecret(cabinetToken),
     walletAddress: wallet.address,
     sealedWalletKey: sealKey(wallet.accountKey),
+    wizardConnectDone: true,
+    wizardRulesDone: true,
+    wizardLockDone: true,
+    wizardHarnessDone: true,
     ownerAddress: null,
   });
   await db.insert(houseMembers).values({ principalId, address: owner, role: "owner" });

@@ -120,7 +120,7 @@ export async function CabinetScreen({
         </div>
         {signedIn || manage ? (
           <div className="cabinet-head-actions">
-            {manage ? (
+            {manage && !isOrgHouse(principal) ? (
               <CabinetSetup
                 token={token}
                 houseId={houseId}
@@ -131,7 +131,7 @@ export async function CabinetScreen({
                 cabinet={t.cabinet}
                 cabinetError={t.cabinet.error}
                 constitution={principal.constitution}
-                houseType={isOrgHouse(principal) ? "org" : "personal"}
+                houseType="personal"
                 email={principal.contactEmail ?? ""}
                 locale={locale}
               />

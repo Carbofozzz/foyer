@@ -96,7 +96,7 @@ Create an org house under the signed-in account. Personal login unchanged.
 
 - `POST /api/orgs` (session). Insert `principals` with `type=org`, `owner_address` **null**, own court wallet. Insert `house_members` owner = session address. Cap **1**.
 - Default `/cabinet` still `findHouseByOwner` (personal).
-- Header: personal shows **Cabinet** and an Organization control (create once, then the org name). Org house shows the org name as the title and **Cabinet** to go home.
+- Header: personal shows **Cabinet** and an Organization control (create once, then the org name). Org house shows the org name as the title and **Cabinet** to go home. No personal setup wizard on the org (no header button, no auto-open).
 - Owner **Settings** tab: rename or delete the org (`PATCH`/`DELETE /api/orgs`). Personal house has no such tab.
 - Personal cabinet: “Add organization”. Tick/court `liveHouse` also includes `type=org` (otherwise org cases never judge). Leftover `type=org` rows that still have `owner_address` are not company houses: no Access, no org Contacts, they do not count toward the create cap.
 

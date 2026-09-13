@@ -27,6 +27,7 @@ import { ownerKey } from "@/lib/gen/chain";
 import { ProtocolError } from "./errors";
 import { readSession } from "./session";
 import { parseWaitlistEmail } from "./waitlist";
+import { isOrgHouse } from "./types";
 import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
 
 export type AdminWaitlistRow = {
@@ -197,7 +198,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
       type: row.type,
       spawn: row.isSpawn,
       created_at: row.createdAt.toISOString(),
-      connected: row.wizardConnectDone,
+      connected: row.wizardConnectDone || isOrgHouse(row),
       contact_email: row.contactEmail,
       email_verified: Boolean(row.emailVerifiedAt),
       telegram: Boolean(row.telegramLinkedAt),
