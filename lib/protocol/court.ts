@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { actions, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { COURT_FLOOR_WEI, ensureCourtFunds } from "@/lib/judge/funds";
@@ -63,7 +63,10 @@ export async function stepHouseCourt(principal: HousePrincipal, now: Date): Prom
   return false;
 }
 
-const liveHouse = and(eq(principals.isSpawn, false), isNotNull(principals.ownerAddress));
+const liveHouse = and(
+  eq(principals.isSpawn, false),
+  or(isNotNull(principals.ownerAddress), eq(principals.type, "org")),
+);
 
 export async function findHouseNeedingCourt(_now: Date): Promise<string | null> {
   const db = getDb();

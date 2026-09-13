@@ -187,6 +187,11 @@ a {
   flex-wrap: wrap;
 }
 
+.wallet-toolbar > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .skeleton {
   display: inline-block;
   background: var(--line);
@@ -828,6 +833,11 @@ button.ghost.is-copied {
   justify-self: start;
 }
 
+button.ghost-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+}
+
 button[type="submit"]:disabled,
 button.ghost:disabled,
 button:disabled {
@@ -935,8 +945,15 @@ pre {
 
 .cabinet-head-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.45rem 0.55rem;
+  position: relative;
+}
+
+.cabinet-head-actions button.ghost,
+.cabinet-head-actions a.ghost {
+  white-space: nowrap;
 }
 
 .cabinet-panel {
@@ -1281,7 +1298,8 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
 .cabinet-panel:has(#cabinet-tab-contacts:checked) [data-cabinet-pane="contacts"],
-.cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
+.cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"],
+.cabinet-panel:has(#cabinet-tab-settings:checked) [data-cabinet-pane="settings"] {
   display: block;
 }
 
@@ -1612,6 +1630,17 @@ label.segment {
   flex: 1 1 100%;
 }
 
+.connect-add .connect-field-wide {
+  flex: 1 1 100%;
+}
+
+.connect-add textarea,
+.connect-current textarea {
+  width: 100%;
+  min-height: 5rem;
+  resize: vertical;
+}
+
 .connect-add .connect-field {
   flex: 1 1 10rem;
   display: grid;
@@ -1679,20 +1708,20 @@ label.segment {
   padding-left: 1.2rem;
 }
 
-.house-switch {
+.add-org-inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-  margin: 0.35rem 0 0;
-  font-size: 0.88rem;
+  align-items: center;
+  gap: 0.45rem;
 }
 
-.house-switch a {
-  color: var(--accent);
+.add-org-inline input {
+  width: 9.5rem;
 }
 
-.house-switch [aria-current="page"] {
-  font-weight: 600;
+.add-org-inline .hint {
+  margin: 0;
+  flex-basis: 100%;
 }
 
 .member-list {

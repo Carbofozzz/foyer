@@ -9,6 +9,7 @@ import { executeAfterAck, executeSilenceAllow } from "./execute";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
 import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
 import { syncEscalateMail } from "@/lib/notify/outbox";
+import { ensureAgentPromptColumn } from "./house-clients";
 
 /**
  * Advances time for one house. Idempotent.
@@ -20,6 +21,7 @@ export async function sweep(
   now: Date,
   options?: { courts?: number; origin?: string; wakes?: boolean; outbox?: boolean },
 ): Promise<{ advanced: number }> {
+  await ensureAgentPromptColumn();
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };

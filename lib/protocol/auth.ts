@@ -5,6 +5,7 @@ import { bearerToken, jsonError } from "./http";
 import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
 import { accessFor, canManage, canOperate } from "./members";
+import { ensureAgentPromptColumn } from "./house-clients";
 import { readSession } from "./session";
 import type { HousePrincipal } from "./bundle";
 import { DEMO_TOKEN } from "./spawn";
@@ -15,6 +16,7 @@ export async function requireAgent(request: Request) {
   if (!token || !token.startsWith("agk_")) {
     return { error: jsonError("unauthorized", "Agent key required", 401) };
   }
+  await ensureAgentPromptColumn();
   const db = getDb();
   const [agent] = await db.select().from(agents).where(eq(agents.keyHash, hashSecret(token))).limit(1);
   if (!agent) {

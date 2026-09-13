@@ -50,6 +50,8 @@ export const agents = pgTable("agents", {
   wake: text("wake").notNull().default("outbound"),
   callbackUrl: text("callback_url"),
   sealedCallbackSecret: text("sealed_callback_secret"),
+  /** Desk instructions pasted above the shared Foyer MCP lines. Empty = those lines only. */
+  systemPrompt: text("system_prompt").notNull().default(""),
   bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

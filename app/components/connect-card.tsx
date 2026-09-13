@@ -7,6 +7,7 @@ import { CopyButton } from "@/app/components/copy-button";
 import { TechCard } from "@/app/components/tech-card";
 import { useCabinetTab } from "@/app/lib/use-cabinet-tab";
 import type { Messages } from "@/lib/i18n/load";
+import { AGENT_PROMPT_MAX, defaultAgentPrompt } from "@/lib/mcp/config";
 import type { WakeKind } from "@/lib/protocol/types";
 import { HOUSE_EVENT } from "@/lib/wallet/events";
 
@@ -20,6 +21,8 @@ type IssuedAgent = {
   callback_url: string | null;
   hook_ok: boolean;
   callback_secret?: string | null;
+  prompt?: string;
+  prompt_lines?: string[];
 };
 
 type ConnectPayload = {
@@ -41,26 +44,32 @@ export function ConnectIssueFields({
   wake,
   callbackUrl,
   callbackSecret,
+  prompt,
   onName,
   onWake,
   onCallbackUrl,
   onCallbackSecret,
+  onPrompt,
   showIssue = true,
   pending = false,
   onIssue,
+  houseType = "personal",
 }: {
   t: Messages["connect"];
   name: string;
   wake: WakeKind;
   callbackUrl: string;
   callbackSecret: string;
+  prompt: string;
   onName: (value: string) => void;
   onWake: (value: WakeKind) => void;
   onCallbackUrl: (value: string) => void;
   onCallbackSecret: (value: string) => void;
+  onPrompt: (value: string) => void;
   showIssue?: boolean;
   pending?: boolean;
   onIssue?: () => void;
+  houseType?: "personal" | "org";
 }) {
   return (
     <div className="connect-add">
@@ -70,7 +79,7 @@ export function ConnectIssueFields({
           type="text"
           value={name}
           required={showIssue}
-          placeholder={t.namePlaceholder}
+          placeholder={houseType === "org" ? t.namePlaceholderOrg : t.namePlaceholder}
           onChange={(event) => onName(event.target.value)}
         />
       </label>
@@ -90,14 +99,6 @@ export function ConnectIssueFields({
           ))}
         </div>
       </div>
-      {wake === "outbound" && showIssue ? (
-        <div className="connect-field connect-field-action">
-          <span aria-hidden="true">&nbsp;</span>
-          <button type="button" disabled={pending || !name.trim()} aria-busy={pending} onClick={onIssue}>
-            {pending ? t.issuing : t.issue}
-          </button>
-        </div>
-      ) : null}
       <p className="hint">{wake === "callback" ? t.wakeHintCallback : t.wakeHintOutbound}</p>
       {wake === "callback" ? (
         <>
@@ -120,15 +121,25 @@ export function ConnectIssueFields({
               onChange={(event) => onCallbackSecret(event.target.value)}
             />
           </label>
-          {showIssue ? (
-            <div className="connect-field connect-field-action">
-              <span aria-hidden="true">&nbsp;</span>
-              <button type="button" disabled={pending || !name.trim()} aria-busy={pending} onClick={onIssue}>
-                {pending ? t.issuing : t.issue}
-              </button>
-            </div>
-          ) : null}
         </>
+      ) : null}
+      <label className="connect-field connect-field-wide">
+        <span>{t.promptLabel}</span>
+        <textarea
+          value={prompt}
+          rows={8}
+          maxLength={AGENT_PROMPT_MAX}
+          onChange={(event) => onPrompt(event.target.value)}
+        />
+      </label>
+      <p className="hint">{t.promptHint}</p>
+      {showIssue ? (
+        <div className="connect-field connect-field-action">
+          <span aria-hidden="true">&nbsp;</span>
+          <button type="button" disabled={pending || !name.trim()} aria-busy={pending} onClick={onIssue}>
+            {pending ? t.issuing : t.issue}
+          </button>
+        </div>
       ) : null}
     </div>
   );
@@ -144,6 +155,8 @@ function agentFromPreview(preview: ConnectPayload): IssuedAgent {
     wake: preview.wake ?? "outbound",
     callback_url: preview.callback_url ?? null,
     hook_ok: preview.hook_ok ?? false,
+    prompt: "",
+    prompt_lines: preview.prompt_lines,
   };
 }
 
@@ -155,6 +168,7 @@ export function ConnectCard({
   errorLabel,
   compact,
   preview = null,
+  houseType = "personal",
 }: {
   token: string;
   houseId?: string;
@@ -163,24 +177,26 @@ export function ConnectCard({
   errorLabel: string;
   compact?: boolean;
   preview?: ConnectPayload | null;
+  houseType?: "personal" | "org";
 }) {
   const router = useRouter();
   const connectTab = useCabinetTab("connect");
   const [agents, setAgents] = useState<IssuedAgent[]>(() => (preview ? [agentFromPreview(preview)] : []));
-  const [promptLines, setPromptLines] = useState<string[]>(() => preview?.prompt_lines ?? []);
   const [selected, setSelected] = useState<string>(() => (preview ? "demo" : ""));
   const [name, setName] = useState("");
   const [wake, setWake] = useState<WakeKind>("outbound");
   const [callbackUrl, setCallbackUrl] = useState("");
   const [callbackSecret, setCallbackSecret] = useState("");
+  const [deskPrompt, setDeskPrompt] = useState(defaultAgentPrompt);
+  const [selectedDesk, setSelectedDesk] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [savingPrompt, setSavingPrompt] = useState(false);
   const [loaded, setLoaded] = useState(Boolean(preview));
 
   const load = useCallback(() => {
     if (preview) {
       setAgents([agentFromPreview(preview)]);
-      setPromptLines(preview.prompt_lines);
       setSelected("demo");
       setLoaded(true);
       return;
@@ -189,12 +205,11 @@ export function ConnectCard({
       .then((response) => {
         if (!response.ok) throw new Error("fail");
         return response.json() as Promise<{
-          data: { agents: IssuedAgent[]; prompt_lines: string[] };
+          data: { agents: IssuedAgent[] };
         }>;
       })
       .then((payload) => {
         setAgents(payload.data.agents);
-        setPromptLines(payload.data.prompt_lines);
         setSelected((id) =>
           payload.data.agents.some((row) => row.id === id) ? id : (payload.data.agents[0]?.id ?? ""),
         );
@@ -221,6 +236,35 @@ export function ConnectCard({
   }, [preview, connectTab, load]);
 
   const current = agents.find((row) => row.id === selected) ?? agents[0] ?? null;
+  const storedDesk = current ? current.prompt || defaultAgentPrompt() : "";
+  const pasteText = preview ? storedDesk : selectedDesk;
+  const deskDirty = Boolean(current) && selectedDesk.trim() !== storedDesk.trim();
+
+  useEffect(() => {
+    setSelectedDesk(current ? current.prompt || defaultAgentPrompt() : defaultAgentPrompt());
+  }, [current?.id, current?.prompt]);
+
+  async function saveDesk() {
+    if (preview || !current) return;
+    setSavingPrompt(true);
+    setError(null);
+    const response = await fetch(`/api/cabinet/${token}/connect`, {
+      method: "PATCH",
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
+      body: JSON.stringify({ id: current.id, prompt: selectedDesk }),
+    });
+    setSavingPrompt(false);
+    if (!response.ok) {
+      setError(errorLabel);
+      return;
+    }
+    const payload = (await response.json()) as { data: { prompt: string; prompt_lines: string[] } };
+    setAgents((rows) =>
+      rows.map((row) =>
+        row.id === current.id ? { ...row, prompt: payload.data.prompt, prompt_lines: payload.data.prompt_lines } : row,
+      ),
+    );
+  }
 
   async function issue() {
     if (preview) return;
@@ -238,6 +282,7 @@ export function ConnectCard({
         wake,
         callback_url: wake === "callback" ? callbackUrl.trim() : undefined,
         callback_secret: wake === "callback" && callbackSecret.trim() ? callbackSecret.trim() : undefined,
+        prompt: deskPrompt,
       }),
     });
     if (!response.ok) {
@@ -257,6 +302,7 @@ export function ConnectCard({
     setName("");
     setCallbackUrl("");
     setCallbackSecret("");
+    setDeskPrompt(defaultAgentPrompt());
     setPending(false);
     router.refresh();
   }
@@ -265,6 +311,7 @@ export function ConnectCard({
     <section className={compact ? "stack" : "card stack"}>
       {compact ? null : <h2 className="section-title">{t.title}</h2>}
       <p className="hint">{t.lead}</p>
+      {houseType === "org" ? <p className="hint">{t.promptOrgHint}</p> : null}
       {preview ? null : (
         <div className="connect-issue">
           <p className="feed-label">{t.another}</p>
@@ -278,8 +325,11 @@ export function ConnectCard({
             onWake={setWake}
             onCallbackUrl={setCallbackUrl}
             onCallbackSecret={setCallbackSecret}
+            prompt={deskPrompt}
+            onPrompt={setDeskPrompt}
             pending={pending}
             onIssue={() => void issue()}
+            houseType={houseType}
           />
         </div>
       )}
@@ -341,8 +391,30 @@ export function ConnectCard({
               </div>
               <div>
                 <p className="feed-label">{t.promptLabel}</p>
-                <pre className="mono snippet">{promptLines.join("\n")}</pre>
-                <CopyButton text={promptLines.join("\n")} copyLabel={t.copy} copiedLabel={t.copied} />
+                {preview ? (
+                  <pre className="mono snippet">{pasteText}</pre>
+                ) : (
+                  <textarea
+                    className="charter-edit"
+                    value={selectedDesk}
+                    rows={8}
+                    maxLength={AGENT_PROMPT_MAX}
+                    onChange={(event) => setSelectedDesk(event.target.value)}
+                  />
+                )}
+                <p className="hint">{t.promptHint}</p>
+                {preview ? null : (
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={savingPrompt || !deskDirty}
+                    aria-busy={savingPrompt}
+                    onClick={() => void saveDesk()}
+                  >
+                    {savingPrompt ? t.promptSaving : t.promptSave}
+                  </button>
+                )}
+                <CopyButton text={pasteText} copyLabel={t.copy} copiedLabel={t.copied} />
               </div>
             </>
           )}

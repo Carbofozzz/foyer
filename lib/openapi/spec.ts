@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.41.0",
+      version: "0.44.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -403,6 +403,25 @@ export function openApiSpec(origin: string) {
           ok: "Verdict",
         }),
       },
+      "/api/cabinet/{token}/connect": {
+        parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+        get: operation({
+          id: "getConnect",
+          summary: "Issued house agents, MCP snippet, and per-agent prompt lines",
+          auth: "session",
+        }),
+        post: operation({
+          id: "issueConnectAgent",
+          summary: "Issue a chat or hook key; optional desk prompt",
+          auth: "session",
+          created: true,
+        }),
+        patch: operation({
+          id: "patchConnectAgent",
+          summary: "Save the desk prompt for an issued agent",
+          auth: "session",
+        }),
+      },
       "/api/cabinet/{token}/test": {
         parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
         get: operation({
@@ -511,6 +530,23 @@ export function openApiSpec(origin: string) {
       "/api/tick": {
         get: operation({ id: "tickGet", summary: "Cron sweep (Vercel Cron sends GET)", auth: "cron" }),
         post: operation({ id: "tick", summary: "Cron sweep for every house", auth: "cron" }),
+      },
+      "/api/orgs": {
+        post: operation({
+          id: "createOrg",
+          summary: "Create an organization house under the signed-in account (session)",
+          auth: "session",
+        }),
+        patch: operation({
+          id: "renameOrg",
+          summary: "Rename the owned organization house (session)",
+          auth: "session",
+        }),
+        delete: operation({
+          id: "deleteOrg",
+          summary: "Delete the owned organization house (session)",
+          auth: "session",
+        }),
       },
       "/api/admin": {
         get: operation({

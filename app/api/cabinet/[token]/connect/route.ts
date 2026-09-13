@@ -1,8 +1,8 @@
 import { cabinetFromToken, needOperate } from "@/lib/protocol/auth";
-import { jsonOk, protocolFail } from "@/lib/protocol/http";
+import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { markConnectDone } from "@/lib/protocol/cabinet";
-import { issueConnectAgent, listConnectAgents } from "@/lib/protocol/house-clients";
 import { mcpConfig, MCP_PROMPT_LINES, publicOrigin } from "@/lib/mcp/config";
+import { issueConnectAgent, listConnectAgents, updateAgentPrompt } from "@/lib/protocol/house-clients";
 import { isRecord } from "@/lib/protocol/parse";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
@@ -42,13 +42,32 @@ export async function POST(request: Request, context: { params: Promise<{ token:
           ...issued,
           mcp_url: `${origin}/api/mcp`,
           mcp_config: mcpConfig(origin, issued.agent_key),
-          prompt_lines: MCP_PROMPT_LINES,
         },
         issued.created ? 201 : 200,
       );
     }
     await markConnectDone(auth.principal);
     return jsonOk({ ok: true });
+  } catch (error) {
+    return protocolFail(error);
+  }
+}
+
+export async function PATCH(request: Request, context: { params: Promise<{ token: string }> }) {
+  const { token } = await context.params;
+  const auth = needOperate(await cabinetFromToken(token, request));
+  if ("error" in auth) return auth.error;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("bad_request", "JSON body required", 400);
+  }
+  if (!isRecord(body) || typeof body.id !== "string" || !body.id.trim()) {
+    return jsonError("bad_request", "id is required", 400);
+  }
+  try {
+    return jsonOk(await updateAgentPrompt(auth.principal, body.id, body));
   } catch (error) {
     return protocolFail(error);
   }

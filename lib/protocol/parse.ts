@@ -1,5 +1,6 @@
 import { WAKE_KINDS, type ActionPayload, type EvidenceItem, type WakeKind } from "./types";
 import { ABUSE } from "./abuse";
+import { AGENT_PROMPT_MAX, defaultAgentPrompt } from "@/lib/mcp/config";
 import { ProtocolError } from "./errors";
 
 export function parsePayload(raw: unknown): ActionPayload {
@@ -110,6 +111,18 @@ export function parseAgentWake(body: Record<string, unknown>): AgentWakeSpec {
     throw new ProtocolError("bad_request", "callback_secret is too long", 400);
   }
   return { wake, callbackUrl, callbackSecret: secretRaw || null };
+}
+
+export function parseAgentPrompt(body: Record<string, unknown>): string {
+  const raw = body.prompt ?? body.system_prompt;
+  if (raw !== undefined && raw !== null && typeof raw !== "string") {
+    throw new ProtocolError("bad_request", "prompt must be a string", 400);
+  }
+  const text = typeof raw === "string" ? raw.trim() : "";
+  if (text.length > AGENT_PROMPT_MAX) {
+    throw new ProtocolError("bad_request", "prompt is too long", 400);
+  }
+  return text || defaultAgentPrompt();
 }
 
 export function parseCallbackUrl(raw: unknown): string {

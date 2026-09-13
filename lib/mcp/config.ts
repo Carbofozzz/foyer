@@ -40,3 +40,19 @@ export const MCP_PROMPT_LINES = [
   "When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.",
   "Cite the house constitution in every justification. If you cite a web page, include the http(s) URL in the text or as evidence { type: \"link\", value }. The court fetches those pages. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
 ];
+
+export const AGENT_PROMPT_MAX = 8000;
+
+/** Recommended prompt prefilled when issuing an agent. The stored value is this text, edited or not. */
+export function defaultAgentPrompt() {
+  return MCP_PROMPT_LINES.join("\n");
+}
+
+export function agentPromptText(stored?: string | null) {
+  const text = stored?.trim() ?? "";
+  return text || defaultAgentPrompt();
+}
+
+export function agentPromptLines(stored?: string | null) {
+  return agentPromptText(stored).split("\n");
+}

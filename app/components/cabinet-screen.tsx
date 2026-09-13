@@ -15,7 +15,8 @@ import { ContactsCard } from "@/app/components/contacts-card";
 import { TreasuryCard } from "@/app/components/treasury-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { AppealForm } from "@/app/components/appeal-form";
-import { HouseSwitch } from "@/app/components/house-switch";
+import { AddOrgForm } from "@/app/components/add-org-form";
+import { OrgSettingsCard } from "@/app/components/org-settings-card";
 import { MembersCard } from "@/app/components/members-card";
 import { TestStageCard } from "@/app/components/test-stage-card";
 import { InboxFeed } from "@/app/components/inbox-feed";
@@ -23,6 +24,7 @@ import { CabinetInboxRefresh } from "@/app/components/cabinet-inbox-refresh";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { WalletButton } from "@/app/components/wallet-button";
 import { txExplorerUrl } from "@/lib/gen/chain";
+import { ensureAgentPromptColumn } from "@/lib/protocol/house-clients";
 import { canManage, canOperate, type HouseListing } from "@/lib/protocol/members";
 import type { MemberRole } from "@/lib/protocol/types";
 import { notifyReasonKey } from "@/lib/notify/reasons";
@@ -51,6 +53,7 @@ export async function CabinetScreen({
   tab?: string;
   t: Messages;
 }) {
+  await ensureAgentPromptColumn();
   await sweepIfBusy(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
@@ -74,7 +77,8 @@ export async function CabinetScreen({
   const tabIds: CabinetTabId[] = ["inbox", "treasury", "rules"];
   if (manage) tabIds.push("contacts");
   if (operate) tabIds.push("connect", "test");
-  if (signedIn && principal.type === "org" && !principal.isSpawn) tabIds.push("people");
+  if (signedIn && principal.type === "org" && manage && !principal.isSpawn) tabIds.push("settings");
+  if (signedIn && principal.type === "org" && principal.ownerAddress && !principal.isSpawn) tabIds.push("people");
   const currentTab = parseCabinetTab(tab, tabIds);
   const tabItems: { id: CabinetTabId; label: string }[] = [
     { id: "inbox", label: t.cabinet.inbox },
@@ -87,7 +91,10 @@ export async function CabinetScreen({
           { id: "test" as CabinetTabId, label: t.cabinet.tabTest },
         ]
       : []),
-    ...(signedIn && principal.type === "org" && !principal.isSpawn
+    ...(signedIn && principal.type === "org" && manage && !principal.isSpawn
+      ? [{ id: "settings" as CabinetTabId, label: t.cabinet.tabSettings }]
+      : []),
+    ...(signedIn && principal.type === "org" && principal.ownerAddress && !principal.isSpawn
       ? [{ id: "people" as CabinetTabId, label: t.cabinet.members }]
       : []),
   ];
@@ -96,9 +103,10 @@ export async function CabinetScreen({
     <main className="cabinet">
       <header className="cabinet-head">
         <div>
-          <h1>{t.cabinet.kicker}</h1>
+          <h1>
+            {principal.type === "org" ? principal.name.trim() || t.cabinet.houseOrg : t.cabinet.kicker}
+          </h1>
           {principal.isSpawn ? <p className="hint">{t.spawn.banner}</p> : null}
-          {signedIn ? <HouseSwitch locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} /> : null}
           {!manage ? <p className="hint">{t.cabinet.readOnly}</p> : null}
         </div>
         {signedIn || manage ? (
@@ -118,6 +126,9 @@ export async function CabinetScreen({
                 email={principal.contactEmail ?? ""}
                 locale={locale}
               />
+            ) : null}
+            {signedIn && !principal.isSpawn ? (
+              <AddOrgForm locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} />
             ) : null}
             {signedIn ? (
               <WalletButton
@@ -259,6 +270,7 @@ export async function CabinetScreen({
                   tech={t.tech}
                   errorLabel={t.cabinet.error}
                   compact
+                  houseType={principal.type === "org" ? "org" : "personal"}
                 />
               </div>
             ) : null}
@@ -272,7 +284,12 @@ export async function CabinetScreen({
                 />
               </div>
             ) : null}
-            {signedIn && principal.type === "org" && !principal.isSpawn ? (
+            {signedIn && principal.type === "org" && manage && !principal.isSpawn ? (
+              <div data-cabinet-pane="settings">
+                <OrgSettingsCard locale={locale} houseId={principal.id} name={principal.name} t={t.cabinet} />
+              </div>
+            ) : null}
+            {signedIn && principal.type === "org" && principal.ownerAddress && !principal.isSpawn ? (
               <div data-cabinet-pane="people">
                 <MembersCard
                   token={token}

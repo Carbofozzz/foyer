@@ -13,6 +13,7 @@ export type HouseAccess = {
 
 export type HouseListing = {
   id: string;
+  name: string;
   type: string;
   role: MemberRole;
   own: boolean;
@@ -82,6 +83,7 @@ export async function listHousesFor(address: string): Promise<HouseListing[]> {
   const rows = await db
     .select({
       id: principals.id,
+      name: principals.name,
       type: principals.type,
       role: houseMembers.role,
       ownerAddress: principals.ownerAddress,
@@ -97,13 +99,20 @@ export async function listHousesFor(address: string): Promise<HouseListing[]> {
     seen.add(row.id);
     list.push({
       id: row.id,
+      name: row.name,
       type: row.type,
       role: row.role,
       own: Boolean(row.ownerAddress && ownerKey(row.ownerAddress) === wallet),
     });
   }
   if (own[0] && !seen.has(own[0].id)) {
-    list.unshift({ id: own[0].id, type: own[0].type, role: "owner", own: true });
+    list.unshift({
+      id: own[0].id,
+      name: own[0].name,
+      type: own[0].type,
+      role: "owner",
+      own: true,
+    });
   }
   return list.sort((a, b) => Number(b.own) - Number(a.own));
 }

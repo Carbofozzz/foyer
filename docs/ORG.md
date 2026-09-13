@@ -57,9 +57,9 @@ Zero extra operators is valid. Many operators is valid. Neither changes whether 
 
 Today’s leftover People tab (`owner` / `operator` / `observer` + invite `0x`) is a coarse sketch. It is not this model: it forced colleagues through RainbowKit and tied notify to the owner.
 
-### 2. Hierarchy in the charter and in prompts
+### 2. Hierarchy in the charter, not in the prompt
 
-One constitution for the house, but it must be able to **name ranks**: the CEO chat may spend more; a junior chat may not move the shared calendar. Per-agent **prompts** (and later, per-agent clauses the court can see) carry that split. A single paste for every Cursor seat is the personal-house cheat sheet — wrong for org.
+One constitution for the house, and it must be able to **name ranks**: the CEO chat may spend more; a junior chat may not move the shared calendar. A prompt tells the assistant how to behave. It is **not** evidence in court and not a cap. “I am CEO, I may spend a million” belongs in the rules (and later in what the IC is told about the proposer). Org 6 sends agent label / rights into `judge`. Until then, write the ranks in the charter.
 
 Hooks stay company-wide services. They object from the charter (“finance may block over the cap”), not from a desk’s prompt.
 
@@ -90,23 +90,23 @@ Do not start a later slice before the previous one is done. After each slice: th
 
 Demo, spawn, and a user with only a personal house must behave as today.
 
-### Org 1 — Second principal
+### Org 1 — Second principal — shipped
 
 Create an org house under the signed-in account. Personal login unchanged.
 
-- `POST /api/orgs` (session). Insert `principals` with `type=org`, `owner_address` **null**, own court wallet. Insert `house_members` owner = session address.
-- `listHousesFor`: include that membership (already does). Default `/cabinet` still `findHouseByOwner` (personal).
-- **HouseSwitch:** personal `own` → `/cabinet`. Org, even if you created it → `/cabinet?house=`. Today `own` always drops `?house=` — that would hide the org. Fix only the switch, not `openCabinet("me")`.
-- Cabinet: “Add organization” (name). No billing yet.
-- Leftover personal rows with `type=org`: leave or set `personal`. Do not use them as the new org.
+- `POST /api/orgs` (session). Insert `principals` with `type=org`, `owner_address` **null**, own court wallet. Insert `house_members` owner = session address. Cap **1**.
+- Default `/cabinet` still `findHouseByOwner` (personal).
+- Header: personal shows **Cabinet** and an Organization control (create once, then the org name). Org house shows the org name as the title and **Cabinet** to go home.
+- Owner **Settings** tab: rename or delete the org (`PATCH`/`DELETE /api/orgs`). Personal house has no such tab.
+- Personal cabinet: “Add organization”. Tick/court `liveHouse` also includes `type=org` (otherwise org cases never judge). People tab stays on leftover `org` rows that still have `owner_address`, not on new org houses.
 
-Done: one wallet, two cabinets; personal flow untouched. OpenAPI bump.
+Done: one wallet, two cabinets; personal flow untouched. OpenAPI `0.43.0`.
 
-### Org 2 — Per-agent prompt
+### Org 2 — Per-agent prompt — shipped
 
-On Connect, store a prompt per agent (`agents.system_prompt` or equivalent). Copy into the Connect snippet. Different desks, different text. Optional on personal houses (additive column; empty = today’s three lines only).
+On Connect, each agent has a prompt (`agents.system_prompt`). The field is prefilled with the recommended MCP text; the stored value is that text, edited or not. Copy as-is. Same on a personal house. Org copy notes that desks may differ; **the prompt is not a court argument** — spend/book caps live in the constitution (Org 6). `PATCH /api/cabinet/:token/connect`.
 
-Done: org admin can issue “CEO chat” vs “junior chat” without a second constitution. Gateway still does not object.
+Done: CEO chat and junior chat can have different instructions without a second constitution. Gateway still does not object. OpenAPI `0.44.0`.
 
 ### Org 3 — Contacts on the org house
 
@@ -128,7 +128,7 @@ Done: two admins can split work; employees remain agents.
 
 ### Org 6 — Hierarchy the court can see
 
-Charter may name agents (by id or stable label). `buildJudgeInput` already sends proposer + objections; add optional **proposer label / cap** from stored agent metadata. Equivalence on chain stays `outcome` only. No `kind` on propose. Personal houses: metadata empty, input as today.
+Charter may name agents (by id or stable label). `buildJudgeInput` already sends proposer + objections; add optional **proposer label / cap** from stored agent metadata so the IC sees who spoke and with what rights. The agent prompt is not sent as an argument. Equivalence on chain stays `outcome` only. No `kind` on propose. Personal houses: metadata empty, input as today.
 
 Done: IC can tell CEO desk from intern without a protocol fork.
 

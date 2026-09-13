@@ -7,10 +7,10 @@ import { requireAgent } from "@/lib/protocol/auth";
 import { sweepIfBusy } from "@/lib/protocol/sweep";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
-import { isRecord, parseAgentWake } from "@/lib/protocol/parse";
+import { isRecord, parseAgentPrompt, parseAgentWake } from "@/lib/protocol/parse";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { sealKey } from "@/lib/protocol/seal";
-import { connectPublicFields } from "@/lib/protocol/house-clients";
+import { connectPublicFields, ensureAgentPromptColumn } from "@/lib/protocol/house-clients";
 
 export async function GET(request: Request) {
   const auth = await requireAgent(request);
@@ -74,6 +74,7 @@ async function postEnroll(request: Request) {
 
   const agentId = mintToken("agt");
   const agentKey = mintToken("agk");
+  await ensureAgentPromptColumn();
   await db.insert(agents).values({
     id: agentId,
     principalId: slot.principalId,
@@ -83,6 +84,7 @@ async function postEnroll(request: Request) {
     wake: spec.wake,
     callbackUrl: spec.callbackUrl,
     sealedCallbackSecret: callbackSecret ? sealKey(callbackSecret) : null,
+    systemPrompt: parseAgentPrompt(body),
   });
   await db.update(enrollments).set({ usedAt: new Date() }).where(eq(enrollments.tokenHash, slot.tokenHash));
 
