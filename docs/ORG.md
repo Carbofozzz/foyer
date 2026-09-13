@@ -114,11 +114,11 @@ Two jobs on the org Contacts tab: **people** (`house_contacts`: name, email, Tel
 
 Done: people and routing are separate; routing is not a blast and not “who is in the fight” by default. OpenAPI `0.45.0`.
 
-### Org 4 — Decide without extra operators
+### Org 4 — Decide without extra operators — shipped
 
-Human yes/no stays `POST /api/cases/:id/appeal` and decide-link. Org may mint decide tokens to contacts from Org 3 (email link), not only the owner wallet. Personal: unchanged.
+Human yes/no stays `POST /api/cases/:id/appeal` and the decide-link. Org mints **one token per person** (`decide_tokens.contact_id`) when that person is notified (reachable channel + policy). The letter/Telegram carries their own `/:locale/decide/:token`. First tap wins; the owner can still decide in the cabinet. Personal house: one owner token, unchanged.
 
-Done: workforce still has no Foyer login; a named human can still decide.
+Done: workforce still has no Foyer login; a named human can still decide. OpenAPI `0.46.0`.
 
 ### Org 5 — Split cabinet rights
 

@@ -1,5 +1,5 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { agents, emailConfirmTokens, houseContactPolicies, houseContacts, telegramLinkTokens } from "@/lib/db/schema";
+import { agents, decideTokens, emailConfirmTokens, houseContactPolicies, houseContacts, telegramLinkTokens } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
@@ -35,6 +35,7 @@ export async function ensureHouseContactsSchema() {
     )
   `);
   await db.execute(sql`ALTER TABLE house_contacts ADD COLUMN IF NOT EXISTS label text NOT NULL DEFAULT ''`);
+  await db.execute(sql`ALTER TABLE house_contacts ADD COLUMN IF NOT EXISTS can_decide boolean NOT NULL DEFAULT true`);
   try {
     await db.execute(sql`ALTER TABLE house_contacts ALTER COLUMN covers_all SET DEFAULT true`);
     await db.execute(sql`ALTER TABLE house_contacts ALTER COLUMN agent_ids SET DEFAULT '[]'::jsonb`);
@@ -70,6 +71,7 @@ export async function ensureHouseContactsSchema() {
   }
   await db.execute(sql`ALTER TABLE email_confirm_tokens ADD COLUMN IF NOT EXISTS contact_id text`);
   await db.execute(sql`ALTER TABLE telegram_link_tokens ADD COLUMN IF NOT EXISTS contact_id text`);
+  await db.execute(sql`ALTER TABLE decide_tokens ADD COLUMN IF NOT EXISTS contact_id text`);
   schemaReady = true;
 }
 
@@ -364,6 +366,7 @@ export async function removeHouseContact(principal: HousePrincipal, contactId: s
   await db.delete(houseContactPolicies).where(eq(houseContactPolicies.contactId, row.id));
   await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.contactId, row.id));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.contactId, row.id));
+  await db.delete(decideTokens).where(eq(decideTokens.contactId, row.id));
   await db.delete(houseContacts).where(eq(houseContacts.id, row.id));
   return listHouseContacts(principal.id);
 }

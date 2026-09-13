@@ -162,3 +162,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-13: Org 3 — org notify pairs `house_contacts` (email or Telegram). Coverage is every ping or chosen desks; `sweep` writes matching pairs only. Personal house unchanged. OpenAPI `0.45.0`.
 - 2026-09-13: Org 3 routing — people vs policies. `house_contact_policies` (one per contact): all escalate points, chosen points, or chosen points plus a named objector. Empty policy = no ping. Personal house unchanged. OpenAPI `0.45.0`.
 - 2026-09-13: Org contacts unique per house: same email or Telegram cannot sit on two people. Personal house unchanged.
+- 2026-09-13: Org 4 — escalate mail/Telegram to an org person carries their own decide token (`decide_tokens.contact_id`). Notified people (channel + policy) get the link; cabinet appeal still works. Personal house unchanged. OpenAPI `0.46.0`.

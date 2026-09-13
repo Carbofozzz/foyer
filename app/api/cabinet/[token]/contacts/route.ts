@@ -49,7 +49,12 @@ export async function POST(request: Request, context: { params: Promise<{ token:
         return jsonOk(await contactsPayload(auth.principal, { drain: false }));
       }
       if (typeof body.save_id === "string") {
-        await saveHouseContact(auth.principal, body.save_id, { label: body.label, email: body.email }, origin);
+        await saveHouseContact(
+          auth.principal,
+          body.save_id,
+          { label: body.label, email: body.email },
+          origin,
+        );
         return jsonOk(await contactsPayload(auth.principal, { drain: false }));
       }
       if (typeof body.save_policy === "string") {

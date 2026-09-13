@@ -49,6 +49,8 @@ export const houseContacts = pgTable(
     telegramChatId: text("telegram_chat_id"),
     telegramHandle: text("telegram_handle"),
     telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
+    /** Org 4: this person may allow/deny from a decide-link (no cabinet login). */
+    canDecide: boolean("can_decide").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("house_contacts_principal").on(table.principalId)],
@@ -363,6 +365,7 @@ export const decideTokens = pgTable(
     actionId: text("action_id")
       .notNull()
       .references(() => actions.id),
+    contactId: text("contact_id"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.45.0",
+      version: "0.46.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -529,7 +529,7 @@ export function openApiSpec(origin: string) {
         },
         post: operation({
           id: "postDecide",
-          summary: "Allow or deny from a decide link (same as cabinet appeal)",
+          summary: "Allow or deny from a decide link (same as cabinet appeal). Org contacts get their own token.",
           body: "DecideRequest",
           ok: "Verdict",
         }),

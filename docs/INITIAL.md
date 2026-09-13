@@ -216,7 +216,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
-- Org: Org 3 shipped (org people + one notify policy each). Further slices in [ORG.md](ORG.md).
+- Org: Org 4 shipped (org people get their own decide-link; no extra login). Further slices in [ORG.md](ORG.md).
 - **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.
 
 ---

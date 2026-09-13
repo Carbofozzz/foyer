@@ -9,7 +9,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { notifyCopy, sendMail } from "./mail";
 import { notifyReasonKey } from "./reasons";
-import { matchReachableHouseContacts } from "./house-contacts";
+import { matchReachableHouseContacts, ensureHouseContactsSchema } from "./house-contacts";
 import { sendTelegram } from "./telegram";
 
 const DECIDE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -116,6 +116,7 @@ async function deliverOne(
     await db.update(notifications).set({ status: "cancelled", updatedAt: new Date() }).where(eq(notifications.id, note.id));
     return false;
   }
+  const live = bundle;
 
   const [claimed] = await db
     .update(notifications)
@@ -130,41 +131,52 @@ async function deliverOne(
     .returning({ id: notifications.id });
   if (!claimed) return false;
 
-  const raw = mintToken("dcd");
-  await db.insert(decideTokens).values({
-    tokenHash: hashSecret(raw),
-    actionId,
-    expiresAt: new Date(Date.now() + DECIDE_MS),
-  });
+  await ensureHouseContactsSchema();
+
   const locale = isLocale(principal.contactLocale) ? principal.contactLocale : "en";
   const t = notifyCopy(locale);
-  const [proposer] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, bundle.action.proposerId)).limit(1);
-  const payload = actionPayload(bundle.action);
-  const reason = notifyReasonKey(bundle.verdict?.reasoning ?? "", bundle.verdict?.judge ?? "offline");
+  const [proposer] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, live.action.proposerId)).limit(1);
+  const payload = actionPayload(live.action);
+  const reason = notifyReasonKey(live.verdict?.reasoning ?? "", live.verdict?.judge ?? "offline");
   const reasonLine = t[reason];
   const amount =
     typeof payload.amount === "number"
       ? `${payload.amount}${payload.currency ? ` ${payload.currency}` : ""}`
       : "";
   const base = decideOrigin(origin);
-  const url = `${base}/${locale}/decide/${raw}`;
-  const text = [
-    t.decideLead,
-    reasonLine,
-    `${t.who}: ${proposer?.name ?? bundle.action.proposerId}`,
-    `${t.what}: ${payload.summary}`,
-    amount ? `${t.amount}: ${amount}` : "",
-    t.ask,
-    url,
-  ]
-    .filter(Boolean)
-    .join("\n");
+
+  function body(url: string | null) {
+    return [
+      t.decideLead,
+      reasonLine,
+      `${t.who}: ${proposer?.name ?? live.action.proposerId}`,
+      `${t.what}: ${payload.summary}`,
+      amount ? `${t.amount}: ${amount}` : "",
+      url ? t.ask : "",
+      url ?? "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  async function mintUrl(contactId: string | null) {
+    const raw = mintToken("dcd");
+    await db.insert(decideTokens).values({
+      tokenHash: hashSecret(raw),
+      actionId,
+      contactId,
+      expiresAt: new Date(Date.now() + DECIDE_MS),
+    });
+    return `${base}/${locale}/decide/${raw}`;
+  }
 
   try {
     if (channel === "org") {
       const errors: string[] = [];
       for (const contact of targets) {
         try {
+          const url = await mintUrl(contact.id);
+          const text = body(url);
           if (contact.telegramChatId) await sendTelegram(contact.telegramChatId, text);
           else if (contact.email) await sendMail({ to: contact.email, subject: t.decideSubject, text });
           else errors.push("unreachable");
@@ -175,9 +187,9 @@ async function deliverOne(
       if (errors.length === targets.length) throw new Error(errors[0] || "send failed");
     } else if (channel === "telegram") {
       if (!principal.telegramChatId) throw new Error("telegram is not linked");
-      await sendTelegram(principal.telegramChatId, text);
+      await sendTelegram(principal.telegramChatId, body(await mintUrl(null)));
     } else {
-      await sendMail({ to: principal.contactEmail!, subject: t.decideSubject, text });
+      await sendMail({ to: principal.contactEmail!, subject: t.decideSubject, text: body(await mintUrl(null)) });
     }
     await db
       .update(notifications)
@@ -235,7 +247,7 @@ export async function decideFromToken(raw: string, outcome: unknown, now: Date) 
   const [principal] = await db.select().from(principals).where(eq(principals.id, bundle.action.principalId)).limit(1);
   if (!principal) throw new ProtocolError("not_found", "Unknown house", 404);
   const result = await appealCase(principal, bundle.courtCase.id, { outcome }, now);
-  await db.update(decideTokens).set({ usedAt: now }).where(eq(decideTokens.tokenHash, token.tokenHash));
+  await db.update(decideTokens).set({ usedAt: now }).where(eq(decideTokens.actionId, token.actionId));
   await db
     .update(notifications)
     .set({ status: "cancelled", updatedAt: now })
