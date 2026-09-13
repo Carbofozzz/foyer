@@ -4,12 +4,12 @@ import { getDb } from "@/lib/db";
 import { bearerToken, jsonError } from "./http";
 import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
-import { accessFor, canManage, canOperate } from "./members";
+import { accessFor, canManage, hasGrant, type HouseAccess } from "./members";
 import { ensureAgentPromptColumn } from "./house-clients";
 import { readSession } from "./session";
 import type { HousePrincipal } from "./bundle";
 import { DEMO_TOKEN } from "./spawn";
-import type { MemberRole } from "./types";
+import type { CabinetGrant, MemberRole } from "./types";
 
 export async function requireAgent(request: Request) {
   const token = bearerToken(request);
@@ -46,8 +46,16 @@ type CabinetAuth = Awaited<ReturnType<typeof cabinetFromToken>>;
 
 export function needOperate(auth: CabinetAuth): CabinetAuth {
   if ("error" in auth) return auth;
-  if (!canOperate(auth.role)) {
+  if (!hasGrant(auth.role, auth.grants, "agents") && !hasGrant(auth.role, auth.grants, "treasury")) {
     return { error: jsonError("forbidden", "This wallet can only watch", 403) };
+  }
+  return auth;
+}
+
+export function needGrant(auth: CabinetAuth, grant: CabinetGrant): CabinetAuth {
+  if ("error" in auth) return auth;
+  if (!hasGrant(auth.role, auth.grants, grant)) {
+    return { error: jsonError("forbidden", "This wallet cannot do that here", 403) };
   }
   return auth;
 }
@@ -74,11 +82,11 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     if (wanted) {
       const access = await accessFor(session.address, wanted);
       if (!access) return null;
-      return asCabinet(access.principal, access.role, "me");
+      return asCabinet(access.principal, access.role, "me", access.grants);
     }
     const principal = await findHouseByOwner(session.address);
     if (!principal) return null;
-    return asCabinet(principal, "owner", "me");
+    return asCabinet(principal, "owner", "me", ["agents", "treasury", "rules"]);
   }
   if (token === DEMO_TOKEN) return null;
   if (!token.startsWith("cab_")) return null;
@@ -88,12 +96,12 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     .from(principals)
     .where(eq(principals.cabinetTokenHash, hashSecret(token)))
     .limit(1);
-  return principal ? asCabinet(principal, "owner", token) : null;
+  return principal ? asCabinet(principal, "owner", token, ["agents", "treasury", "rules"]) : null;
 }
 
-function asCabinet(principal: HousePrincipal, role: MemberRole, token: string) {
-  if (principal.isSpawn) return { principal, role: "observer" as const, token };
-  return { principal, role, token };
+function asCabinet(principal: HousePrincipal, role: MemberRole, token: string, grants: HouseAccess["grants"] = []) {
+  if (principal.isSpawn) return { principal, role: "observer" as const, token, grants: [] as HouseAccess["grants"] };
+  return { principal, role, token, grants };
 }
 
 export async function requireCabinetRequest(request: Request) {

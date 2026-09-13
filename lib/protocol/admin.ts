@@ -44,6 +44,7 @@ export type AdminContactRow = {
 
 export type AdminHouseRow = {
   id: string;
+  name: string;
   owner: string | null;
   type: string;
   spawn: boolean;
@@ -111,6 +112,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     db
       .select({
         id: principals.id,
+        name: principals.name,
         type: principals.type,
         isSpawn: principals.isSpawn,
         ownerAddress: principals.ownerAddress,
@@ -139,7 +141,9 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
         createdAt: actions.createdAt,
       })
       .from(actions),
-    db.select({ principalId: houseMembers.principalId }).from(houseMembers),
+    db.select({ principalId: houseMembers.principalId, address: houseMembers.address, role: houseMembers.role }).from(
+      houseMembers,
+    ),
   ]);
 
   const agentByHouse = new Map<string, { agents: number; hooks: number }>();
@@ -170,8 +174,12 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
   }
 
   const memberByHouse = new Map<string, number>();
+  const ownerByHouse = new Map<string, string>();
   for (const row of memberRows) {
     memberByHouse.set(row.principalId, (memberByHouse.get(row.principalId) ?? 0) + 1);
+    if (row.role === "owner" && !ownerByHouse.has(row.principalId)) {
+      ownerByHouse.set(row.principalId, row.address);
+    }
   }
 
   const houses: AdminHouseRow[] = houseRows.map((row) => {
@@ -184,7 +192,8 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     };
     return {
       id: row.id,
-      owner: row.ownerAddress,
+      name: row.name,
+      owner: row.ownerAddress ?? ownerByHouse.get(row.id) ?? null,
       type: row.type,
       spawn: row.isSpawn,
       created_at: row.createdAt.toISOString(),

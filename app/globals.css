@@ -1806,6 +1806,10 @@ label.segment {
   gap: 0.45rem 0.7rem;
 }
 
+.member-list .check-list {
+  flex-basis: 100%;
+}
+
 .cabinet-meta {
   display: grid;
   border-top: 1px solid var(--hairline);

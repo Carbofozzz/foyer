@@ -1,4 +1,4 @@
-import { cabinetFromToken, needManage, needOperate } from "@/lib/protocol/auth";
+import { cabinetFromToken, needGrant, needManage } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { exportHouseWalletKey, faucetHouse, loadHouseWalletView, recordDeposit, withdrawTo } from "@/lib/judge/wallet";
 import { canManage } from "@/lib/protocol/members";
@@ -47,12 +47,12 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       return jsonOk(await withdrawTo(principal, { to, gen: body.gen }));
     }
     if (body.faucet === true) {
-      const denied = needOperate(auth);
+      const denied = needGrant(auth, "treasury");
       if ("error" in denied) return denied.error;
       return jsonOk(await faucetHouse(principal));
     }
     if (body.deposit === true) {
-      const denied = needOperate(auth);
+      const denied = needGrant(auth, "treasury");
       if ("error" in denied) return denied.error;
       if (typeof body.tx !== "string" || typeof body.from !== "string" || typeof body.gen !== "string") {
         return jsonError("bad_request", "tx, from and gen are required", 400);

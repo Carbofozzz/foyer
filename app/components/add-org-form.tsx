@@ -21,8 +21,11 @@ export function AddOrgForm({
   const [composing, setComposing] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
-  const org = houses.find((house) => house.type === "org");
-  const canCreate = houses.some((house) => house.own && house.type !== "org");
+  const personal = houses.find((house) => house.own && house.type !== "org");
+  const orgs = houses.filter((house) => house.type === "org");
+  const ownsOrg = orgs.some((house) => house.own);
+  const canCreate = Boolean(personal) && !ownsOrg;
+  const onPersonal = personal?.id === currentId;
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -43,25 +46,25 @@ export function AddOrgForm({
     router.refresh();
   }
 
-  if (org) {
-    const onOrg = org.id === currentId;
-    if (onOrg) {
-      return (
+  const links = (
+    <>
+      {!onPersonal && personal ? (
         <a className="ghost" href={`/${locale}/cabinet`}>
           {t.kicker}
         </a>
-      );
-    }
-    return (
-      <a className="ghost" href={`/${locale}/cabinet?house=${org.id}`}>
-        {org.name.trim() || t.houseOrg}
-      </a>
-    );
-  }
+      ) : null}
+      {orgs.map((org) =>
+        org.id === currentId ? null : (
+          <a key={org.id} className="ghost" href={`/${locale}/cabinet?house=${org.id}`}>
+            {org.name.trim() || t.houseOrg}
+            {org.own ? "" : ` · ${t.accessLimitedShort}`}
+          </a>
+        ),
+      )}
+    </>
+  );
 
-  if (!canCreate) return null;
-
-  if (composing) {
+  if (composing && canCreate) {
     return (
       <form className="add-org-inline" onSubmit={(event) => void onSubmit(event)}>
         <input
@@ -92,8 +95,13 @@ export function AddOrgForm({
   }
 
   return (
-    <button type="button" className="ghost" onClick={() => setComposing(true)}>
-      {t.addOrg}
-    </button>
+    <>
+      {links}
+      {canCreate ? (
+        <button type="button" className="ghost" onClick={() => setComposing(true)}>
+          {t.addOrg}
+        </button>
+      ) : null}
+    </>
   );
 }

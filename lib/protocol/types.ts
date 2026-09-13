@@ -43,11 +43,20 @@ export type WakeStatus = (typeof WAKE_STATUSES)[number];
 export const PRINCIPAL_TYPES = ["personal", "org"] as const;
 export type PrincipalType = (typeof PRINCIPAL_TYPES)[number];
 
+/** Company house from POST /api/orgs. A leftover type=org row with owner_address is not one. */
+export function isOrgHouse(row: { type: string; ownerAddress: string | null }): boolean {
+  return row.type === "org" && !row.ownerAddress;
+}
+
 /** Wallet roles inside one house. Same SIWE login — not a second account. */
 export const MEMBER_ROLES = ["owner", "operator", "observer"] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
 export const INVITE_ROLES = ["operator", "observer"] as const;
 export type InviteRole = (typeof INVITE_ROLES)[number];
+
+/** Org cabinet sections a helper may open. Yes/no on escalate is Contacts, not this. */
+export const CABINET_GRANTS = ["agents", "treasury", "rules"] as const;
+export type CabinetGrant = (typeof CABINET_GRANTS)[number];
 
 export const JUDGES = ["onchain", "offline"] as const;
 export type Judge = (typeof JUDGES)[number];

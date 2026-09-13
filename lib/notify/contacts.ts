@@ -6,7 +6,7 @@ import { defaultPublicOrigin } from "@/lib/mcp/config";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
-import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
+import { isOrgHouse } from "@/lib/protocol/types";
 import { notifyCopy, sendMail } from "./mail";
 import { mintTelegramStartUrl, drainTelegramUpdates, telegramConfigured } from "./telegram";
 import { listHouseContacts, listHouseDesks, confirmContactEmail } from "./house-contacts";
@@ -124,14 +124,14 @@ export async function contactsPayload(principal: HousePrincipal, opts?: { drain?
   const view = contactsView(row);
   const configured = telegramConfigured();
   let telegram_url: string | null = null;
-  if (row.type !== "org" && !view.telegram && configured) {
+  if (!isOrgHouse(row) && !view.telegram && configured) {
     telegram_url = await mintTelegramStartUrl(row);
   }
   return {
     ...view,
     telegram_configured: configured,
     telegram_url,
-    targets: row.type === "org" ? await listHouseContacts(row.id) : [],
-    desks: row.type === "org" ? await listHouseDesks(row.id) : [],
+    targets: isOrgHouse(row) ? await listHouseContacts(row.id) : [],
+    desks: isOrgHouse(row) ? await listHouseDesks(row.id) : [],
   };
 }

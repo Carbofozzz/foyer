@@ -17,7 +17,7 @@ This file is the product we want. The live app is still a personal house ([INITI
 | Employee with a work chat | An **outbound agent**. Admin pastes MCP + a prompt written for that desk. | No |
 | Company-wide service (finance, legal, calendar, access, IdP) | A **callback agent** (hook). Woken on propose. Cites the charter. | No |
 | Admin (one is enough) | A human who runs the house: rules, keys, treasury, yes/no when the loop asks. | Yes |
-| Extra operators | Optional humans with **narrow rights** on the same house (prompts, treasury, decide, read). | Yes, only if the admin wants help |
+| Extra operators | Optional humans with **narrow rights** on the same house (agents, treasury, rules, or feed only). | Yes, only if the admin wants help |
 
 The gateway client is always an agent. A human never proposes. An employee who never logs in is still in the loop: their chat is.
 
@@ -78,7 +78,7 @@ Who is in the argument can change who is asked. A sales-vs-finance deadlock is n
 
 ## What ships today
 
-Personal house. Wizard has no company switch. Leftover `org` rows still show People (wallet invites). Do not grow that tab until it matches this file.
+Personal house. Wizard has no company switch. Leftover `type=org` rows with `owner_address` stay a personal house. Do not treat them as `POST /api/orgs` houses.
 
 Same loop: propose → object → bargain → insist → court → report. Permit, then the agent acts.
 
@@ -98,7 +98,7 @@ Create an org house under the signed-in account. Personal login unchanged.
 - Default `/cabinet` still `findHouseByOwner` (personal).
 - Header: personal shows **Cabinet** and an Organization control (create once, then the org name). Org house shows the org name as the title and **Cabinet** to go home.
 - Owner **Settings** tab: rename or delete the org (`PATCH`/`DELETE /api/orgs`). Personal house has no such tab.
-- Personal cabinet: “Add organization”. Tick/court `liveHouse` also includes `type=org` (otherwise org cases never judge). People tab stays on leftover `org` rows that still have `owner_address`, not on new org houses.
+- Personal cabinet: “Add organization”. Tick/court `liveHouse` also includes `type=org` (otherwise org cases never judge). Leftover `type=org` rows that still have `owner_address` are not company houses: no Access, no org Contacts, they do not count toward the create cap.
 
 Done: one wallet, two cabinets; personal flow untouched. OpenAPI `0.43.0`.
 
@@ -110,7 +110,7 @@ Done: CEO chat and junior chat can have different instructions without a second 
 
 ### Org 3 — Contacts on the org house — shipped
 
-Two jobs on the org Contacts tab: **people** (`house_contacts`: name, email, Telegram) and **policies** (`house_contact_policies`, at most one per person). Email and Telegram are unique per org. A person with no policy gets no letter. Policy kinds: every escalate point; chosen points; chosen points only if a named house agent objected. `sweep` fans out to reachable people whose policy matches that ping. Personal house Contacts unchanged.
+Two jobs on the org Contacts tab: **people** (`house_contacts`: name, email, Telegram) and **policies** (`house_contact_policies`, at most one per person). Email and Telegram are unique per org. A person with no policy gets no letter. Policy kinds: every escalate point; chosen points; chosen points only if a named house agent objected. That is who gets the ping — there is no second routing map. `sweep` fans out to reachable people whose policy matches. Personal house Contacts unchanged.
 
 Done: people and routing are separate; routing is not a blast and not “who is in the fight” by default. OpenAPI `0.45.0`.
 
@@ -120,11 +120,11 @@ Human yes/no stays `POST /api/cases/:id/appeal` and the decide-link. Org mints *
 
 Done: workforce still has no Foyer login; a named human can still decide. OpenAPI `0.46.0`.
 
-### Org 5 — Split cabinet rights
+### Org 5 — Split cabinet rights — shipped
 
-Replace the coarse People tab **on org houses only**. Capabilities: prompts/keys, treasury, decide, read. Personal houses do not grow this tab. Invite to cabinet is optional helpers with a wallet — not employees.
+Access tab **on org houses only** (`type=org` and no `owner_address`; not Contacts, not leftover flagged personal rows). Invite a wallet; they keep their personal `/cabinet` and any org they own. Invited orgs appear in the header (`?house=`). Grants pick which sections they may open: Agents (prompts/keys + test), Treasury (deposit; withdraw stays owner), and Rules (charter — **off unless ticked**). Empty grants = activity feed only. Yes/no on escalate is Contacts (and the owner in the feed). Personal houses do not grow this tab.
 
-Done: two admins can split work; employees remain agents.
+Done: two admins can split cabinet work; employees remain agents. OpenAPI `0.47.0`.
 
 ### Org 6 — Hierarchy the court can see
 
@@ -132,11 +132,7 @@ Charter may name agents (by id or stable label). `buildJudgeInput` already sends
 
 Done: IC can tell CEO desk from intern without a protocol fork.
 
-### Org 7 — Route the fight
-
-Optional map: objector-set or hook role → notify/decide target. Default: Org 3 list / owner. Personal: skip the map.
-
-### Org 8 — Paid create
+### Org 7 — Paid create
 
 Gate Org 1 behind billing (or an env allow-list until then). Personal stays free.
 

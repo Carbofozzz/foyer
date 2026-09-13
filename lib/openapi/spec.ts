@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.46.0",
+      version: "0.47.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -483,9 +483,14 @@ export function openApiSpec(origin: string) {
         }),
         post: operation({
           id: "inviteMember",
-          summary: "Invite a wallet as operator or observer (owner only, org only)",
+          summary: "Invite a wallet to this org cabinet with section grants (agents, treasury, rules; owner only)",
           auth: "session",
           created: true,
+        }),
+        patch: operation({
+          id: "patchMember",
+          summary: "Change which cabinet sections a helper may open (owner only)",
+          auth: "session",
         }),
       },
       "/api/cabinet/{token}/wizard": {

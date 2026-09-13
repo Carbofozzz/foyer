@@ -164,7 +164,13 @@ export function AdminDesk({
                       {row.owner ? shortAddr(row.owner) : "—"}
                     </td>
                     <td>
-                      {row.spawn ? a.spawn : row.type === "org" ? t.home.typeOrg : t.home.typePersonal}
+                      {row.spawn
+                        ? a.spawn
+                        : row.type === "org"
+                          ? row.name.trim()
+                            ? `${t.home.typeOrg} · ${row.name.trim()}`
+                            : t.home.typeOrg
+                          : t.home.typePersonal}
                       {row.connected ? "" : ` · ${a.notConnected}`}
                     </td>
                     <td className="muted">{formatWhen(row.created_at, locale)}</td>

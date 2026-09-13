@@ -1,4 +1,4 @@
-import { cabinetFromToken, needOperate } from "@/lib/protocol/auth";
+import { cabinetFromToken, needGrant } from "@/lib/protocol/auth";
 import { jsonOk, protocolFail } from "@/lib/protocol/http";
 import { publicOrigin } from "@/lib/mcp/config";
 import { inspectQuery } from "@/lib/protocol/test-stage";
@@ -7,7 +7,7 @@ export const maxDuration = 120;
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
-  const auth = needOperate(await cabinetFromToken(token, request));
+  const auth = needGrant(await cabinetFromToken(token, request), "agents");
   if ("error" in auth) return auth.error;
   try {
     return jsonOk(await inspectQuery(auth.principal, new URL(request.url), publicOrigin(request)));

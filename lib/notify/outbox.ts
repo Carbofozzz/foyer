@@ -7,6 +7,7 @@ import { actionPayload, loadActionBundle } from "@/lib/protocol/bundle";
 import { appealCase } from "@/lib/protocol/appeal";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
+import { isOrgHouse } from "@/lib/protocol/types";
 import { notifyCopy, sendMail } from "./mail";
 import { notifyReasonKey } from "./reasons";
 import { matchReachableHouseContacts, ensureHouseContactsSchema } from "./house-contacts";
@@ -59,9 +60,9 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
     const bundle = await loadActionBundle(row.id);
     const reason = notifyReasonKey(bundle?.verdict?.reasoning ?? "", bundle?.verdict?.judge ?? "offline");
     const objectorIds = bundle?.objections.map((item) => item.objectorId) ?? [];
-    const matched = principal.type === "org" ? await matchReachableHouseContacts(principalId, reason, objectorIds) : [];
+    const matched = isOrgHouse(principal) ? await matchReachableHouseContacts(principalId, reason, objectorIds) : [];
     const channel: NotifyChannel | null =
-      principal.type === "org" ? (matched.length > 0 ? "org" : null) : preferredChannel(principal);
+      isOrgHouse(principal) ? (matched.length > 0 ? "org" : null) : preferredChannel(principal);
     if (!channel) continue;
 
     const existing = await db.select().from(notifications).where(eq(notifications.actionId, row.id));

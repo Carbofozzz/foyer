@@ -266,6 +266,8 @@ export const houseMembers = pgTable(
       .references(() => principals.id),
     address: text("address").notNull(),
     role: text("role").notNull(),
+    /** Org helpers: agents | treasury | rules. Empty = activity feed only. Owner ignores this. */
+    grants: jsonb("grants").$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.principalId, table.address] })],

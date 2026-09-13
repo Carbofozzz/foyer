@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
-import { roleLabel } from "@/app/components/house-switch";
-import type { MemberRole } from "@/lib/protocol/types";
+import type { CabinetGrant, MemberRole } from "@/lib/protocol/types";
 import type { Messages } from "@/lib/i18n/load";
 
-type Member = { address: string; role: MemberRole };
+type Member = { address: string; role: MemberRole; grants: CabinetGrant[] };
+
+const GRANT_OPTIONS: CabinetGrant[] = ["agents", "treasury", "rules"];
 
 export function MembersCard({
   token,
@@ -27,7 +28,7 @@ export function MembersCard({
 }) {
   const [items, setItems] = useState<Member[] | null>(null);
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState<"operator" | "observer">("operator");
+  const [grants, setGrants] = useState<CabinetGrant[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
 
@@ -54,7 +55,7 @@ export function MembersCard({
     const response = await fetch(`/api/cabinet/${token}/members`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ address, role }),
+      body: JSON.stringify({ address, grants }),
     });
     setPending(false);
     if (!response.ok) {
@@ -65,6 +66,20 @@ export function MembersCard({
     setItems(payload.data.items);
     setAddress("");
     setError(false);
+  }
+
+  async function saveGrants(target: string, next: CabinetGrant[]) {
+    const response = await fetch(`/api/cabinet/${token}/members`, {
+      method: "PATCH",
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
+      body: JSON.stringify({ address: target, grants: next }),
+    });
+    if (!response.ok) {
+      setError(true);
+      return;
+    }
+    const payload = (await response.json()) as { data: { items: Member[] } };
+    setItems(payload.data.items);
   }
 
   async function remove(target: string) {
@@ -83,20 +98,26 @@ export function MembersCard({
   const body = (
     <>
       <p className="hint">{t.membersLead}</p>
-      <p className="hint">{t.membersRoles}</p>
       {items ? (
         <ul className="member-list">
           {items.map((item) => (
             <li key={item.address}>
               <span className="mono">{short(item.address)}</span>
               <span className="muted">
-                {roleLabel(item.role, t)}
+                {item.role === "owner" ? t.memberOwner : grantSummary(item.grants, t)}
                 {selfAddress && item.address.toLowerCase() === selfAddress.toLowerCase() ? ` · ${t.memberYou}` : ""}
               </span>
               {canInvite && item.role !== "owner" ? (
-                <button type="button" className="ghost" onClick={() => remove(item.address)}>
-                  {t.remove}
-                </button>
+                <>
+                  <GrantChecks
+                    t={t}
+                    value={item.grants}
+                    onChange={(next) => void saveGrants(item.address, next)}
+                  />
+                  <button type="button" className="ghost" onClick={() => remove(item.address)}>
+                    {t.remove}
+                  </button>
+                </>
               ) : null}
             </li>
           ))}
@@ -112,13 +133,8 @@ export function MembersCard({
             {t.inviteAddress}
             <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="0x…" />
           </label>
-          <label>
-            {t.inviteRole}
-            <select value={role} onChange={(event) => setRole(event.target.value as "operator" | "observer")}>
-              <option value="operator">{t.memberOperator}</option>
-              <option value="observer">{t.memberObserver}</option>
-            </select>
-          </label>
+          <GrantChecks t={t} value={grants} onChange={setGrants} />
+          <p className="hint">{t.membersGrantsHint}</p>
           <button type="submit" className="primary" disabled={pending || !address.trim()} aria-busy={pending}>
             {pending ? t.inviting : t.invite}
           </button>
@@ -135,6 +151,45 @@ export function MembersCard({
       {body}
     </details>
   );
+}
+
+function GrantChecks({
+  t,
+  value,
+  onChange,
+}: {
+  t: Messages["cabinet"];
+  value: CabinetGrant[];
+  onChange: (next: CabinetGrant[]) => void;
+}) {
+  return (
+    <div className="check-list">
+      {GRANT_OPTIONS.map((grant) => (
+        <label key={grant} className="check-row">
+          <input
+            type="checkbox"
+            checked={value.includes(grant)}
+            onChange={(event) => {
+              const next = event.target.checked ? [...value, grant] : value.filter((item) => item !== grant);
+              onChange(next);
+            }}
+          />
+          {grantLabel(grant, t)}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function grantLabel(grant: CabinetGrant, t: Messages["cabinet"]) {
+  if (grant === "treasury") return t.grantTreasury;
+  if (grant === "rules") return t.grantRules;
+  return t.grantAgents;
+}
+
+function grantSummary(grants: CabinetGrant[], t: Messages["cabinet"]) {
+  if (grants.length === 0) return t.grantRead;
+  return grants.map((grant) => grantLabel(grant, t)).join(" · ");
 }
 
 function short(address: string) {

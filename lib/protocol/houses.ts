@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { houseMembers, principals, enrollments } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { ownerKey } from "@/lib/gen/chain";
@@ -8,7 +8,7 @@ import { deleteHouse } from "./admin";
 import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
 import { accessFor } from "./members";
-import type { PrincipalType } from "./types";
+import { isOrgHouse, type PrincipalType } from "./types";
 
 export const ORG_CAP = 1;
 const ORG_NAME = 80;
@@ -104,6 +104,7 @@ export async function createOrgHouse(ownerAddress: string, rawName: string) {
         eq(houseMembers.address, owner),
         eq(houseMembers.role, "owner"),
         eq(principals.type, "org"),
+        isNull(principals.ownerAddress),
         eq(principals.isSpawn, false),
       ),
     );
@@ -132,7 +133,7 @@ export async function ownedOrg(ownerAddress: string, houseId: string) {
   const id = houseId.trim();
   if (!id) throw new ProtocolError("bad_request", "id is required", 400);
   const access = await accessFor(ownerAddress, id);
-  if (!access || access.principal.type !== "org") {
+  if (!access || !isOrgHouse(access.principal)) {
     throw new ProtocolError("not_found", "Unknown organization", 404);
   }
   if (access.role !== "owner") {

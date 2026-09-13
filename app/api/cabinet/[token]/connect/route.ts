@@ -1,4 +1,4 @@
-import { cabinetFromToken, needOperate } from "@/lib/protocol/auth";
+import { cabinetFromToken, needGrant } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { markConnectDone } from "@/lib/protocol/cabinet";
 import { mcpConfig, MCP_PROMPT_LINES, publicOrigin } from "@/lib/mcp/config";
@@ -7,7 +7,7 @@ import { isRecord } from "@/lib/protocol/parse";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
-  const auth = needOperate(await cabinetFromToken(token, request));
+  const auth = needGrant(await cabinetFromToken(token, request), "agents");
   if ("error" in auth) return auth.error;
   try {
     const origin = publicOrigin(request);
@@ -24,7 +24,7 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
-  const auth = needOperate(await cabinetFromToken(token, request));
+  const auth = needGrant(await cabinetFromToken(token, request), "agents");
   if ("error" in auth) return auth.error;
   let body: unknown = {};
   try {
@@ -55,7 +55,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
 
 export async function PATCH(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
-  const auth = needOperate(await cabinetFromToken(token, request));
+  const auth = needGrant(await cabinetFromToken(token, request), "agents");
   if ("error" in auth) return auth.error;
   let body: unknown;
   try {

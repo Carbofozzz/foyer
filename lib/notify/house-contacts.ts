@@ -6,6 +6,7 @@ import { defaultPublicOrigin } from "@/lib/mcp/config";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
+import { isOrgHouse } from "@/lib/protocol/types";
 import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { isNotifyReason, NOTIFY_REASON_KEYS, type NotifyReasonKey } from "./reasons";
 import { notifyCopy, sendMail } from "./mail";
@@ -239,7 +240,7 @@ export async function addHouseContact(
   input: { label?: unknown; email?: unknown },
   origin?: string,
 ): Promise<HouseContactView[]> {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   const label = parseLabel(input.label, true);
   const db = getDb();
@@ -276,7 +277,7 @@ export async function saveHouseContact(
   input: { label?: unknown; email?: unknown },
   origin?: string,
 ): Promise<HouseContactView[]> {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   const db = getDb();
   const [row] = await db
@@ -310,7 +311,7 @@ export async function saveHouseContactPolicy(
   contactId: string,
   input: { kind: unknown; reasons?: unknown; objectorId?: unknown },
 ): Promise<HouseContactView[]> {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   if (!isPolicyKind(input.kind)) throw new ProtocolError("bad_request", "Unknown policy", 400);
   const db = getDb();
@@ -354,7 +355,7 @@ export async function saveHouseContactPolicy(
 }
 
 export async function removeHouseContact(principal: HousePrincipal, contactId: string): Promise<HouseContactView[]> {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   const db = getDb();
   const [row] = await db
@@ -372,7 +373,7 @@ export async function removeHouseContact(principal: HousePrincipal, contactId: s
 }
 
 export async function resendHouseContactConfirm(principal: HousePrincipal, contactId: string, origin?: string) {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   const [row] = await getDb()
     .select()
@@ -423,7 +424,7 @@ export async function confirmContactEmail(contactId: string, email: string) {
 }
 
 export async function unlinkHouseContactTelegram(principal: HousePrincipal, contactId: string) {
-  if (principal.type !== "org") throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
+  if (!isOrgHouse(principal)) throw new ProtocolError("forbidden", "Only a company house has a contact list", 403);
   await ensureHouseContactsSchema();
   const db = getDb();
   const [row] = await db

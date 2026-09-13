@@ -15,7 +15,7 @@ import {
   unlinkHouseContactTelegram,
 } from "@/lib/notify/house-contacts";
 import { isLocale } from "@/lib/i18n/config";
-import { isRecord } from "@/lib/protocol/parse";
+import { isOrgHouse } from "@/lib/protocol/types";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
@@ -43,7 +43,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   const locale = typeof body.locale === "string" && isLocale(body.locale) ? body.locale : "en";
   const origin = publicOrigin(request);
   try {
-    if (auth.principal.type === "org") {
+    if (isOrgHouse(auth.principal)) {
       if (body.add === true) {
         await addHouseContact(auth.principal, { label: body.label, email: body.add_email }, origin);
         return jsonOk(await contactsPayload(auth.principal, { drain: false }));
