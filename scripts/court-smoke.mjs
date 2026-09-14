@@ -13,8 +13,12 @@ import { readFileSync } from "node:fs";
 import { createAccount, createClient, generatePrivateKey, isSuccessful } from "genlayer-js";
 import { studioDevnet } from "genlayer-js/chains";
 
-const chain = studioDevnet;
-const RPC = chain.rpcUrls.default.http[0];
+const rpc =
+  process.env.GENLAYER_RPC_URL?.trim() ||
+  process.env.NEXT_PUBLIC_GENLAYER_RPC_URL?.trim() ||
+  studioDevnet.rpcUrls.default.http[0];
+const chain = { ...studioDevnet, rpcUrls: { default: { http: [rpc] } } };
+const RPC = rpc;
 const WAIT = { interval: 5_000, retries: 30 };
 const FUND_WEI = BigInt(5) * BigInt(10) ** BigInt(18);
 

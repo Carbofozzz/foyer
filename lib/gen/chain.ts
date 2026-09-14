@@ -1,11 +1,17 @@
 import { defineChain } from "viem";
 
-/** Studio-dev (chain id 61997). Alias in env: studioDevnet / studionetdev. */
+/**
+ * Studio-dev / Studio Next (chain id 61997). Must match genlayer-js `studioDevnet`.
+ * Canonical RPC is studio-dev; `studio-next.genlayer.com` is the v2-dev boilerplate alias.
+ * Override with NEXT_PUBLIC_GENLAYER_RPC_URL (wallet) and GENLAYER_RPC_URL (court).
+ */
 export const GENLAYER_CHAIN_ID = 61997;
 export const GENLAYER_CHAIN_ID_HEX = `0x${GENLAYER_CHAIN_ID.toString(16)}` as const;
-export const GENLAYER_RPC_URL = "https://studio-dev.genlayer.com/api";
+export const GENLAYER_RPC_URL =
+  process.env.NEXT_PUBLIC_GENLAYER_RPC_URL?.trim() || "https://studio-dev.genlayer.com/api";
 export const GENLAYER_EXPLORER_URL = "https://explorer-studio-dev.genlayer.com";
-export const GENLAYER_CHAIN_NAME = "GenLayer Studio Devnet";
+export const GENLAYER_CHAIN_NAME =
+  process.env.NEXT_PUBLIC_GENLAYER_CHAIN_NAME?.trim() || "GenLayer Studio Devnet";
 export const GENLAYER_CURRENCY = {
   name: "GEN Token",
   symbol: "GEN",

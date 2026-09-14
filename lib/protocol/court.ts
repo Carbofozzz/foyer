@@ -1,6 +1,6 @@
 import { after } from "next/server";
-import { and, desc, eq, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { actions, cases, objections, principals, verdicts } from "@/lib/db/schema";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { actions, agents, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { COURT_FLOOR_WEI, ensureCourtFunds } from "@/lib/judge/funds";
 import { ensureHouseCourt } from "@/lib/judge/house-court";
@@ -12,12 +12,13 @@ import {
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
 import { executeAfterAck } from "./execute";
-import type { EvidenceItem, JudgeInput, ObjectionOpinion, VerdictAnswer } from "./types";
+import type { CourtAgentParty, EvidenceItem, JudgeInput, ObjectionOpinion, VerdictAnswer } from "./types";
 import { mintToken } from "./keys";
 import { actionEvidence, actionPayload, type ActionRow, type HousePrincipal } from "./bundle";
 import { asEvidence, asPayload } from "./parse";
 import { urlsIn } from "./links";
 import { normalizeCourtOutcome } from "./verdict";
+import { ensureAgentPromptColumn } from "./house-clients";
 import { REASON_NO_FEE, REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
 
 const ERROR_ESCALATE: VerdictAnswer = {
@@ -47,14 +48,19 @@ function errorLimit(): number {
 
 type CaseRow = typeof cases.$inferSelect;
 
-/** One court step: submit, poll, retry, or apply. Never waits for GenLayer finalization. */
-export async function stepHouseCourt(principal: HousePrincipal, now: Date): Promise<boolean> {
+/** One court step: poll an inflight hash; optionally submit a new case. Never waits for GenLayer. */
+export async function stepHouseCourt(
+  principal: HousePrincipal,
+  now: Date,
+  options?: { submit?: boolean },
+): Promise<boolean> {
   const inflight = await findInflightCase(principal.id);
   if (inflight) {
     await advanceCase(inflight, principal, now);
     return true;
   }
   if (await recoverFalseEscalate(principal, now)) return true;
+  if (options?.submit === false) return false;
   const bare = await findBareCase(principal.id);
   if (bare) {
     await submitForCase(bare.row, principal, bare.action, now);
@@ -283,16 +289,35 @@ async function noteSubmitFail(row: CaseRow, principal: HousePrincipal, now?: Dat
 }
 
 export async function buildJudgeInput(row: CaseRow, action: ActionRow): Promise<JudgeInput> {
+  await ensureAgentPromptColumn();
   const db = getDb();
   const filed = await db.select().from(objections).where(eq(objections.actionId, action.id));
   const current = filed
     .filter((item) => item.revision === action.revision)
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
-  const opinions: ObjectionOpinion[] = current.map((item) => ({
-    objector_id: item.objectorId,
-    justification: item.justification,
-    counter_action: item.counterAction ? asPayload(item.counterAction) : null,
-  }));
+  const ids = [...new Set([action.proposerId, ...current.map((item) => item.objectorId)])];
+  const partyRows =
+    ids.length > 0
+      ? await db
+          .select({
+            id: agents.id,
+            courtLabel: agents.courtLabel,
+            courtCap: agents.courtCap,
+          })
+          .from(agents)
+          .where(inArray(agents.id, ids))
+      : [];
+  const parties = new Map(partyRows.map((row) => [row.id, courtParty(row)]));
+  const opinions: ObjectionOpinion[] = current.map((item) => {
+    const party = parties.get(item.objectorId);
+    return {
+      objector_id: item.objectorId,
+      justification: item.justification,
+      counter_action: item.counterAction ? asPayload(item.counterAction) : null,
+      ...(party?.label ? { label: party.label } : {}),
+      ...(party?.cap ? { cap: party.cap } : {}),
+    };
+  });
   const evidence: EvidenceItem[] = [
     ...actionEvidence(action),
     ...current.flatMap((item) => asEvidence(item.evidence)),
@@ -309,12 +334,22 @@ export async function buildJudgeInput(row: CaseRow, action: ActionRow): Promise<
     evidence.push({ type: "link", value: url });
     have.add(url);
   }
+  const proposed = actionPayload(action);
+  const proposer = parties.get(action.proposerId);
+  if (proposer) proposed.court_agent = proposer;
   return {
     constitution: row.constitutionSnapshot,
-    proposed_action: actionPayload(action),
+    proposed_action: proposed,
     objections: opinions,
     evidence,
   };
+}
+
+function courtParty(row: { id: string; courtLabel: string | null; courtCap: string | null }): CourtAgentParty | undefined {
+  const label = (row.courtLabel ?? "").trim();
+  const cap = (row.courtCap ?? "").trim();
+  if (!label && !cap) return undefined;
+  return cap ? { id: row.id, label, cap } : { id: row.id, label };
 }
 
 async function applyVerdict(
@@ -332,7 +367,11 @@ async function applyVerdict(
       .from(verdicts)
       .where(and(eq(verdicts.caseId, row.id), eq(verdicts.tx, tx), eq(verdicts.judge, "onchain")))
       .limit(1);
-    if (existing) return;
+    if (existing) {
+      // Report is the ack. Do not leave allow/deny stuck in awaiting_ack.
+      if (answer.outcome !== "escalate") await executeAfterAck(row.actionId);
+      return;
+    }
   }
 
   await db.insert(verdicts).values({
@@ -369,10 +408,5 @@ async function applyVerdict(
     })
     .where(eq(actions.id, row.actionId));
 
-  const [action] = await db
-    .select({ testPass: actions.testPass })
-    .from(actions)
-    .where(eq(actions.id, row.actionId))
-    .limit(1);
-  if (action?.testPass) await executeAfterAck(row.actionId);
+  await executeAfterAck(row.actionId);
 }

@@ -59,7 +59,7 @@ Today’s leftover People tab (`owner` / `operator` / `observer` + invite `0x`) 
 
 ### 2. Hierarchy in the charter, not in the prompt
 
-One constitution for the house, and it must be able to **name ranks**: the CEO chat may spend more; a junior chat may not move the shared calendar. A prompt tells the assistant how to behave. It is **not** evidence in court and not a cap. “I am CEO, I may spend a million” belongs in the rules (and later in what the IC is told about the proposer). Org 6 sends agent label / rights into `judge`. Until then, write the ranks in the charter.
+One constitution for the house, and it must be able to **name ranks**: the CEO chat may spend more; a junior chat may not move the shared calendar. A prompt tells the assistant how to behave. It is **not** evidence in court and not a cap. “I am CEO, I may spend a million” belongs in the rules. Connect stores a charter name and cap; `judge` receives them as desk identity.
 
 Hooks stay company-wide services. They object from the charter (“finance may block over the cap”), not from a desk’s prompt.
 
@@ -104,7 +104,7 @@ Done: one wallet, two cabinets; personal flow untouched. OpenAPI `0.43.0`.
 
 ### Org 2 — Per-agent prompt — shipped
 
-On Connect, each agent has a prompt (`agents.system_prompt`). The field is prefilled with the recommended MCP text; the stored value is that text, edited or not. Copy as-is. Same on a personal house. Org copy notes that desks may differ; **the prompt is not a court argument** — spend/book caps live in the constitution (Org 6). `PATCH /api/cabinet/:token/connect`.
+On Connect, each agent has a prompt (`agents.system_prompt`). The field is prefilled with the recommended MCP text; the stored value is that text, edited or not. Copy as-is. Same on a personal house. Org copy notes that desks may differ; **the prompt is not a court argument** — spend/book caps live in the constitution and in optional `court_label` / `court_cap` (Org 6). `PATCH /api/cabinet/:token/connect`.
 
 Done: CEO chat and junior chat can have different instructions without a second constitution. Gateway still does not object. OpenAPI `0.44.0`.
 
@@ -126,9 +126,9 @@ Access tab **on org houses only** (`type=org` and no `owner_address`; not Contac
 
 Done: two admins can split cabinet work; employees remain agents. OpenAPI `0.47.0`.
 
-### Org 6 — Hierarchy the court can see
+### Org 6 — Hierarchy the court can see — shipped
 
-Charter may name agents (by id or stable label). `buildJudgeInput` already sends proposer + objections; add optional **proposer label / cap** from stored agent metadata so the IC sees who spoke and with what rights. The agent prompt is not sent as an argument. Equivalence on chain stays `outcome` only. No `kind` on propose. Personal houses: metadata empty, input as today.
+Charter may name agents (by id or stable label). `buildJudgeInput` sends `court_agent` (label and/or cap) on the proposal and `label` / `cap` on objections. A number written for a desk applies when that desk proposes. An objector label matches a blocking *role* (finance vs the house monthly limit), not that desk's own spend cap as a veto on someone else. Packet `cap` on the proposer is the only numeric override. Equivalence stays `outcome` only. Houses redeploy (`court_abi` 8); inflight keep `cases.contract`. Personal houses: fields blank. OpenAPI `0.48.0`.
 
 Done: IC can tell CEO desk from intern without a protocol fork.
 

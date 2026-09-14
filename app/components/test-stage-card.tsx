@@ -116,7 +116,13 @@ export function TestStageCard({
     load()
       .then((data) => {
         setProposer((id) => id || data.agents[0]?.id || "");
-        if (data.current?.live || data.current?.action.status === "escalated") setWatching(true);
+        if (
+          data.current?.live ||
+          data.current?.action.status === "escalated" ||
+          data.current?.action.status === "awaiting_ack"
+        ) {
+          setWatching(true);
+        }
         setLoaded(true);
       })
       .catch(() => {

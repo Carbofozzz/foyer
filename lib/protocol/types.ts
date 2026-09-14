@@ -92,4 +92,13 @@ export type ObjectionOpinion = {
   objector_id: string;
   justification: string;
   counter_action: ActionPayload | null;
+  label?: string;
+  cap?: string;
+};
+
+/** Desk identity for the IC. Omitted when the house left metadata empty. */
+export type CourtAgentParty = {
+  id: string;
+  label: string;
+  cap?: string;
 };

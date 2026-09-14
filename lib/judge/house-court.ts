@@ -6,8 +6,8 @@ import { COURT_FLOOR_WEI, ensureCourtFunds } from "./funds";
 import { ensureHouseWallet } from "./house-wallet";
 import { deployHouseCourt } from "./onchain";
 
-/** allow/deny/escalate; IC fetches cited http(s) links. Older deploys redeploy. */
-export const COURT_ABI = 4;
+/** Desk label matches who proposes; another desk's spend cap is not a veto. */
+export const COURT_ABI = 8;
 
 /** One Intelligent Contract per house. Redeploys when the stored ABI is stale. */
 export async function ensureHouseCourt(principal: HousePrincipal): Promise<string | null> {

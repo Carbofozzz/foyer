@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.47.0",
+      version: "0.48.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -443,13 +443,13 @@ export function openApiSpec(origin: string) {
         }),
         post: operation({
           id: "issueConnectAgent",
-          summary: "Issue a chat or hook key; optional desk prompt",
+          summary: "Issue a chat or hook key; optional desk prompt and court label/cap",
           auth: "session",
           created: true,
         }),
         patch: operation({
           id: "patchConnectAgent",
-          summary: "Save the desk prompt for an issued agent",
+          summary: "Save the desk prompt and court label/cap for an issued agent",
           auth: "session",
         }),
       },

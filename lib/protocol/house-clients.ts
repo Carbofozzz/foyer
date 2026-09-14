@@ -5,7 +5,7 @@ import { agentPromptLines, agentPromptText } from "@/lib/mcp/config";
 import type { HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
-import { parseAgentPrompt, parseAgentWake } from "./parse";
+import { parseAgentPrompt, parseAgentWake, parseCourtCap, parseCourtLabel } from "./parse";
 import { sealKey, unsealKey } from "./seal";
 import type { WakeKind } from "./types";
 import { WAKE_KINDS } from "./types";
@@ -17,6 +17,12 @@ export async function ensureAgentPromptColumn() {
   const db = getDb();
   await db.execute(
     sql`ALTER TABLE agents ADD COLUMN IF NOT EXISTS system_prompt text NOT NULL DEFAULT ''`,
+  );
+  await db.execute(
+    sql`ALTER TABLE agents ADD COLUMN IF NOT EXISTS court_label text NOT NULL DEFAULT ''`,
+  );
+  await db.execute(
+    sql`ALTER TABLE agents ADD COLUMN IF NOT EXISTS court_cap text NOT NULL DEFAULT ''`,
   );
   promptColumnReady = true;
 }
@@ -39,10 +45,16 @@ export async function issueConnectAgent(principal: HousePrincipal, body: Record<
   if (!trimmed) throw new ProtocolError("bad_request", "name is required", 400);
   const spec = parseAgentWake(body);
   const prompt = parseAgentPrompt(body);
+  const courtLabel = parseCourtLabel(body.court_label);
+  const courtCap = parseCourtCap(body.court_cap);
   const existing = await findRealAgentByName(principal.id, trimmed);
   if (existing?.sealedKey) {
-    if (body.prompt !== undefined || body.system_prompt !== undefined) {
-      await saveAgentPrompt(existing.id, principal.id, prompt);
+    if (body.prompt !== undefined || body.system_prompt !== undefined || body.court_label !== undefined || body.court_cap !== undefined) {
+      await saveAgentConnect(existing.id, principal.id, {
+        ...(body.prompt !== undefined || body.system_prompt !== undefined ? { systemPrompt: prompt } : {}),
+        ...(body.court_label !== undefined ? { courtLabel } : {}),
+        ...(body.court_cap !== undefined ? { courtCap } : {}),
+      });
       const fresh = await findRealAgentById(principal.id, existing.id);
       if (fresh) return { ...connectAgentView(fresh), agent_key: unsealKey(existing.sealedKey), created: false };
     }
@@ -62,6 +74,8 @@ export async function issueConnectAgent(principal: HousePrincipal, body: Record<
     callbackUrl: spec.callbackUrl,
     callbackSecret,
     systemPrompt: prompt,
+    courtLabel,
+    courtCap,
   });
   return {
     ...connectAgentView(agent),
@@ -73,10 +87,16 @@ export async function issueConnectAgent(principal: HousePrincipal, body: Record<
 
 export async function updateAgentPrompt(principal: HousePrincipal, agentId: string, raw: Record<string, unknown>) {
   await ensureAgentPromptColumn();
-  const prompt = parseAgentPrompt(raw);
   const row = await findRealAgentById(principal.id, agentId.trim());
   if (!row?.sealedKey) throw new ProtocolError("not_found", "Unknown agent", 404);
-  await saveAgentPrompt(row.id, principal.id, prompt);
+  const patch: { systemPrompt?: string; courtLabel?: string; courtCap?: string } = {};
+  if (raw.prompt !== undefined || raw.system_prompt !== undefined) {
+    patch.systemPrompt = parseAgentPrompt(raw);
+  }
+  if (raw.court_label !== undefined) patch.courtLabel = parseCourtLabel(raw.court_label);
+  if (raw.court_cap !== undefined) patch.courtCap = parseCourtCap(raw.court_cap);
+  if (!Object.keys(patch).length) throw new ProtocolError("bad_request", "nothing to update", 400);
+  await saveAgentConnect(row.id, principal.id, patch);
   const fresh = await findRealAgentById(principal.id, row.id);
   if (!fresh) throw new ProtocolError("not_found", "Unknown agent", 404);
   return connectAgentView(fresh);
@@ -105,6 +125,8 @@ function connectAgentView(row: {
   callbackUrl: string | null;
   sealedCallbackSecret: string | null;
   systemPrompt?: string | null;
+  courtLabel?: string | null;
+  courtCap?: string | null;
 }) {
   const prompt = agentPromptText(row.systemPrompt);
   return {
@@ -114,15 +136,21 @@ function connectAgentView(row: {
     agent_key: row.sealedKey ? unsealKey(row.sealedKey) : "",
     prompt,
     prompt_lines: agentPromptLines(prompt),
+    court_label: row.courtLabel ?? "",
+    court_cap: row.courtCap ?? "",
     ...connectPublicFields(row),
   };
 }
 
-async function saveAgentPrompt(agentId: string, principalId: string, prompt: string) {
+async function saveAgentConnect(
+  agentId: string,
+  principalId: string,
+  patch: { systemPrompt?: string; courtLabel?: string; courtCap?: string },
+) {
   const db = getDb();
   await db
     .update(agents)
-    .set({ systemPrompt: prompt })
+    .set(patch)
     .where(and(eq(agents.id, agentId), eq(agents.principalId, principalId)));
 }
 
@@ -135,6 +163,8 @@ async function insertSealedAgent(
     callbackUrl?: string | null;
     callbackSecret?: string | null;
     systemPrompt?: string;
+    courtLabel?: string;
+    courtCap?: string;
   },
 ) {
   const db = getDb();
@@ -153,6 +183,8 @@ async function insertSealedAgent(
     callbackUrl: input.callbackUrl ?? null,
     sealedCallbackSecret: input.callbackSecret ? sealKey(input.callbackSecret) : null,
     systemPrompt: input.systemPrompt ?? "",
+    courtLabel: input.courtLabel ?? "",
+    courtCap: input.courtCap ?? "",
   });
   const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
   if (!row) throw new ProtocolError("internal", "Failed to create agent", 500);

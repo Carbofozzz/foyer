@@ -125,6 +125,25 @@ export function parseAgentPrompt(body: Record<string, unknown>): string {
   return text || defaultAgentPrompt();
 }
 
+const COURT_LABEL_MAX = 80;
+const COURT_CAP_MAX = 200;
+
+export function parseCourtLabel(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw !== "string") throw new ProtocolError("bad_request", "court_label must be a string", 400);
+  const text = raw.trim();
+  if (text.length > COURT_LABEL_MAX) throw new ProtocolError("bad_request", "court_label is too long", 400);
+  return text;
+}
+
+export function parseCourtCap(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw !== "string") throw new ProtocolError("bad_request", "court_cap must be a string", 400);
+  const text = raw.trim();
+  if (text.length > COURT_CAP_MAX) throw new ProtocolError("bad_request", "court_cap is too long", 400);
+  return text;
+}
+
 export function parseCallbackUrl(raw: unknown): string {
   if (typeof raw !== "string" || !raw.trim()) {
     throw new ProtocolError("bad_request", "callback_url is required", 400);

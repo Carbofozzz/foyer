@@ -21,7 +21,7 @@ export const principals = pgTable("principals", {
   testClients: boolean("test_clients").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
-  /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. */
+  /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. 5+ = desk fields in the packet. */
   courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
@@ -91,6 +91,10 @@ export const agents = pgTable("agents", {
   sealedCallbackSecret: text("sealed_callback_secret"),
   /** Desk instructions pasted above the shared Foyer MCP lines. Empty = those lines only. */
   systemPrompt: text("system_prompt").notNull().default(""),
+  /** Stable name the constitution may cite. Empty = not sent to court. */
+  courtLabel: text("court_label").notNull().default(""),
+  /** Plain-language cap for the court (not a prompt). Empty = not sent. */
+  courtCap: text("court_cap").notNull().default(""),
   bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

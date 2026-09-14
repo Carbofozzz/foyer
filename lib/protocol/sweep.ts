@@ -14,7 +14,7 @@ import { ensureAgentPromptColumn } from "./house-clients";
 /**
  * Advances time for one house. Idempotent.
  * Test objections come from the cabinet test stage as house agents.
- * Reads pass courts: 0. Tick only polls an already submitted court.
+ * Reads poll an already submitted court. Tick may also submit one new court.
  */
 export async function sweep(
   principalId: string,
@@ -60,7 +60,8 @@ export async function sweep(
 
   advanced += await timeoutBargains(principal, now);
 
-  if (courts > 0 && (await stepHouseCourt(principal, now))) advanced += 1;
+  // Poll a stored hash on every sweep. Submit a new court only when courts > 0 (tick).
+  if (await stepHouseCourt(principal, now, { submit: courts > 0 })) advanced += 1;
 
   const pending = await db
     .select()

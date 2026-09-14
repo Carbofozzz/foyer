@@ -23,6 +23,8 @@ type IssuedAgent = {
   callback_secret?: string | null;
   prompt?: string;
   prompt_lines?: string[];
+  court_label?: string;
+  court_cap?: string;
 };
 
 type ConnectPayload = {
@@ -50,6 +52,10 @@ export function ConnectIssueFields({
   onCallbackUrl,
   onCallbackSecret,
   onPrompt,
+  courtLabel,
+  courtCap,
+  onCourtLabel,
+  onCourtCap,
   showIssue = true,
   pending = false,
   onIssue,
@@ -66,6 +72,10 @@ export function ConnectIssueFields({
   onCallbackUrl: (value: string) => void;
   onCallbackSecret: (value: string) => void;
   onPrompt: (value: string) => void;
+  courtLabel?: string;
+  courtCap?: string;
+  onCourtLabel?: (value: string) => void;
+  onCourtCap?: (value: string) => void;
   showIssue?: boolean;
   pending?: boolean;
   onIssue?: () => void;
@@ -83,6 +93,31 @@ export function ConnectIssueFields({
           onChange={(event) => onName(event.target.value)}
         />
       </label>
+      {onCourtLabel && onCourtCap ? (
+        <div className="connect-desk">
+          <label className="connect-field">
+            <span>{t.courtLabel}</span>
+            <input
+              type="text"
+              value={courtLabel ?? ""}
+              maxLength={80}
+              placeholder={t.courtLabelPlaceholder}
+              onChange={(event) => onCourtLabel(event.target.value)}
+            />
+          </label>
+          <label className="connect-field">
+            <span>{t.courtCap}</span>
+            <input
+              type="text"
+              value={courtCap ?? ""}
+              maxLength={200}
+              placeholder={t.courtCapPlaceholder}
+              onChange={(event) => onCourtCap(event.target.value)}
+            />
+          </label>
+          <p className="hint">{t.courtHint}</p>
+        </div>
+      ) : null}
       <div className="connect-field">
         <span>{t.wakeLabel}</span>
         <div className="segmented" role="group" aria-label={t.wakeLabel}>
@@ -188,7 +223,11 @@ export function ConnectCard({
   const [callbackUrl, setCallbackUrl] = useState("");
   const [callbackSecret, setCallbackSecret] = useState("");
   const [deskPrompt, setDeskPrompt] = useState(defaultAgentPrompt);
+  const [issueLabel, setIssueLabel] = useState("");
+  const [issueCap, setIssueCap] = useState("");
   const [selectedDesk, setSelectedDesk] = useState("");
+  const [selectedLabel, setSelectedLabel] = useState("");
+  const [selectedCap, setSelectedCap] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [savingPrompt, setSavingPrompt] = useState(false);
@@ -237,12 +276,20 @@ export function ConnectCard({
 
   const current = agents.find((row) => row.id === selected) ?? agents[0] ?? null;
   const storedDesk = current ? current.prompt || defaultAgentPrompt() : "";
+  const storedLabel = current?.court_label ?? "";
+  const storedCap = current?.court_cap ?? "";
   const pasteText = preview ? storedDesk : selectedDesk;
-  const deskDirty = Boolean(current) && selectedDesk.trim() !== storedDesk.trim();
+  const deskDirty =
+    Boolean(current) &&
+    (selectedDesk.trim() !== storedDesk.trim() ||
+      selectedLabel.trim() !== storedLabel.trim() ||
+      selectedCap.trim() !== storedCap.trim());
 
   useEffect(() => {
     setSelectedDesk(current ? current.prompt || defaultAgentPrompt() : defaultAgentPrompt());
-  }, [current?.id, current?.prompt]);
+    setSelectedLabel(current?.court_label ?? "");
+    setSelectedCap(current?.court_cap ?? "");
+  }, [current?.id, current?.prompt, current?.court_label, current?.court_cap]);
 
   async function saveDesk() {
     if (preview || !current) return;
@@ -251,17 +298,32 @@ export function ConnectCard({
     const response = await fetch(`/api/cabinet/${token}/connect`, {
       method: "PATCH",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ id: current.id, prompt: selectedDesk }),
+      body: JSON.stringify({
+        id: current.id,
+        prompt: selectedDesk,
+        court_label: selectedLabel,
+        court_cap: selectedCap,
+      }),
     });
     setSavingPrompt(false);
     if (!response.ok) {
       setError(errorLabel);
       return;
     }
-    const payload = (await response.json()) as { data: { prompt: string; prompt_lines: string[] } };
+    const payload = (await response.json()) as {
+      data: { prompt: string; prompt_lines: string[]; court_label?: string; court_cap?: string };
+    };
     setAgents((rows) =>
       rows.map((row) =>
-        row.id === current.id ? { ...row, prompt: payload.data.prompt, prompt_lines: payload.data.prompt_lines } : row,
+        row.id === current.id
+          ? {
+              ...row,
+              prompt: payload.data.prompt,
+              prompt_lines: payload.data.prompt_lines,
+              court_label: payload.data.court_label ?? "",
+              court_cap: payload.data.court_cap ?? "",
+            }
+          : row,
       ),
     );
   }
@@ -283,6 +345,8 @@ export function ConnectCard({
         callback_url: wake === "callback" ? callbackUrl.trim() : undefined,
         callback_secret: wake === "callback" && callbackSecret.trim() ? callbackSecret.trim() : undefined,
         prompt: deskPrompt,
+        court_label: issueLabel,
+        court_cap: issueCap,
       }),
     });
     if (!response.ok) {
@@ -303,6 +367,8 @@ export function ConnectCard({
     setCallbackUrl("");
     setCallbackSecret("");
     setDeskPrompt(defaultAgentPrompt());
+    setIssueLabel("");
+    setIssueCap("");
     setPending(false);
     router.refresh();
   }
@@ -327,6 +393,10 @@ export function ConnectCard({
             onCallbackSecret={setCallbackSecret}
             prompt={deskPrompt}
             onPrompt={setDeskPrompt}
+            courtLabel={issueLabel}
+            courtCap={issueCap}
+            onCourtLabel={setIssueLabel}
+            onCourtCap={setIssueCap}
             pending={pending}
             onIssue={() => void issue()}
             houseType={houseType}
@@ -404,15 +474,40 @@ export function ConnectCard({
                 )}
                 <p className="hint">{t.promptHint}</p>
                 {preview ? null : (
-                  <button
-                    type="button"
-                    className="ghost"
-                    disabled={savingPrompt || !deskDirty}
-                    aria-busy={savingPrompt}
-                    onClick={() => void saveDesk()}
-                  >
-                    {savingPrompt ? t.promptSaving : t.promptSave}
-                  </button>
+                  <>
+                    <div className="connect-desk">
+                      <label className="connect-field">
+                        <span>{t.courtLabel}</span>
+                        <input
+                          type="text"
+                          value={selectedLabel}
+                          maxLength={80}
+                          placeholder={t.courtLabelPlaceholder}
+                          onChange={(event) => setSelectedLabel(event.target.value)}
+                        />
+                      </label>
+                      <label className="connect-field">
+                        <span>{t.courtCap}</span>
+                        <input
+                          type="text"
+                          value={selectedCap}
+                          maxLength={200}
+                          placeholder={t.courtCapPlaceholder}
+                          onChange={(event) => setSelectedCap(event.target.value)}
+                        />
+                      </label>
+                      <p className="hint">{t.courtHint}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={savingPrompt || !deskDirty}
+                      aria-busy={savingPrompt}
+                      onClick={() => void saveDesk()}
+                    >
+                      {savingPrompt ? t.promptSaving : t.promptSave}
+                    </button>
+                  </>
                 )}
                 <CopyButton text={pasteText} copyLabel={t.copy} copiedLabel={t.copied} />
               </div>

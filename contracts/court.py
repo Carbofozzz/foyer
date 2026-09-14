@@ -19,7 +19,10 @@ Rules:
 - deny: do not permit. Empty permit. Do not execute anyone's counter_action. Changing the trip is a revise, not a court result.
 - escalate: the constitution is silent or its articles contradict. The principal decides yes or no on that same payload.
 - objection_grounded: true if at least one objection had grounds in the constitution.
-- Do not pick a winning objector. Do not write a remedy_action. Do not invent a fourth outcome.
+- Do not pick a winning objector. Do not write a remedy_action. Do not invent a fourth outcome. Desk fields are not the payload to permit. Do not read a chat prompt.
+- court_agent.label names who is proposing. A constitution amount written for a named desk applies only when that desk is the proposer.
+- court_agent.cap is this proposer's assigned override. Only then may it beat a lower general constitution amount, unless the constitution names this same desk and still binds it lower. If cap is absent, use general constitution limits for this proposer — do not copy another desk's number onto them.
+- An objector's label matches clauses about that desk's role (for example finance may block over the house monthly limit). It does not move that desk's own spend cap onto this proposal. An objector's cap is their own limit if they proposed, not a veto threshold for others.
 
 Return ONLY JSON:
 {
@@ -55,6 +58,7 @@ class Court(gl.contract.Contract):
 
         def leader_fn():
             fetched = _fetch_cited_pages(proposed_action, objections, evidence)
+            desks = _desk_note(proposed_action, objections)
             prompt = (
                 PROMPT
                 + f"""
@@ -72,6 +76,7 @@ evidence:
 
 fetched_pages:
 {fetched}
+{desks}
 """
             )
             raw = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -224,6 +229,46 @@ def _fetch_url(url: str) -> str:
         return text or "(empty)"
     except Exception as exc:
         return f"(could not fetch: {exc})"
+
+
+def _desk_note(proposed_action: str, objections: str) -> str:
+    notes = []
+    try:
+        proposed = json.loads(proposed_action)
+    except Exception:
+        proposed = None
+    if isinstance(proposed, dict):
+        agent = proposed.get("court_agent")
+        if isinstance(agent, dict):
+            cap = str(agent.get("cap") or "").strip()
+            label = str(agent.get("label") or "").strip()
+            who = label or str(agent.get("id") or "proposer").strip()
+            if cap:
+                notes.append(f"Proposer desk {who} assigned cap: {cap}. Override for this proposer only.")
+            elif label:
+                notes.append(
+                    f"Proposer desk {label}, no packet cap. "
+                    "Apply general constitution limits and clauses that name this desk. "
+                    "Do not apply another desk's spend cap."
+                )
+    try:
+        items = json.loads(objections)
+    except Exception:
+        items = None
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            who = str(item.get("label") or "").strip()
+            if not who:
+                continue
+            notes.append(
+                f"Objector desk {who}. Match role clauses (who may block). "
+                "Do not treat this desk's own spend cap as a limit on the proposer."
+            )
+    if not notes:
+        return ""
+    return "desk_limits:\n" + "\n".join(f"- {line}" for line in notes)
 
 
 def _fetch_cited_pages(proposed_action: str, objections: str, evidence: str) -> str:
