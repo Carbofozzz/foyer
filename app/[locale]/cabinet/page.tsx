@@ -35,6 +35,7 @@ export default async function CabinetMePage({
       token="me"
       principal={opened.principal}
       memberRole={opened.role}
+      memberGrants={opened.grants}
       houses={await listHousesFor(session.address)}
       viewerAddress={session.address}
       enroll={enroll}

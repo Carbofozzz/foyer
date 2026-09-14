@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { actions, agents, decideTokens, notifications, principals } from "@/lib/db/schema";
+import { actions, agents, decideTokens, houseContacts, notifications, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { isLocale } from "@/lib/i18n/config";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
@@ -7,14 +7,17 @@ import { actionPayload, loadActionBundle } from "@/lib/protocol/bundle";
 import { appealCase } from "@/lib/protocol/appeal";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
+import { isOrgHouse } from "@/lib/protocol/types";
 import { notifyCopy, sendMail } from "./mail";
 import { notifyReasonKey } from "./reasons";
+import { matchReachableHouseContacts, ensureHouseContactsSchema } from "./house-contacts";
 import { sendTelegram } from "./telegram";
 
 const DECIDE_MS = 7 * 24 * 60 * 60 * 1000;
 const SEND_ATTEMPTS = 5;
 
-type NotifyChannel = "email" | "telegram";
+type NotifyChannel = "email" | "telegram" | "org";
+type ContactRow = typeof houseContacts.$inferSelect;
 
 function decideOrigin(origin?: string): string {
   const raw = (origin || defaultPublicOrigin()).replace(/\/$/, "");
@@ -22,7 +25,7 @@ function decideOrigin(origin?: string): string {
   return raw;
 }
 
-function preferredChannel(principal: typeof principals.$inferSelect): NotifyChannel | null {
+function preferredChannel(principal: typeof principals.$inferSelect): Exclude<NotifyChannel, "org"> | null {
   if (principal.telegramChatId) return "telegram";
   if (principal.contactEmail && principal.emailVerifiedAt) return "email";
   return null;
@@ -47,9 +50,6 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
     }
   }
 
-  const channel = preferredChannel(principal);
-  if (!channel) return 0;
-
   const escalated = await db
     .select({ id: actions.id })
     .from(actions)
@@ -57,6 +57,14 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
 
   let advanced = 0;
   for (const row of escalated) {
+    const bundle = await loadActionBundle(row.id);
+    const reason = notifyReasonKey(bundle?.verdict?.reasoning ?? "", bundle?.verdict?.judge ?? "offline");
+    const objectorIds = bundle?.objections.map((item) => item.objectorId) ?? [];
+    const matched = isOrgHouse(principal) ? await matchReachableHouseContacts(principalId, reason, objectorIds) : [];
+    const channel: NotifyChannel | null =
+      isOrgHouse(principal) ? (matched.length > 0 ? "org" : null) : preferredChannel(principal);
+    if (!channel) continue;
+
     const existing = await db.select().from(notifications).where(eq(notifications.actionId, row.id));
     if (existing.some((item) => item.status === "sent")) continue;
     for (const item of existing) {
@@ -76,7 +84,7 @@ export async function syncEscalateNotify(principalId: string, origin?: string): 
         status: "pending",
       })
       .onConflictDoNothing({ target: [notifications.actionId, notifications.channel] });
-    const sent = await deliverOne(row.id, principal, origin, channel);
+    const sent = await deliverOne(row.id, principal, origin, channel, matched);
     if (sent) advanced += 1;
   }
   return advanced;
@@ -90,6 +98,7 @@ async function deliverOne(
   principal: typeof principals.$inferSelect,
   origin: string | undefined,
   channel: NotifyChannel,
+  targets: ContactRow[],
 ): Promise<boolean> {
   const db = getDb();
   const [note] = await db
@@ -108,6 +117,7 @@ async function deliverOne(
     await db.update(notifications).set({ status: "cancelled", updatedAt: new Date() }).where(eq(notifications.id, note.id));
     return false;
   }
+  const live = bundle;
 
   const [claimed] = await db
     .update(notifications)
@@ -122,42 +132,65 @@ async function deliverOne(
     .returning({ id: notifications.id });
   if (!claimed) return false;
 
-  const raw = mintToken("dcd");
-  await db.insert(decideTokens).values({
-    tokenHash: hashSecret(raw),
-    actionId,
-    expiresAt: new Date(Date.now() + DECIDE_MS),
-  });
+  await ensureHouseContactsSchema();
+
   const locale = isLocale(principal.contactLocale) ? principal.contactLocale : "en";
   const t = notifyCopy(locale);
-  const [proposer] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, bundle.action.proposerId)).limit(1);
-  const payload = actionPayload(bundle.action);
-  const reason = notifyReasonKey(bundle.verdict?.reasoning ?? "", bundle.verdict?.judge ?? "offline");
+  const [proposer] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, live.action.proposerId)).limit(1);
+  const payload = actionPayload(live.action);
+  const reason = notifyReasonKey(live.verdict?.reasoning ?? "", live.verdict?.judge ?? "offline");
   const reasonLine = t[reason];
   const amount =
     typeof payload.amount === "number"
       ? `${payload.amount}${payload.currency ? ` ${payload.currency}` : ""}`
       : "";
   const base = decideOrigin(origin);
-  const url = `${base}/${locale}/decide/${raw}`;
-  const text = [
-    t.decideLead,
-    reasonLine,
-    `${t.who}: ${proposer?.name ?? bundle.action.proposerId}`,
-    `${t.what}: ${payload.summary}`,
-    amount ? `${t.amount}: ${amount}` : "",
-    t.ask,
-    url,
-  ]
-    .filter(Boolean)
-    .join("\n");
+
+  function body(url: string | null) {
+    return [
+      t.decideLead,
+      reasonLine,
+      `${t.who}: ${proposer?.name ?? live.action.proposerId}`,
+      `${t.what}: ${payload.summary}`,
+      amount ? `${t.amount}: ${amount}` : "",
+      url ? t.ask : "",
+      url ?? "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  async function mintUrl(contactId: string | null) {
+    const raw = mintToken("dcd");
+    await db.insert(decideTokens).values({
+      tokenHash: hashSecret(raw),
+      actionId,
+      contactId,
+      expiresAt: new Date(Date.now() + DECIDE_MS),
+    });
+    return `${base}/${locale}/decide/${raw}`;
+  }
 
   try {
-    if (channel === "telegram") {
+    if (channel === "org") {
+      const errors: string[] = [];
+      for (const contact of targets) {
+        try {
+          const url = await mintUrl(contact.id);
+          const text = body(url);
+          if (contact.telegramChatId) await sendTelegram(contact.telegramChatId, text);
+          else if (contact.email) await sendMail({ to: contact.email, subject: t.decideSubject, text });
+          else errors.push("unreachable");
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : "send failed");
+        }
+      }
+      if (errors.length === targets.length) throw new Error(errors[0] || "send failed");
+    } else if (channel === "telegram") {
       if (!principal.telegramChatId) throw new Error("telegram is not linked");
-      await sendTelegram(principal.telegramChatId, text);
+      await sendTelegram(principal.telegramChatId, body(await mintUrl(null)));
     } else {
-      await sendMail({ to: principal.contactEmail!, subject: t.decideSubject, text });
+      await sendMail({ to: principal.contactEmail!, subject: t.decideSubject, text: body(await mintUrl(null)) });
     }
     await db
       .update(notifications)
@@ -215,7 +248,7 @@ export async function decideFromToken(raw: string, outcome: unknown, now: Date) 
   const [principal] = await db.select().from(principals).where(eq(principals.id, bundle.action.principalId)).limit(1);
   if (!principal) throw new ProtocolError("not_found", "Unknown house", 404);
   const result = await appealCase(principal, bundle.courtCase.id, { outcome }, now);
-  await db.update(decideTokens).set({ usedAt: now }).where(eq(decideTokens.tokenHash, token.tokenHash));
+  await db.update(decideTokens).set({ usedAt: now }).where(eq(decideTokens.actionId, token.actionId));
   await db
     .update(notifications)
     .set({ status: "cancelled", updatedAt: now })

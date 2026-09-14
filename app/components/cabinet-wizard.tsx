@@ -12,6 +12,7 @@ import { ContactsWhenList } from "@/app/components/contacts-card";
 import { notifyHouseChanged } from "@/lib/wallet/events";
 import { asHexAddress, GENLAYER_CHAIN_ID, ownerKey } from "@/lib/gen/chain";
 import { parseGen, shortGen } from "@/lib/gen/amount";
+import { defaultAgentPrompt } from "@/lib/mcp/config";
 import type { WakeKind } from "@/lib/protocol/types";
 
 const STEPS = ["rules", "agent", "fund", "contacts"] as const;
@@ -153,6 +154,7 @@ function CabinetWizardModal({
   const [text, setText] = useState(() => constitution.trim() || assembled);
 
   const [agentName, setAgentName] = useState("");
+  const [agentPrompt, setAgentPrompt] = useState(defaultAgentPrompt);
   const [wake, setWake] = useState<WakeKind>("outbound");
   const [callbackUrl, setCallbackUrl] = useState("");
   const [callbackSecret, setCallbackSecret] = useState("");
@@ -244,6 +246,7 @@ function CabinetWizardModal({
           wake,
           callback_url: wake === "callback" ? callbackUrl.trim() : undefined,
           callback_secret: wake === "callback" && callbackSecret.trim() ? callbackSecret.trim() : undefined,
+          prompt: agentPrompt,
         }
       : undefined;
     const response = await fetch(`/api/cabinet/${token}/wizard`, {
@@ -347,6 +350,7 @@ function CabinetWizardModal({
           <div className="stack">
             <h3>{wizard.agentTitle}</h3>
             <p className="hint">{wizard.agentLead}</p>
+            {houseType === "org" ? <p className="hint">{connect.promptOrgHint}</p> : null}
             <div className="connect-issue">
               <p className="feed-label">{connect.another}</p>
               <ConnectIssueFields
@@ -359,7 +363,10 @@ function CabinetWizardModal({
                 onWake={setWake}
                 onCallbackUrl={setCallbackUrl}
                 onCallbackSecret={setCallbackSecret}
+                prompt={agentPrompt}
+                onPrompt={setAgentPrompt}
                 showIssue={false}
+                houseType={houseType === "org" ? "org" : "personal"}
               />
             </div>
             <p className="hint">{wizard.agentSkip}</p>

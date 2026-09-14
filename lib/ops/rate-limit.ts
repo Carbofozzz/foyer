@@ -19,6 +19,7 @@ export const LIMITS = {
   confirmEmail: { max: 20, windowSec: 3600 },
   decide: { max: 30, windowSec: 3600 },
   telegram: { max: 120, windowSec: 3600 },
+  orgs: { max: 8, windowSec: 3600 },
 } as const satisfies Record<string, RateLimit>;
 
 /** Returns true when the caller is over the limit. */

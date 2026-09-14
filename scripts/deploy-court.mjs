@@ -9,6 +9,8 @@ const CHAINS = {
   studiodevnet: studioDevnet,
   studionetdev: studioDevnet,
   "studio-dev": studioDevnet,
+  studionext: studioDevnet,
+  "studio-next": studioDevnet,
   studionet,
   testnetasimov: testnetAsimov,
   testnetbradbury: testnetBradbury,
@@ -23,11 +25,18 @@ if (!keyRaw) {
 }
 
 const chainKey = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase();
-const chain = CHAINS[chainKey.replace(/_/g, "-")] ?? CHAINS[chainKey.replace(/-/g, "")];
-if (!chain) {
-  console.error("Unknown GENLAYER_CHAIN. Use studioDevnet, studionetdev, studionet, testnetBradbury, or testnetAsimov.");
+const base = CHAINS[chainKey.replace(/_/g, "-")] ?? CHAINS[chainKey.replace(/-/g, "")];
+if (!base) {
+  console.error("Unknown GENLAYER_CHAIN. Use studioDevnet, studionetdev, studio-next, studionet, testnetBradbury, or testnetAsimov.");
   process.exit(1);
 }
+const envRpc = process.env.GENLAYER_RPC_URL?.trim();
+const nextRpc =
+  chainKey.replace(/_/g, "-") === "studio-next" || chainKey.replace(/-/g, "") === "studionext"
+    ? "https://studio-next.genlayer.com/api"
+    : null;
+const rpc = envRpc || nextRpc;
+const chain = rpc ? { ...base, rpcUrls: { default: { http: [rpc] } } } : base;
 
 const accountKey = /** @type {`0x${string}`} */ (keyRaw.startsWith("0x") ? keyRaw : `0x${keyRaw}`);
 const code = new Uint8Array(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../contracts/court.py")));

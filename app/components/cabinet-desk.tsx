@@ -1,4 +1,4 @@
-export type CabinetTabId = "inbox" | "treasury" | "rules" | "connect" | "test" | "people" | "contacts";
+export type CabinetTabId = "inbox" | "treasury" | "rules" | "connect" | "test" | "people" | "contacts" | "settings";
 
 export function parseCabinetTab(value: string | undefined, allowed: CabinetTabId[]): CabinetTabId {
   const raw = value === "tech" ? "connect" : value === "history" ? "treasury" : value;

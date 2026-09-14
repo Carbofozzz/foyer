@@ -115,6 +115,7 @@ function isLive(serialized: SerializedAction): boolean {
   if (serialized.status === "open" || serialized.status === "bargaining" || serialized.status === "escalated") {
     return true;
   }
+  if (serialized.status === "awaiting_ack") return true;
   if (serialized.phase === "in_court") return true;
   return serialized.status === "permitted" && !serialized.report;
 }
@@ -582,7 +583,7 @@ async function buildEvents(
           why: humanOutcome ? "denied_you" : "denied",
           tone: "history",
           actors: [
-            actor(proposer, "stopped", [
+            actor(proposer, serialized.report ? "stopped" : "after_deny", [
               handle("see", "get_action", "GET", actionPath, verdictSnap),
             ]),
           ],
@@ -619,7 +620,7 @@ export async function loadTestStage(principal: HousePrincipal, origin?: string) 
   let serialized = await getAction({ agent: actor, principal }, actionId);
   const settled = serialized.verdict?.outcome;
   if (
-    serialized.status === "escalated" &&
+    (serialized.status === "escalated" || serialized.status === "awaiting_ack") &&
     (settled === "allow" || settled === "allow_a" || settled === "deny")
   ) {
     await executeAfterAck(actionId);

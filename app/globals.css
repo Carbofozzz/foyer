@@ -187,6 +187,11 @@ a {
   flex-wrap: wrap;
 }
 
+.wallet-toolbar > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .skeleton {
   display: inline-block;
   background: var(--line);
@@ -828,6 +833,11 @@ button.ghost.is-copied {
   justify-self: start;
 }
 
+button.ghost-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+}
+
 button[type="submit"]:disabled,
 button.ghost:disabled,
 button:disabled {
@@ -935,8 +945,15 @@ pre {
 
 .cabinet-head-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.45rem 0.55rem;
+  position: relative;
+}
+
+.cabinet-head-actions button.ghost,
+.cabinet-head-actions a.ghost {
+  white-space: nowrap;
 }
 
 .cabinet-panel {
@@ -1088,6 +1105,73 @@ button.wallet-balance:disabled {
 .contact-channel-label {
   margin: 0;
   font-size: 0.92rem;
+}
+
+.contact-pair {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.1rem 0 1.2rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.contact-pair h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.contact-pair.is-new {
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card, #fff) 88%, var(--hairline));
+}
+
+.contact-cover {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.contact-people .contact-cell-link {
+  display: inline;
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.contact-people .contact-cell-link:hover,
+.contact-people .contact-cell-link:focus-visible {
+  background: none;
+  color: var(--ink);
+}
+
+.contact-add-row {
+  display: grid;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+@media (min-width: 640px) {
+  .contact-add-row {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.contact-cover legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .contact-when {
@@ -1281,7 +1365,8 @@ button.wallet-balance:disabled {
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
 .cabinet-panel:has(#cabinet-tab-contacts:checked) [data-cabinet-pane="contacts"],
-.cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"] {
+.cabinet-panel:has(#cabinet-tab-people:checked) [data-cabinet-pane="people"],
+.cabinet-panel:has(#cabinet-tab-settings:checked) [data-cabinet-pane="settings"] {
   display: block;
 }
 
@@ -1585,9 +1670,16 @@ label.segment {
   gap: 0.7rem;
 }
 
-.connect-current .connect-field {
+.connect-desk {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.7rem;
+  margin-top: 0.35rem;
+}
+
+.connect-current .connect-field,
+.connect-issue .connect-field {
+  display: grid;
+  gap: 0.45rem;
   min-width: 0;
 }
 
@@ -1608,14 +1700,26 @@ label.segment {
   align-items: end;
 }
 
-.connect-add .hint {
+.connect-add .hint,
+.connect-add .connect-desk {
   flex: 1 1 100%;
+}
+
+.connect-add .connect-field-wide {
+  flex: 1 1 100%;
+}
+
+.connect-add textarea,
+.connect-current textarea {
+  width: 100%;
+  min-height: 5rem;
+  resize: vertical;
 }
 
 .connect-add .connect-field {
   flex: 1 1 10rem;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.45rem;
   min-width: 0;
   align-content: end;
 }
@@ -1679,20 +1783,20 @@ label.segment {
   padding-left: 1.2rem;
 }
 
-.house-switch {
+.add-org-inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-  margin: 0.35rem 0 0;
-  font-size: 0.88rem;
+  align-items: center;
+  gap: 0.45rem;
 }
 
-.house-switch a {
-  color: var(--accent);
+.add-org-inline input {
+  width: 9.5rem;
 }
 
-.house-switch [aria-current="page"] {
-  font-weight: 600;
+.add-org-inline .hint {
+  margin: 0;
+  flex-basis: 100%;
 }
 
 .member-list {
@@ -1708,6 +1812,10 @@ label.segment {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem 0.7rem;
+}
+
+.member-list .check-list {
+  flex-basis: 100%;
 }
 
 .cabinet-meta {

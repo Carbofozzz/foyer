@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { OrgContactsCard } from "@/app/components/org-contacts-card";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import { useCabinetTab } from "@/app/lib/use-cabinet-tab";
 import type { Messages } from "@/lib/i18n/load";
@@ -15,6 +16,54 @@ type ContactsData = {
 };
 
 export function ContactsCard({
+  token,
+  houseId,
+  locale,
+  canEdit,
+  locked = false,
+  preview = null,
+  houseType = "personal",
+  t,
+  errorLabel,
+}: {
+  token: string;
+  houseId?: string;
+  locale: string;
+  canEdit: boolean;
+  locked?: boolean;
+  preview?: ContactsData | null;
+  houseType?: "personal" | "org";
+  t: Messages["cabinet"];
+  errorLabel: string;
+}) {
+  if (houseType === "org") {
+    return (
+      <OrgContactsCard
+        token={token}
+        houseId={houseId}
+        locale={locale}
+        canEdit={canEdit}
+        locked={locked}
+        t={t}
+        errorLabel={errorLabel}
+      />
+    );
+  }
+  return (
+    <PersonalContactsCard
+      token={token}
+      houseId={houseId}
+      locale={locale}
+      canEdit={canEdit}
+      locked={locked}
+      preview={preview}
+      t={t}
+      errorLabel={errorLabel}
+    />
+  );
+}
+
+function PersonalContactsCard({
   token,
   houseId,
   locale,
@@ -44,22 +93,21 @@ export function ContactsCard({
   const [error, setError] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [waitTelegram, setWaitTelegram] = useState(false);
-  const linkedRef = useRef(Boolean(preview?.telegram));
-  linkedRef.current = telegram;
   const contactsTab = useCabinetTab("contacts");
+
+  function apply(data: ContactsData) {
+    setEmail(data.email ?? "");
+    setVerified(data.email_verified);
+    setTelegram(data.telegram);
+    setTelegramHandle(data.telegram_handle ?? null);
+    setTelegramUrl(data.telegram_url ?? null);
+    setConfigured(data.telegram_configured !== false);
+    if (data.telegram) setWaitTelegram(false);
+    setError(false);
+  }
 
   useEffect(() => {
     if (preview || locked || !contactsTab) return;
-    function apply(data: ContactsData) {
-      setEmail(data.email ?? "");
-      setVerified(data.email_verified);
-      setTelegram(data.telegram);
-      setTelegramHandle(data.telegram_handle ?? null);
-      setTelegramUrl(data.telegram_url ?? null);
-      setConfigured(data.telegram_configured !== false);
-      if (data.telegram) setWaitTelegram(false);
-      setError(false);
-    }
     function load(wake: boolean) {
       const q = wake ? "?wake=1" : "";
       fetch(`/api/cabinet/${token}/contacts${q}`, { headers: cabinetHeaders(houseId) })
@@ -72,7 +120,7 @@ export function ContactsCard({
     }
     load(true);
     function onVis() {
-      if (document.visibilityState === "visible" && !linkedRef.current) load(true);
+      if (document.visibilityState === "visible") load(true);
     }
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
@@ -83,90 +131,71 @@ export function ContactsCard({
   }, [preview, locked, contactsTab, token, houseId]);
 
   useEffect(() => {
-    if (preview || locked || !contactsTab || telegram || !waitTelegram) return;
+    if (preview || locked || !contactsTab) return;
+    const waitingOwner = waitTelegram && !telegram;
+    if (!waitingOwner) return;
     const tick = window.setInterval(() => {
       fetch(`/api/cabinet/${token}/contacts?wake=1`, { headers: cabinetHeaders(houseId) })
         .then((response) => {
           if (!response.ok) throw new Error("fail");
           return response.json() as Promise<{ data: ContactsData }>;
         })
-        .then((payload) => {
-          setEmail(payload.data.email ?? "");
-          setVerified(payload.data.email_verified);
-          setTelegram(payload.data.telegram);
-          setTelegramHandle(payload.data.telegram_handle ?? null);
-          setTelegramUrl(payload.data.telegram_url ?? null);
-          setConfigured(payload.data.telegram_configured !== false);
-          if (payload.data.telegram) setWaitTelegram(false);
-        })
+        .then((payload) => apply(payload.data))
         .catch(() => setError(true));
     }, 4000);
     return () => window.clearInterval(tick);
   }, [preview, locked, contactsTab, telegram, waitTelegram, token, houseId]);
 
+  async function post(body: Record<string, unknown>) {
+    const response = await fetch(`/api/cabinet/${token}/contacts`, {
+      method: "POST",
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error("fail");
+    return (await response.json()) as { data: ContactsData & { confirmQueued?: boolean } };
+  }
+
   async function save() {
     setEmailPending(true);
     setError(false);
     setHint(null);
-    const response = await fetch(`/api/cabinet/${token}/contacts`, {
-      method: "POST",
-      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ email, locale }),
-    });
-    setEmailPending(false);
-    if (!response.ok) {
+    try {
+      const payload = await post({ email, locale });
+      apply(payload.data);
+      if (payload.data.confirmQueued) setHint(t.contactsSent);
+    } catch {
       setError(true);
-      return;
     }
-    const payload = (await response.json()) as {
-      data: ContactsData & { confirmQueued?: boolean };
-    };
-    setEmail(payload.data.email ?? "");
-    setVerified(Boolean(payload.data.email_verified));
-    setTelegram(Boolean(payload.data.telegram));
-    setTelegramHandle(payload.data.telegram_handle ?? null);
-    setTelegramUrl(payload.data.telegram_url ?? null);
-    if (payload.data.confirmQueued) setHint(t.contactsSent);
+    setEmailPending(false);
   }
 
   async function resend() {
     setEmailPending(true);
     setError(false);
-    const response = await fetch(`/api/cabinet/${token}/contacts`, {
-      method: "POST",
-      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ resend: true, locale }),
-    });
-    setEmailPending(false);
-    if (!response.ok) {
+    try {
+      await post({ resend: true, locale });
+      setHint(t.contactsSent);
+    } catch {
       setError(true);
-      return;
     }
-    setHint(t.contactsSent);
+    setEmailPending(false);
   }
 
   async function unlink() {
     setTelegramPending(true);
     setError(false);
-    const response = await fetch(`/api/cabinet/${token}/contacts`, {
-      method: "POST",
-      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ unlink_telegram: true }),
-    });
-    setTelegramPending(false);
-    if (!response.ok) {
+    try {
+      const payload = await post({ unlink_telegram: true });
+      apply(payload.data);
+    } catch {
       setError(true);
-      return;
     }
-    const payload = (await response.json()) as { data: ContactsData };
-    setTelegram(Boolean(payload.data.telegram));
-    setTelegramHandle(payload.data.telegram_handle ?? null);
-    setTelegramUrl(payload.data.telegram_url ?? null);
+    setTelegramPending(false);
   }
 
-  return (
-    <div className="stack">
-      <p className="hint">{t.contactsLead}</p>
+  const personalBlock = (
+    <>
       <div className="contact-channel">
         <label>
           {t.contactsEmail}
@@ -192,47 +221,90 @@ export function ContactsCard({
           </div>
         ) : null}
       </div>
-      <div className="contact-channel">
-        <label>
-          {t.contactsTelegram}
-          <input
-            type="text"
-            value={telegram ? displayTelegramName(telegramHandle ?? "") : ""}
-            readOnly
-            disabled={locked || !canEdit}
-            autoComplete="off"
-          />
-        </label>
-        {telegram ? <p className="hint">{t.contactsTelegramLinked}</p> : null}
-        {waitTelegram && !telegram ? <p className="hint">{t.contactsTelegramWait}</p> : null}
-        {!telegram && configured && !telegramUrl && canEdit && !locked ? (
-          <p className="hint">{t.contactsTelegramOff}</p>
-        ) : null}
-        {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
-        {telegram && canEdit && !locked ? (
-          <div className="wallet-actions">
-            <button type="button" className="ghost" disabled={telegramPending} aria-busy={telegramPending} onClick={() => void unlink()}>
-              {t.contactsTelegramUnlink}
-            </button>
-          </div>
-        ) : null}
-        {!telegram && telegramUrl && canEdit && !locked ? (
-          <div className="wallet-actions">
-            <a
-              className="ghost"
-              href={telegramUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setWaitTelegram(true)}
-            >
-              {t.contactsTelegramOpen}
-            </a>
-          </div>
-        ) : null}
-      </div>
+      <TelegramFields
+        t={t}
+        locked={locked}
+        canEdit={canEdit}
+        telegram={telegram}
+        telegramHandle={telegramHandle}
+        telegramUrl={telegramUrl}
+        configured={configured}
+        wait={waitTelegram}
+        pending={telegramPending}
+        onUnlink={() => void unlink()}
+        onWait={() => setWaitTelegram(true)}
+      />
+    </>
+  );
+
+  return (
+    <div className="stack">
+      <p className="hint">{t.contactsLead}</p>
+      {personalBlock}
       {hint ? <p className="hint">{hint}</p> : null}
       {error ? <p className="error">{errorLabel}</p> : null}
       <ContactsWhenList t={t} />
+    </div>
+  );
+}
+
+function TelegramFields({
+  t,
+  locked,
+  canEdit,
+  telegram,
+  telegramHandle,
+  telegramUrl,
+  configured,
+  wait,
+  pending,
+  plain = false,
+  onUnlink,
+  onWait,
+}: {
+  t: Messages["cabinet"];
+  locked: boolean;
+  canEdit: boolean;
+  telegram: boolean;
+  telegramHandle: string | null | undefined;
+  telegramUrl: string | null | undefined;
+  configured: boolean | null;
+  wait: boolean;
+  pending: boolean;
+  plain?: boolean;
+  onUnlink: () => void;
+  onWait: () => void;
+}) {
+  return (
+    <div className={plain ? "stack" : "contact-channel"}>
+      <label>
+        {t.contactsTelegram}
+        <input
+          type="text"
+          value={telegram ? displayTelegramName(telegramHandle ?? "") : ""}
+          readOnly
+          disabled={locked || !canEdit}
+          autoComplete="off"
+        />
+      </label>
+      {telegram ? <p className="hint">{t.contactsTelegramLinked}</p> : null}
+      {wait && !telegram ? <p className="hint">{t.contactsTelegramWait}</p> : null}
+      {!telegram && configured && !telegramUrl && canEdit && !locked ? <p className="hint">{t.contactsTelegramOff}</p> : null}
+      {configured === false ? <p className="hint">{locked ? t.contactsTelegramSoon : t.contactsTelegramOff}</p> : null}
+      {telegram && canEdit && !locked ? (
+        <div className="wallet-actions">
+          <button type="button" className="ghost" disabled={pending} aria-busy={pending} onClick={onUnlink}>
+            {t.contactsTelegramUnlink}
+          </button>
+        </div>
+      ) : null}
+      {!telegram && telegramUrl && canEdit && !locked ? (
+        <div className="wallet-actions">
+          <a className="ghost" href={telegramUrl} target="_blank" rel="noreferrer" onClick={onWait}>
+            {t.contactsTelegramOpen}
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

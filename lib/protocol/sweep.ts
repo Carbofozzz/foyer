@@ -9,17 +9,19 @@ import { executeAfterAck, executeSilenceAllow } from "./execute";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
 import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
 import { syncEscalateMail } from "@/lib/notify/outbox";
+import { ensureAgentPromptColumn } from "./house-clients";
 
 /**
  * Advances time for one house. Idempotent.
  * Test objections come from the cabinet test stage as house agents.
- * Reads pass courts: 0. Tick only polls an already submitted court.
+ * Reads poll an already submitted court. Tick may also submit one new court.
  */
 export async function sweep(
   principalId: string,
   now: Date,
   options?: { courts?: number; origin?: string; wakes?: boolean; outbox?: boolean },
 ): Promise<{ advanced: number }> {
+  await ensureAgentPromptColumn();
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };
@@ -58,7 +60,8 @@ export async function sweep(
 
   advanced += await timeoutBargains(principal, now);
 
-  if (courts > 0 && (await stepHouseCourt(principal, now))) advanced += 1;
+  // Poll a stored hash on every sweep. Submit a new court only when courts > 0 (tick).
+  if (await stepHouseCourt(principal, now, { submit: courts > 0 })) advanced += 1;
 
   const pending = await db
     .select()

@@ -10,6 +10,8 @@ import {
   enrollments,
   executions,
   houseMembers,
+  houseContacts,
+  houseContactPolicies,
   notifications,
   objections,
   principals,
@@ -25,6 +27,8 @@ import { ownerKey } from "@/lib/gen/chain";
 import { ProtocolError } from "./errors";
 import { readSession } from "./session";
 import { parseWaitlistEmail } from "./waitlist";
+import { isOrgHouse } from "./types";
+import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
 
 export type AdminWaitlistRow = {
   email: string;
@@ -41,6 +45,7 @@ export type AdminContactRow = {
 
 export type AdminHouseRow = {
   id: string;
+  name: string;
   owner: string | null;
   type: string;
   spawn: boolean;
@@ -108,6 +113,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     db
       .select({
         id: principals.id,
+        name: principals.name,
         type: principals.type,
         isSpawn: principals.isSpawn,
         ownerAddress: principals.ownerAddress,
@@ -136,7 +142,9 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
         createdAt: actions.createdAt,
       })
       .from(actions),
-    db.select({ principalId: houseMembers.principalId }).from(houseMembers),
+    db.select({ principalId: houseMembers.principalId, address: houseMembers.address, role: houseMembers.role }).from(
+      houseMembers,
+    ),
   ]);
 
   const agentByHouse = new Map<string, { agents: number; hooks: number }>();
@@ -167,8 +175,12 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
   }
 
   const memberByHouse = new Map<string, number>();
+  const ownerByHouse = new Map<string, string>();
   for (const row of memberRows) {
     memberByHouse.set(row.principalId, (memberByHouse.get(row.principalId) ?? 0) + 1);
+    if (row.role === "owner" && !ownerByHouse.has(row.principalId)) {
+      ownerByHouse.set(row.principalId, row.address);
+    }
   }
 
   const houses: AdminHouseRow[] = houseRows.map((row) => {
@@ -181,11 +193,12 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     };
     return {
       id: row.id,
-      owner: row.ownerAddress,
+      name: row.name,
+      owner: row.ownerAddress ?? ownerByHouse.get(row.id) ?? null,
       type: row.type,
       spawn: row.isSpawn,
       created_at: row.createdAt.toISOString(),
-      connected: row.wizardConnectDone,
+      connected: row.wizardConnectDone || isOrgHouse(row),
       contact_email: row.contactEmail,
       email_verified: Boolean(row.emailVerifiedAt),
       telegram: Boolean(row.telegramLinkedAt),
@@ -270,6 +283,17 @@ export async function deleteHouse(houseId: string) {
   await db.delete(enrollments).where(eq(enrollments.principalId, id));
   await db.delete(emailConfirmTokens).where(eq(emailConfirmTokens.principalId, id));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.principalId, id));
+  await ensureHouseContactsSchema();
+  const people = await db.select({ id: houseContacts.id }).from(houseContacts).where(eq(houseContacts.principalId, id));
+  if (people.length > 0) {
+    await db.delete(houseContactPolicies).where(
+      inArray(
+        houseContactPolicies.contactId,
+        people.map((row) => row.id),
+      ),
+    );
+  }
+  await db.delete(houseContacts).where(eq(houseContacts.principalId, id));
   await db.delete(walletTransfers).where(eq(walletTransfers.principalId, id));
   await db.delete(houseMembers).where(eq(houseMembers.principalId, id));
   await db.delete(spendReceipts).where(eq(spendReceipts.principalId, id));

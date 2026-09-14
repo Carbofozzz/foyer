@@ -3,20 +3,45 @@ import { join } from "node:path";
 import { createAccount, createClient, isSuccessful } from "genlayer-js";
 import { studioDevnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
-import type { Address, CalldataEncodable, DecodedDeployData, TransactionHash } from "genlayer-js/types";
+import type {
+  Address,
+  CalldataEncodable,
+  DecodedDeployData,
+  GenLayerChain,
+  GenLayerTransaction,
+  TransactionHash,
+} from "genlayer-js/types";
 import { type JudgeInput, type VerdictAnswer } from "@/lib/protocol/types";
 import { isRecord } from "@/lib/protocol/parse";
 import { asHexAddress } from "@/lib/gen/chain";
 import { normalizeCourtOutcome } from "@/lib/protocol/verdict";
 
+/** Optional RPC override (boilerplate Studio Next alias: https://studio-next.genlayer.com/api). */
+function rpcOverride(): string | null {
+  const url = (process.env.GENLAYER_RPC_URL ?? process.env.NEXT_PUBLIC_GENLAYER_RPC_URL ?? "").trim();
+  return url || null;
+}
+
+function withRpc(chain: GenLayerChain, rpcUrl?: string | null): GenLayerChain {
+  const url = rpcUrl?.trim() || rpcOverride();
+  if (!url) return chain;
+  return { ...chain, rpcUrls: { default: { http: [url] } } };
+}
+
 export function resolveChain() {
-  const raw = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase();
-  if (raw === "studiodevnet" || raw === "studionetdev" || raw === "studio-dev" || raw === "studiodev") {
-    return studioDevnet;
+  const raw = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase().replace(/_/g, "-");
+  if (raw === "studio-next" || raw === "studionext") {
+    return withRpc(
+      { ...studioDevnet, name: "GenLayer Studio Next" },
+      rpcOverride() ?? "https://studio-next.genlayer.com/api",
+    );
   }
-  if (raw === "studionet") return studionet;
-  if (raw === "testnetasimov") return testnetAsimov;
-  if (raw === "testnetbradbury") return testnetBradbury;
+  if (raw === "studiodevnet" || raw === "studionetdev" || raw === "studio-dev" || raw === "studiodev") {
+    return withRpc(studioDevnet);
+  }
+  if (raw === "studionet") return withRpc(studionet);
+  if (raw === "testnetasimov") return withRpc(testnetAsimov);
+  if (raw === "testnetbradbury") return withRpc(testnetBradbury);
   return null;
 }
 
@@ -105,25 +130,26 @@ export async function readJudgeVerdict(
   }
 }
 
-function courtTxPhase(tx: {
-  status?: TransactionStatus | number;
-  statusName?: TransactionStatus;
-  txExecutionResultName?: ExecutionResult;
-}): CourtTxPhase {
-  const status = tx.statusName ?? (typeof tx.status === "string" ? tx.status : undefined);
-  const result = tx.txExecutionResultName;
-  if (status === TransactionStatus.CANCELED) return "failed";
-  if (status !== TransactionStatus.FINALIZED) return "pending";
-  if (result === ExecutionResult.FINISHED_WITH_RETURN) return "ready";
-  if (
+function executionFailed(result: ExecutionResult | undefined): boolean {
+  return (
     result === ExecutionResult.FINISHED_WITH_ERROR ||
     result === ExecutionResult.NONDET_DISAGREE ||
     result === ExecutionResult.TIMEOUT ||
     result === ExecutionResult.DETERMINISTIC_VIOLATION
-  ) {
-    return "failed";
-  }
-  return "pending";
+  );
+}
+
+/** Consensus v0.6: wait until finalized. Do not require FINISHED_WITH_RETURN by name — Studio may omit it. */
+function courtTxPhase(tx: Pick<GenLayerTransaction, "lifecycle" | "status" | "statusName" | "txExecutionResultName">): CourtTxPhase {
+  const result = tx.txExecutionResultName;
+  const life = tx.lifecycle;
+  const status = tx.statusName ?? (typeof tx.status === "string" ? tx.status : undefined);
+  const canceled = life?.state === "canceled" || status === TransactionStatus.CANCELED;
+  const finalized = life?.state === "finalized" || status === TransactionStatus.FINALIZED;
+  if (canceled) return "failed";
+  if (!finalized) return "pending";
+  if (executionFailed(result)) return "failed";
+  return "ready";
 }
 
 export async function walletBalance(address: string): Promise<bigint | null> {

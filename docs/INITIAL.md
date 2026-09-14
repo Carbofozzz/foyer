@@ -134,8 +134,8 @@ Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history)
 
 - Wallet login; house treasury is a different address, topped up from the signed-in wallet (Studio faucet below the floor).
 - Owner edits the charter. Operator can appeal / connect / deposit. Observer reads. Owner alone withdraws, invites, writes the charter.
-- Company house is not a wizard choice. Direction: [ORG.md](ORG.md) — employees are chats (MCP), corp services are hooks, only admins need a Foyer login.
-- Connect: name an assistant, issue a key, one MCP block + prompt lines (including: poll inbox at least every 30 s after propose). Chat = outbound. A checker needs a hook URL. No auto-mint Travel.
+- Company house is not a wizard choice. Org 1 shipped: extra principal via **Organization**, open with `?house=`; Settings on the org house can rename or delete it ([ORG.md](ORG.md)).
+- Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A checker needs a hook URL. No auto-mint Travel. Prompt is not court evidence.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
 - Ops: `/:locale/cabinet/admin` for the wallet in `FOYER_ADMIN_ADDRESS` (same session). Waitlist emails, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house. No keys, no charter. Unset env → 404.
@@ -216,7 +216,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
-- Org: People tab and roles ship; notify fan-out and the rest of the company house are [ORG.md](ORG.md).
+- Org: Org 6 shipped (desk label/cap on Connect go to the court packet; the IC applies a proposer's cap). Further slices in [ORG.md](ORG.md).
 - **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.
 
 ---

@@ -21,7 +21,7 @@ export const principals = pgTable("principals", {
   testClients: boolean("test_clients").notNull().default(false),
   isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
-  /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. */
+  /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. 5+ = desk fields in the packet. */
   courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
@@ -34,6 +34,45 @@ export const principals = pgTable("principals", {
   telegramHandle: text("telegram_handle"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Org person we can reach. Routing lives on house_contact_policies. */
+export const houseContacts = pgTable(
+  "house_contacts",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    label: text("label").notNull().default(""),
+    email: text("email"),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    telegramChatId: text("telegram_chat_id"),
+    telegramHandle: text("telegram_handle"),
+    telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
+    /** Org 4: this person may allow/deny from a decide-link (no cabinet login). */
+    canDecide: boolean("can_decide").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_contacts_principal").on(table.principalId)],
+);
+
+/** One notify policy per org person. */
+export const houseContactPolicies = pgTable(
+  "house_contact_policies",
+  {
+    id: text("id").primaryKey(),
+    contactId: text("contact_id")
+      .notNull()
+      .unique()
+      .references(() => houseContacts.id),
+    /** all | points | objector */
+    kind: text("kind").notNull(),
+    reasons: jsonb("reasons").$type<string[]>().notNull().default([]),
+    objectorId: text("objector_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_contact_policies_contact").on(table.contactId)],
+);
 
 export const agents = pgTable("agents", {
   id: text("id").primaryKey(),
@@ -50,6 +89,12 @@ export const agents = pgTable("agents", {
   wake: text("wake").notNull().default("outbound"),
   callbackUrl: text("callback_url"),
   sealedCallbackSecret: text("sealed_callback_secret"),
+  /** Desk instructions pasted above the shared Foyer MCP lines. Empty = those lines only. */
+  systemPrompt: text("system_prompt").notNull().default(""),
+  /** Stable name the constitution may cite. Empty = not sent to court. */
+  courtLabel: text("court_label").notNull().default(""),
+  /** Plain-language cap for the court (not a prompt). Empty = not sent. */
+  courtCap: text("court_cap").notNull().default(""),
   bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -225,6 +270,8 @@ export const houseMembers = pgTable(
       .references(() => principals.id),
     address: text("address").notNull(),
     role: text("role").notNull(),
+    /** Org helpers: agents | treasury | rules. Empty = activity feed only. Owner ignores this. */
+    grants: jsonb("grants").$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.principalId, table.address] })],
@@ -295,6 +342,7 @@ export const emailConfirmTokens = pgTable("email_confirm_tokens", {
   principalId: text("principal_id")
     .notNull()
     .references(() => principals.id),
+  contactId: text("contact_id"),
   email: text("email").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -305,6 +353,7 @@ export const telegramLinkTokens = pgTable("telegram_link_tokens", {
   principalId: text("principal_id")
     .notNull()
     .references(() => principals.id),
+  contactId: text("contact_id"),
   payload: text("payload").notNull().default(""),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -322,6 +371,7 @@ export const decideTokens = pgTable(
     actionId: text("action_id")
       .notNull()
       .references(() => actions.id),
+    contactId: text("contact_id"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

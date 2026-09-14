@@ -1,5 +1,6 @@
 import { WAKE_KINDS, type ActionPayload, type EvidenceItem, type WakeKind } from "./types";
 import { ABUSE } from "./abuse";
+import { AGENT_PROMPT_MAX, defaultAgentPrompt } from "@/lib/mcp/config";
 import { ProtocolError } from "./errors";
 
 export function parsePayload(raw: unknown): ActionPayload {
@@ -110,6 +111,37 @@ export function parseAgentWake(body: Record<string, unknown>): AgentWakeSpec {
     throw new ProtocolError("bad_request", "callback_secret is too long", 400);
   }
   return { wake, callbackUrl, callbackSecret: secretRaw || null };
+}
+
+export function parseAgentPrompt(body: Record<string, unknown>): string {
+  const raw = body.prompt ?? body.system_prompt;
+  if (raw !== undefined && raw !== null && typeof raw !== "string") {
+    throw new ProtocolError("bad_request", "prompt must be a string", 400);
+  }
+  const text = typeof raw === "string" ? raw.trim() : "";
+  if (text.length > AGENT_PROMPT_MAX) {
+    throw new ProtocolError("bad_request", "prompt is too long", 400);
+  }
+  return text || defaultAgentPrompt();
+}
+
+const COURT_LABEL_MAX = 80;
+const COURT_CAP_MAX = 200;
+
+export function parseCourtLabel(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw !== "string") throw new ProtocolError("bad_request", "court_label must be a string", 400);
+  const text = raw.trim();
+  if (text.length > COURT_LABEL_MAX) throw new ProtocolError("bad_request", "court_label is too long", 400);
+  return text;
+}
+
+export function parseCourtCap(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw !== "string") throw new ProtocolError("bad_request", "court_cap must be a string", 400);
+  const text = raw.trim();
+  if (text.length > COURT_CAP_MAX) throw new ProtocolError("bad_request", "court_cap is too long", 400);
+  return text;
 }
 
 export function parseCallbackUrl(raw: unknown): string {
