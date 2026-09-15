@@ -37,6 +37,10 @@ export const MAX_REVISION = 3;
 /** After a final allow or deny the proposer must POST report (ack). */
 export const REPORT_ACK_SEC = 300;
 
+/** House collect / bargain clocks (SIGN S1). Zero is not auto-court. */
+export const WINDOW_SEC_MIN = 10;
+export const WINDOW_SEC_MAX = 86_400;
+
 export const WAKE_STATUSES = ["pending", "delivered", "failed"] as const;
 export type WakeStatus = (typeof WAKE_STATUSES)[number];
 

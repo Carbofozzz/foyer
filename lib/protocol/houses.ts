@@ -9,11 +9,15 @@ import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
 import { accessFor } from "./members";
 import { isOrgHouse, type PrincipalType } from "./types";
+import { ensureHouseWindowsColumn } from "./house-windows";
+import { ensureWriteSignColumns } from "./write-sign";
 
 export const ORG_CAP = 1;
 const ORG_NAME = 80;
 
 export async function findHouseByOwner(ownerAddress: string) {
+  await ensureHouseWindowsColumn();
+  await ensureWriteSignColumns();
   const owner = ownerKey(ownerAddress);
   if (!owner) return null;
   const db = getDb();
@@ -26,6 +30,8 @@ export async function findHouseByOwner(ownerAddress: string) {
 }
 
 export async function createHouse(input: { name: string; type: PrincipalType; ownerAddress?: string }) {
+  await ensureHouseWindowsColumn();
+  await ensureWriteSignColumns();
   if (input.ownerAddress) {
     const existing = await findHouseByOwner(input.ownerAddress);
     if (existing) return { principalId: existing.id, cabinetToken: "me", enrollmentToken: null as string | null, existing: true };

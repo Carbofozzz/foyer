@@ -80,6 +80,9 @@
     "humanAllowed": "İsteği siz onayladınız.",
     "suggestion": "Öneri: {summary}",
     "revision": "Sürüm {n}",
+    "filedHash": "Kayıt {hash}",
+    "writeSigned": "imzalı",
+    "writeUnsigned": "imzasız",
     "revised": "Şöyle düzeltildi: {summary}",
     "revisedSilence": "Öneren düzeltti. Ondan sonra itiraz yok.",
     "allowBCounter": "Bunun yerine: {summary}",
@@ -170,6 +173,14 @@
     "tabs": "Panel bölümleri",
     "tabRules": "Kurallar",
     "rulesHint": "Asistanlar ve mahkeme bu metni okur.",
+    "windowCollect": "İtiraz süresi",
+    "windowCollectHint": "Bir istekten sonra diğerleri bu kadar saniye itiraz edebilir. Sessizlik rızadır.",
+    "windowBargain": "Yanıt süresi",
+    "windowBargainHint": "İtirazdan sonra isteyen geri alabilir, düzeltebilir veya ısrar edebilir. Yetişmezse siz karar verirsiniz.",
+    "windowBargainChat": "Sohbetler gelen kutusunu yaklaşık 30 saniyede bir okur. Çok kısa pencere onlara zor.",
+    "windowSec": " sn",
+    "requireSigned": "İmzalı yazıları zorunlu tut",
+    "requireSignedHint": "İmzasız propose, object, revise, withdraw, insist ve report reddedilir. Test sekmesi imzasız kalır. İmzalar mahkemeye gitmez.",
     "saveRules": "Kaydet",
     "savingRules": "Kaydediliyor…",
     "tabConnect": "Ajanlar",
@@ -444,6 +455,7 @@
     "namePlaceholder": "Örneğin Seyahat",
     "namePlaceholderOrg": "Örneğin Çalışan",
     "promptHint": "Önerilen metin. Düzenleyip sohbete yapıştırın. Mahkeme ev kurallarını okur, bu promptu değil.",
+    "promptPinHint": "Yeni prompt kaydı hash’i değiştirir. MCP bloğunu yeniden kopyalamazsanız yazılar 409 döner.",
     "promptOrgHint": "Her asistanın promptu ayrı olabilir. Kim harcayabilir veya rezervasyon yapabilir kurallardadır — prompt mahkemede argüman değildir.",
     "courtLabel": "Kurallardaki ad",
     "courtLabelPlaceholder": "örn. CEO masası",
@@ -473,6 +485,9 @@
     "advanced": "HTTP ve kendi istemci",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
+    "rotate": "Anahtarları yenile",
+    "rotating": "Yenileniyor…",
+    "rotateHint": "Yeni bearer ve imza sırrı. Eski MCP bloğu çalışmaz. Geçmiş kalır.",
     "added": "Ekledim",
     "skip": "Henüz kendi asistanım yok",
     "loading": "Yükleniyor…"
@@ -710,10 +725,6 @@
       {
         "title": "Kancalı barındırılan ajanlar",
         "body": "Foyer ev için bir denetçi çalıştırır, kancayla — kendi sunucunuzu kaldırmanız gerekmez."
-      },
-      {
-        "title": "İmzalar, sürümler, pencereler",
-        "body": "Her istek imzalıdır: gerçekten o asistanın gönderdiği görülür. Hangi ajan sürümüne izin verileceğini sabitleyebilirsiniz. İtiraza ne kadar süre tanınacağını ve isteyenin itirazdan sonra ne kadar sürede yanıt vereceğini ayarlayabilirsiniz."
       },
       {
         "title": "İnsana ulaşmanın başka yolları",

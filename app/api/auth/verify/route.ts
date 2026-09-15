@@ -1,4 +1,4 @@
-import { jsonError } from "@/lib/protocol/http";
+import { jsonError, protocolFail } from "@/lib/protocol/http";
 import { isRecord } from "@/lib/protocol/parse";
 import { ensureHouseForOwner } from "@/lib/protocol/houses";
 import {
@@ -27,7 +27,11 @@ async function postVerify(request: Request) {
   }
   const address = await addressFromLogin(request, body.message, body.signature);
   if (!address) return jsonError("forbidden", "Bad signature", 403);
-  await ensureHouseForOwner(address);
+  try {
+    await ensureHouseForOwner(address);
+  } catch (error) {
+    return protocolFail(error);
+  }
   const headers = new Headers({ "content-type": "application/json" });
   headers.append("set-cookie", cookieHeader(sessionCookie(address)));
   headers.append("set-cookie", cookieHeader(clearNonceCookie()));

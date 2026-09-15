@@ -10,6 +10,9 @@ import { defaultPublicOrigin } from "@/lib/mcp/config";
 import { deliverPendingWakes, escalateUnreachable, requiredWakeGate } from "@/lib/notify/wake";
 import { syncEscalateMail } from "@/lib/notify/outbox";
 import { ensureAgentPromptColumn } from "./house-clients";
+import { ensureHouseWindowsColumn, houseWindows } from "./house-windows";
+import { ensureWriteHashColumns } from "./write-hash";
+import { ensureWriteSignColumns } from "./write-sign";
 
 /**
  * Advances time for one house. Idempotent.
@@ -22,6 +25,9 @@ export async function sweep(
   options?: { courts?: number; origin?: string; wakes?: boolean; outbox?: boolean },
 ): Promise<{ advanced: number }> {
   await ensureAgentPromptColumn();
+  await ensureHouseWindowsColumn();
+  await ensureWriteHashColumns();
+  await ensureWriteSignColumns();
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };
@@ -53,7 +59,7 @@ export async function sweep(
       await executeSilenceAllow(bundle.action);
       advanced += 1;
     } else {
-      await enterBargain(bundle.action.id, principal.silenceWindowSec, now);
+      await enterBargain(bundle.action.id, houseWindows(principal).bargain_window_sec, now);
       advanced += 1;
     }
   }

@@ -76,7 +76,7 @@ export function WalletButton({
       });
       if (verifyResponse.ok) {
         notifyAuthChanged();
-        if (window.location.pathname.includes("/cabinet/admin")) window.location.reload();
+        window.location.reload();
       }
     } finally {
       setBusy(false);

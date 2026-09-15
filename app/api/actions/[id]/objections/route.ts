@@ -3,6 +3,7 @@ import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { sweep } from "@/lib/protocol/sweep";
 import { fileObjection } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
+import { writeSignFrom } from "@/lib/protocol/write-sign";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 
@@ -25,7 +26,7 @@ async function postObjection(request: Request, context: { params: Promise<{ id: 
   }
   if (!isRecord(body)) return jsonError("bad_request", "JSON object required", 400);
   try {
-    return jsonOk(await fileObjection(auth, id, body, new Date()), 201);
+    return jsonOk(await fileObjection(auth, id, body, new Date(), { sign: writeSignFrom(request, body) }), 201);
   } catch (error) {
     return protocolFail(error);
   }

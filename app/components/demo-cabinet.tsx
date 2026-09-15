@@ -102,6 +102,8 @@ export function DemoCabinet({
             <RulesCard
               token={DEMO_TOKEN}
               constitution={constitution}
+              collectWindowSec={60}
+              bargainWindowSec={60}
               canEdit={false}
               locked
               t={t.cabinet}

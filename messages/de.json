@@ -80,6 +80,9 @@
     "humanAllowed": "Sie haben den Antrag erlaubt.",
     "suggestion": "Vorschlag: {summary}",
     "revision": "Fassung {n}",
+    "filedHash": "Eingereicht {hash}",
+    "writeSigned": "signiert",
+    "writeUnsigned": "unsigniert",
     "revised": "Geändert auf: {summary}",
     "revisedSilence": "Der Antrag wurde nachgebessert. Danach kein Widerspruch.",
     "allowBCounter": "Stattdessen: {summary}",
@@ -170,6 +173,14 @@
     "tabs": "Bereiche des Kabinetts",
     "tabRules": "Regeln",
     "rulesHint": "Assistenten und das Gericht lesen diesen Text.",
+    "windowCollect": "Zeit zum Widerspruch",
+    "windowCollectHint": "Nach einem Antrag können andere so viele Sekunden widersprechen. Schweigen gilt als Zustimmung.",
+    "windowBargain": "Zeit zur Antwort",
+    "windowBargainHint": "Nach einem Widerspruch kann der Antragsteller zurücknehmen, ändern oder bestehen. Sonst entscheiden Sie.",
+    "windowBargainChat": "Chats lesen den Posteingang etwa alle 30 Sekunden. Ein sehr kurzes Fenster ist für sie schwer.",
+    "windowSec": " s",
+    "requireSigned": "Signierte Schreibvorgänge verlangen",
+    "requireSignedHint": "Unsigniertes propose, object, revise, withdraw, insist und report wird abgelehnt. Der Test-Tab bleibt unsigniert. Signaturen gehen nicht an das Gericht.",
     "saveRules": "Speichern",
     "savingRules": "Speichern…",
     "tabConnect": "Agenten",
@@ -444,6 +455,7 @@
     "namePlaceholder": "Zum Beispiel Reisen",
     "namePlaceholderOrg": "Zum Beispiel Mitarbeiter",
     "promptHint": "Empfohlener Text. Anpassen und in den Chat einfügen. Das Gericht liest die Hausregeln, nicht diesen Prompt.",
+    "promptPinHint": "Ein neuer Prompt ändert den Hash. Den MCP-Block neu kopieren, sonst 409 bei Schreibvorgängen.",
     "promptOrgHint": "Jeder Assistent kann einen anderen Prompt haben. Wer ausgeben oder buchen darf, steht in den Regeln — der Prompt gilt vor Gericht nicht.",
     "courtLabel": "Name in den Regeln",
     "courtLabelPlaceholder": "z. B. CEO-Schreibtisch",
@@ -473,6 +485,9 @@
     "advanced": "HTTP und eigener Client",
     "copy": "Kopieren",
     "copied": "Kopiert",
+    "rotate": "Schlüssel drehen",
+    "rotating": "Wird gedreht…",
+    "rotateHint": "Neuer Bearer und Signatur-Geheimnis. Der alte MCP-Block gilt nicht mehr. Die Historie bleibt.",
     "added": "Habe ich eingefügt",
     "skip": "Ich habe noch keinen eigenen Assistenten",
     "loading": "Laden…"
@@ -710,10 +725,6 @@
       {
         "title": "Gehostete Agenten mit Hooks",
         "body": "Foyer würde einen Prüfer fürs Haus betreiben, mit einem Hook — Sie müssen keinen eigenen Server aufsetzen."
-      },
-      {
-        "title": "Signaturen, Versionen, Fenster",
-        "body": "Jeder Antrag ist signiert, damit klar ist, dass er wirklich von diesem Assistenten kommt. Sie können festlegen, welche Agentenversion zulässig ist. Sie können einstellen, wie lange Widerspruch möglich ist und wie lange wer gefragt hat nach einem Widerspruch antworten darf."
       },
       {
         "title": "Weitere Wege zu einem Menschen",

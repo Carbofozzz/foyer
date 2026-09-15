@@ -26,7 +26,8 @@ export type TokenPrefix =
   | "ntf"
   | "tgl"
   | "hct"
-  | "hpl";
+  | "hpl"
+  | "sgn";
 
 export function mintToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(18).toString("base64url")}`;

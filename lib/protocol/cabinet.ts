@@ -6,23 +6,47 @@ import type { KnownActionKind, PrincipalType } from "./types";
 import { isOrgHouse } from "./types";
 import { ProtocolError } from "./errors";
 import type { HousePrincipal } from "./bundle";
+import { ensureHouseWindowsColumn, parseWindowSec } from "./house-windows";
+import { ensureWriteSignColumns, parseRequireSigned } from "./write-sign";
 
 export async function saveConstitution(
   principal: HousePrincipal,
   constitution: string,
   type?: PrincipalType,
+  windows?: {
+    collect_window_sec?: unknown;
+    bargain_window_sec?: unknown;
+    require_signed_writes?: unknown;
+  },
 ) {
   const text = constitution.trim();
   if (!text) throw new ProtocolError("bad_request", "constitution is required", 400);
+  await ensureHouseWindowsColumn();
+  await ensureWriteSignColumns();
+  const patch: {
+    constitution: string;
+    wizardRulesDone: boolean;
+    type?: PrincipalType;
+    silenceWindowSec?: number;
+    bargainWindowSec?: number;
+    requireSignedWrites?: boolean;
+  } = {
+    constitution: text,
+    wizardRulesDone: true,
+    ...(type === "org" || type === "personal" ? { type } : {}),
+  };
+  if (windows?.collect_window_sec !== undefined) {
+    patch.silenceWindowSec = parseWindowSec(windows.collect_window_sec, "collect_window_sec");
+  }
+  if (windows?.bargain_window_sec !== undefined) {
+    patch.bargainWindowSec = parseWindowSec(windows.bargain_window_sec, "bargain_window_sec");
+  }
+  if (windows?.require_signed_writes !== undefined) {
+    const required = parseRequireSigned(windows.require_signed_writes);
+    if (required !== undefined) patch.requireSignedWrites = required;
+  }
   const db = getDb();
-  await db
-    .update(principals)
-    .set({
-      constitution: text,
-      wizardRulesDone: true,
-      ...(type === "org" || type === "personal" ? { type } : {}),
-    })
-    .where(eq(principals.id, principal.id));
+  await db.update(principals).set(patch).where(eq(principals.id, principal.id));
 }
 
 export async function saveLocks(principal: HousePrincipal, kinds: unknown) {

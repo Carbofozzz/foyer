@@ -7,6 +7,10 @@ export const principals = pgTable("principals", {
   type: text("type").notNull(),
   constitution: text("constitution").notNull(),
   silenceWindowSec: integer("silence_window_sec").notNull().default(60),
+  /** After an objection: withdraw / revise / insist. Timeout escalates; never auto-court. */
+  bargainWindowSec: integer("bargain_window_sec").notNull().default(60),
+  /** Reject unsigned propose/object/revise/withdraw/insist/report. */
+  requireSignedWrites: boolean("require_signed_writes").notNull().default(false),
   ackTimeoutSec: integer("ack_timeout_sec").notNull().default(300),
   appealWindowSec: integer("appeal_window_sec").notNull().default(600),
   cabinetTokenHash: text("cabinet_token_hash").notNull().unique(),
@@ -95,6 +99,10 @@ export const agents = pgTable("agents", {
   courtLabel: text("court_label").notNull().default(""),
   /** Plain-language cap for the court (not a prompt). Empty = not sent. */
   courtCap: text("court_cap").notNull().default(""),
+  sealedSignSecret: text("sealed_sign_secret").notNull().default(""),
+  keyGen: integer("key_gen").notNull().default(1),
+  /** SHA-256 of the effective Connect prompt. Empty until backfill. */
+  promptSha: text("prompt_sha").notNull().default(""),
   bondBalance: integer("bond_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -124,6 +132,14 @@ export const actions = pgTable(
     payload: jsonb("payload").notNull(),
     justification: text("justification").notNull(),
     evidence: jsonb("evidence").notNull(),
+    /** SHA-256 of the accepted propose/revise body. Empty on leftover rows. */
+    payloadHash: text("payload_hash").notNull().default(""),
+    lastWriteOp: text("last_write_op").notNull().default(""),
+    lastWriteHash: text("last_write_hash").notNull().default(""),
+    lastWriteSigned: boolean("last_write_signed").notNull().default(false),
+    lastWriteSig: text("last_write_sig").notNull().default(""),
+    lastWriteIssuedAt: timestamp("last_write_issued_at", { withTimezone: true }),
+    lastWriteKeyGen: integer("last_write_key_gen").notNull().default(0),
     status: text("status").notNull(),
     silenceUntil: timestamp("silence_until", { withTimezone: true }).notNull(),
     ackUntil: timestamp("ack_until", { withTimezone: true }),
@@ -153,6 +169,7 @@ export const objections = pgTable(
     revision: integer("revision").notNull().default(1),
     justification: text("justification").notNull(),
     evidence: jsonb("evidence").notNull(),
+    payloadHash: text("payload_hash").notNull().default(""),
     bond: text("bond").notNull(),
     counterAction: jsonb("counter_action"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -377,6 +394,16 @@ export const decideTokens = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("decide_tokens_action").on(table.actionId)],
+);
+
+/** Replay store for HMAC write signatures (agent_id + sig). */
+export const writeSigs = pgTable(
+  "write_sigs",
+  {
+    agentId: text("agent_id").notNull(),
+    sig: text("sig").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.agentId, table.sig] })],
 );
 
 export const notifications = pgTable(

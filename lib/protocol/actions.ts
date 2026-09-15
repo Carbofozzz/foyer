@@ -8,12 +8,14 @@ import { parseCounterAction, parseEvidence, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
 import { assertHouseProposeRoom, assertJustification } from "./abuse";
 import { enqueueWakes } from "@/lib/notify/wake";
+import { writeHash, stampActionWrite } from "./write-hash";
+import { verifyWriteSign, writeSignFrom, writeSignStamp, type WriteSignOffer } from "./write-sign";
 
 export async function proposeAction(
   auth: HouseAuth,
   body: Record<string, unknown>,
   now: Date,
-  options?: { origin?: string; testPass?: boolean },
+  options?: { origin?: string; testPass?: boolean; sign?: WriteSignOffer },
 ) {
   const payload = parsePayload(body.payload ?? body);
   const justification = typeof body.justification === "string" ? body.justification.trim() : "";
@@ -21,7 +23,14 @@ export async function proposeAction(
   assertJustification(justification);
   const evidence = parseEvidence(body.evidence);
   await assertHouseProposeRoom(auth.principal.id);
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "propose", payload, justification, evidence },
+    options?.sign ?? writeSignFrom(undefined, body),
+    { skip: Boolean(options?.testPass) },
+  );
   const id = mintToken("act");
+  const hash = writeHash({ op: "propose", payload, justification, evidence });
   const db = getDb();
   await db.insert(actions).values({
     id,
@@ -31,6 +40,10 @@ export async function proposeAction(
     payload,
     justification,
     evidence,
+    payloadHash: hash,
+    lastWriteOp: "propose",
+    lastWriteHash: hash,
+    ...writeSignStamp(proof),
     status: "open",
     silenceUntil: new Date(now.getTime() + auth.principal.silenceWindowSec * 1000),
     testPass: Boolean(options?.testPass),
@@ -54,6 +67,7 @@ export async function fileObjection(
   actionId: string,
   body: Record<string, unknown>,
   _now: Date,
+  options?: { sign?: WriteSignOffer; skipSign?: boolean },
 ) {
   const bundle = await loadActionBundle(actionId);
   if (!bundle || bundle.action.principalId !== auth.principal.id) {
@@ -70,7 +84,14 @@ export async function fileObjection(
   assertJustification(justification);
   const evidence = parseEvidence(body.evidence);
   const counter = parseCounterAction(body.counter_action);
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "object", action_id: actionId, justification, evidence, counter_action: counter },
+    options?.sign ?? writeSignFrom(undefined, body),
+    { skip: Boolean(options?.skipSign || bundle.action.testPass) },
+  );
   const objectionId = mintToken("obj");
+  const hash = writeHash({ op: "object", justification, evidence, counter_action: counter });
   const db = getDb();
   await db.insert(objections).values({
     id: objectionId,
@@ -79,9 +100,11 @@ export async function fileObjection(
     revision: bundle.action.revision,
     justification,
     evidence,
+    payloadHash: hash,
     bond: "0",
     counterAction: counter,
   });
+  await stampActionWrite(actionId, "object", hash, writeSignStamp(proof));
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next);

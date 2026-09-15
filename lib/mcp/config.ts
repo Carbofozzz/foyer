@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export function publicOrigin(request: Request): string {
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
   const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
@@ -13,16 +15,19 @@ export function defaultPublicOrigin(): string {
   return "https://foyerapp.dev";
 }
 
-/** Standard MCP HTTP snippet: URL + bearer key. Not tied to one runtime. */
-export function mcpConfig(origin: string, agentKey: string) {
+/** Standard MCP HTTP snippet: URL + bearer key. Optional sign secret and prompt pin for writes. */
+export function mcpConfig(origin: string, agentKey: string, signSecret?: string, promptSha?: string) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${agentKey}`,
+  };
+  if (signSecret) headers["X-Foyer-Sign-Secret"] = signSecret;
+  if (promptSha) headers["X-Foyer-Prompt-Sha"] = promptSha;
   return JSON.stringify(
     {
       mcpServers: {
         foyer: {
           url: `${origin}/api/mcp`,
-          headers: {
-            Authorization: `Bearer ${agentKey}`,
-          },
+          headers,
         },
       },
     },
@@ -38,7 +43,8 @@ export const MCP_PROMPT_LINES = [
   "Propose, object, read inbox, ack, withdraw, revise, insist, and report only through Foyer tools.",
   `After you propose or object, call inbox at least every ${MCP_INBOX_POLL_SEC} seconds until verdict.outcome is allow or deny, or status is withdrawn. Chat runtimes are not woken — this poll is how you learn.`,
   "When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.",
-  "Cite the house constitution in every justification. If you cite a web page, include the http(s) URL in the text or as evidence { type: \"link\", value }. The court fetches those pages. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
+  "Cite the house constitution in every justification. If you cite a web page, include the http(s) URL in the text or as evidence { type: \"link\", value }. The court fetches those pages. Do not pay, book, or message before may_act. Hooked agents are woken to object. Collect and bargain durations are on GET constitution. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.",
+  "Keep X-Foyer-Sign-Secret and X-Foyer-Prompt-Sha from Connect on writes. If the house requires signed writes, unsigned tools fail. If prompt_sha does not match, recopy Connect — the owner edited the prompt. Do not put secrets or the prompt in court text.",
 ];
 
 export const AGENT_PROMPT_MAX = 8000;
@@ -55,4 +61,9 @@ export function agentPromptText(stored?: string | null) {
 
 export function agentPromptLines(stored?: string | null) {
   return agentPromptText(stored).split("\n");
+}
+
+/** SHA-256 of the prompt the assistant is told to paste (empty stored = default lines). */
+export function promptShaOf(stored?: string | null): string {
+  return createHash("sha256").update(agentPromptText(stored), "utf8").digest("hex");
 }

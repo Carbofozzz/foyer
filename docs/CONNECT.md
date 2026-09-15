@@ -22,13 +22,14 @@ Put these lines in the system prompt (the cabinet copies them for you):
 1. Propose, object, read inbox, ack, withdraw, revise, insist, and report only through Foyer tools.
 2. After you propose or object, call inbox at least every 30 seconds until verdict.outcome is allow or deny, or status is withdrawn. Chat runtimes are not woken — this poll is how you learn.
 3. When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.
-4. Cite the house constitution in every justification. Do not pay, book, or message before may_act. Hooked agents are woken to object. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.
+4. Cite the house constitution in every justification. Do not pay, book, or message before may_act. Hooked agents are woken to object. Collect and bargain durations are on GET constitution. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.
+5. Keep `X-Foyer-Sign-Secret` and `X-Foyer-Prompt-Sha` from Connect on writes. If the house requires signed writes, unsigned tools fail. If prompt_sha does not match, recopy Connect. Do not put the secret or the prompt in court text.
 
 The lock is tools and keys, not this prompt.
 
 ## MCP
 
-The snippet is standard MCP HTTP. The URL is `/api/mcp`. The same key goes in `Authorization: Bearer agk_…`.
+The snippet is standard MCP HTTP. The URL is `/api/mcp`. The same key goes in `Authorization: Bearer agk_…`. Connect also puts `X-Foyer-Sign-Secret` and `X-Foyer-Prompt-Sha` on the snippet. House Rules can require signed writes. If the owner edits the prompt, recopy the block (409). Signatures and the prompt are not sent to court. Rotate in Connect if a paste leaked.
 
 GET with that key is a ping (tool names + the calling agent). Calls are JSON-RPC over POST. An empty POST body is treated as `initialize`.
 

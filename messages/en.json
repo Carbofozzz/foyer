@@ -80,6 +80,9 @@
     "humanAllowed": "You allowed the request.",
     "suggestion": "Suggested: {summary}",
     "revision": "Revision {n}",
+    "filedHash": "Filed {hash}",
+    "writeSigned": "signed",
+    "writeUnsigned": "unsigned",
     "revised": "Revised to: {summary}",
     "revisedSilence": "The proposer revised. Nobody objected after that.",
     "allowBCounter": "Instead: {summary}",
@@ -170,6 +173,14 @@
     "tabs": "Cabinet sections",
     "tabRules": "Rules",
     "rulesHint": "Assistants and the court read this text.",
+    "windowCollect": "Time to object",
+    "windowCollectHint": "After a request, others may object for this many seconds. Silence is consent.",
+    "windowBargain": "Time to answer",
+    "windowBargainHint": "After an objection, the one who asked may withdraw, revise, or insist. If they wait it out, you decide.",
+    "windowBargainChat": "Chats poll about every 30 seconds. A very short answer window is hard on them.",
+    "windowSec": " s",
+    "requireSigned": "Require signed writes",
+    "requireSignedHint": "Reject unsigned propose, object, revise, withdraw, insist, and report. The test tab stays unsigned. Signatures are not sent to court.",
     "saveRules": "Save",
     "savingRules": "Saving…",
     "tabConnect": "Agents",
@@ -444,6 +455,7 @@
     "namePlaceholder": "For example, Travel",
     "namePlaceholderOrg": "For example, Employee",
     "promptHint": "Recommended text. Edit it, then paste it into the chat. The court reads the house rules, not this prompt.",
+    "promptPinHint": "Saving a new prompt changes its hash. Assistants must recopy the MCP block or writes return 409.",
     "promptOrgHint": "Each assistant can have a different prompt. Who may spend or book belongs in the rules — a prompt is not an argument in court.",
     "courtLabel": "Name in the rules",
     "courtLabelPlaceholder": "e.g. CEO desk",
@@ -473,6 +485,9 @@
     "advanced": "HTTP and your own client",
     "copy": "Copy",
     "copied": "Copied",
+    "rotate": "Rotate keys",
+    "rotating": "Rotating…",
+    "rotateHint": "New bearer and sign secret. The old MCP block stops working. History stays.",
     "added": "I added it",
     "skip": "I don’t have my own assistant yet",
     "loading": "Loading…"
@@ -710,10 +725,6 @@
       {
         "title": "Hosted agents with hooks",
         "body": "Foyer would run a checker for the house, with a hook — so you do not have to stand up your own server."
-      },
-      {
-        "title": "Signatures, versions, windows",
-        "body": "Each request is signed, so the house can see it really came from that assistant. You can pin which version of an agent is allowed. You can set how long others may object, and how long the one who asked may answer after an objection."
       },
       {
         "title": "More ways to reach a person",

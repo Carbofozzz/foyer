@@ -69,6 +69,7 @@ type StagePayload = {
   agents: StageAgent[];
   kinds: string[];
   silence_window_sec: number;
+  bargain_window_sec: number;
   current: {
     live: boolean;
     action: StageAction;

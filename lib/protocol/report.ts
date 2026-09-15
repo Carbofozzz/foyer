@@ -4,6 +4,8 @@ import { getDb } from "@/lib/db";
 import { ProtocolError } from "./errors";
 import { loadActionBundle, serializeAction, type HouseAuth } from "./bundle";
 import { isRecord } from "./parse";
+import { stampActionWrite, writeHash } from "./write-hash";
+import { verifyWriteSign, writeSignFrom, writeSignStamp, type WriteSignOffer } from "./write-sign";
 
 export type DoorStats = {
   agent_id: string;
@@ -18,7 +20,12 @@ export type DoorStats = {
 };
 
 /** Proposer acks a final allow or deny. No did flag — the act is outside Foyer. */
-export async function reportAction(auth: HouseAuth, actionId: string, _body?: Record<string, unknown>) {
+export async function reportAction(
+  auth: HouseAuth,
+  actionId: string,
+  body?: Record<string, unknown>,
+  options?: { sign?: WriteSignOffer },
+) {
   const bundle = await loadActionBundle(actionId);
   if (!bundle || bundle.action.principalId !== auth.principal.id) {
     throw new ProtocolError("not_found", "Unknown house", 404);
@@ -35,6 +42,12 @@ export async function reportAction(auth: HouseAuth, actionId: string, _body?: Re
     if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
     return serializeAction(next);
   }
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "report", action_id: actionId },
+    options?.sign ?? writeSignFrom(undefined, body),
+    { skip: Boolean(bundle.action.testPass) },
+  );
   await getDb()
     .insert(actionReports)
     .values({
@@ -43,6 +56,7 @@ export async function reportAction(auth: HouseAuth, actionId: string, _body?: Re
       did: true,
     })
     .onConflictDoNothing();
+  await stampActionWrite(actionId, "report", writeHash({ op: "report", action_id: actionId }), writeSignStamp(proof));
   const done = await loadActionBundle(actionId);
   if (!done) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(done);
