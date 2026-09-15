@@ -2,6 +2,7 @@ import { cabinetFromToken, needManage } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { isRecord } from "@/lib/protocol/parse";
 import { saveConstitution } from "@/lib/protocol/cabinet";
+import { parseRequireSigned } from "@/lib/protocol/write-sign";
 
 export async function POST(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
@@ -19,7 +20,11 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
   const type = body.type === "org" || body.type === "personal" ? body.type : undefined;
   try {
-    await saveConstitution(principal, body.constitution, type);
+    await saveConstitution(principal, body.constitution, type, {
+      collect_window_sec: body.collect_window_sec,
+      bargain_window_sec: body.bargain_window_sec,
+      require_signed_writes: parseRequireSigned(body.require_signed_writes),
+    });
     return jsonOk({ ok: true });
   } catch (error) {
     return protocolFail(error);

@@ -9,14 +9,16 @@ import { MAX_REVISION } from "./types";
 import { loadActionBundle, serializeAction, type HouseAuth, type HousePrincipal } from "./bundle";
 import { assertJustification } from "./abuse";
 import { parseEvidence, parsePayload } from "./parse";
+import { writeHash } from "./write-hash";
+import { verifyWriteSign, writeSignFrom, writeSignStamp, type WriteSignOffer } from "./write-sign";
 
-export async function enterBargain(actionId: string, principalSilenceSec: number, now: Date): Promise<void> {
+export async function enterBargain(actionId: string, bargainWindowSec: number, now: Date): Promise<void> {
   const db = getDb();
   await db
     .update(actions)
     .set({
       status: "bargaining",
-      bargainUntil: new Date(now.getTime() + principalSilenceSec * 1000),
+      bargainUntil: new Date(now.getTime() + bargainWindowSec * 1000),
     })
     .where(and(eq(actions.id, actionId), eq(actions.status, "open")));
 }
@@ -38,11 +40,27 @@ export async function timeoutBargains(principal: HousePrincipal, now: Date): Pro
   return advanced;
 }
 
-export async function withdrawAction(auth: HouseAuth, actionId: string) {
+export async function withdrawAction(auth: HouseAuth, actionId: string, options?: { sign?: WriteSignOffer }) {
   const bundle = await requireProposer(auth, actionId);
   assertCanBargain(bundle, "withdraw");
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "withdraw", action_id: actionId },
+    options?.sign ?? {},
+    { skip: Boolean(bundle.action.testPass) },
+  );
+  const hash = writeHash({ op: "withdraw", action_id: actionId });
   const db = getDb();
-  await db.update(actions).set({ status: "withdrawn", bargainUntil: null }).where(eq(actions.id, actionId));
+  await db
+    .update(actions)
+    .set({
+      status: "withdrawn",
+      bargainUntil: null,
+      lastWriteOp: "withdraw",
+      lastWriteHash: hash,
+      ...writeSignStamp(proof),
+    })
+    .where(eq(actions.id, actionId));
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next);
@@ -53,7 +71,7 @@ export async function reviseAction(
   actionId: string,
   body: Record<string, unknown>,
   now: Date,
-  options?: { origin?: string },
+  options?: { origin?: string; sign?: WriteSignOffer },
 ) {
   const bundle = await requireProposer(auth, actionId);
   assertCanBargain(bundle, "revise");
@@ -66,6 +84,13 @@ export async function reviseAction(
   assertJustification(justification);
   const evidence = parseEvidence(body.evidence);
   const revision = bundle.action.revision + 1;
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "revise", action_id: actionId, revision, payload, justification, evidence },
+    options?.sign ?? writeSignFrom(undefined, body),
+    { skip: Boolean(bundle.action.testPass) },
+  );
+  const hash = writeHash({ op: "revise", payload, justification, evidence, revision });
   const db = getDb();
   await db
     .update(actions)
@@ -74,6 +99,10 @@ export async function reviseAction(
       payload,
       justification,
       evidence,
+      payloadHash: hash,
+      lastWriteOp: "revise",
+      lastWriteHash: hash,
+      ...writeSignStamp(proof),
       status: "open",
       revision,
       bargainRound: bundle.action.bargainRound + 1,
@@ -93,14 +122,24 @@ export async function reviseAction(
   return serializeAction(next);
 }
 
-export async function insistAction(auth: HouseAuth, actionId: string, now: Date) {
+export async function insistAction(auth: HouseAuth, actionId: string, now: Date, options?: { sign?: WriteSignOffer }) {
   const bundle = await requireProposer(auth, actionId);
   assertCanBargain(bundle, "insist");
   if (bundle.objections.length === 0) {
     throw new ProtocolError("conflict", "Insist needs at least one objection", 409);
   }
+  const proof = await verifyWriteSign(
+    auth,
+    { op: "insist", action_id: actionId },
+    options?.sign ?? {},
+    { skip: Boolean(bundle.action.testPass) },
+  );
+  const hash = writeHash({ op: "insist", action_id: actionId });
   const db = getDb();
-  await db.update(actions).set({ insistedAt: now }).where(eq(actions.id, actionId));
+  await db
+    .update(actions)
+    .set({ insistedAt: now, lastWriteOp: "insist", lastWriteHash: hash, ...writeSignStamp(proof) })
+    .where(eq(actions.id, actionId));
   const [fresh] = await db.select().from(actions).where(eq(actions.id, actionId)).limit(1);
   if (!fresh) throw new ProtocolError("internal", "Failed to load action", 500);
   scheduleOpenCourt(fresh, auth.principal, now);

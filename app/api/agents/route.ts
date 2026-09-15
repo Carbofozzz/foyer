@@ -3,6 +3,8 @@ import { agents, enrollments } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { jsonError, jsonOk, bearerToken } from "@/lib/protocol/http";
 import { hashSecret, mintToken } from "@/lib/protocol/keys";
+import { promptShaOf } from "@/lib/mcp/config";
+import { ensureWriteSignColumns, mintSignSecret, sealSignSecret } from "@/lib/protocol/write-sign";
 import { requireAgent } from "@/lib/protocol/auth";
 import { sweepIfBusy } from "@/lib/protocol/sweep";
 import { guardPublicWrite } from "@/lib/ops/guard";
@@ -26,6 +28,8 @@ export async function GET(request: Request) {
       id: row.id,
       role: row.role,
       name: row.name,
+      prompt_sha: row.promptSha || promptShaOf(row.systemPrompt),
+      key_gen: row.keyGen ?? 1,
       ...connectPublicFields(row),
     })),
   );
@@ -74,7 +78,9 @@ async function postEnroll(request: Request) {
 
   const agentId = mintToken("agt");
   const agentKey = mintToken("agk");
+  const signSecret = mintSignSecret();
   await ensureAgentPromptColumn();
+  await ensureWriteSignColumns();
   await db.insert(agents).values({
     id: agentId,
     principalId: slot.principalId,
@@ -85,6 +91,9 @@ async function postEnroll(request: Request) {
     callbackUrl: spec.callbackUrl,
     sealedCallbackSecret: callbackSecret ? sealKey(callbackSecret) : null,
     systemPrompt: parseAgentPrompt(body),
+    sealedSignSecret: sealSignSecret(signSecret),
+    keyGen: 1,
+    promptSha: promptShaOf(parseAgentPrompt(body)),
   });
   await db.update(enrollments).set({ usedAt: new Date() }).where(eq(enrollments.tokenHash, slot.tokenHash));
 
@@ -95,6 +104,8 @@ async function postEnroll(request: Request) {
       role: slot.role,
       name,
       agent_key: agentKey,
+      sign_secret: signSecret,
+      prompt_sha: promptShaOf(parseAgentPrompt(body)),
       ...connectPublicFields({
         wake: spec.wake,
         callbackUrl: spec.callbackUrl,

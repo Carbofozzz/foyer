@@ -84,6 +84,16 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     payload: bundle.action.payload,
     justification: bundle.action.justification,
     evidence: bundle.action.evidence,
+    payload_hash: bundle.action.payloadHash || null,
+    last_write:
+      bundle.action.lastWriteHash && bundle.action.lastWriteOp
+        ? {
+            op: bundle.action.lastWriteOp,
+            hash: bundle.action.lastWriteHash,
+            signed: Boolean(bundle.action.lastWriteSigned),
+            key_gen: bundle.action.lastWriteKeyGen || null,
+          }
+        : null,
     status: bundle.action.status,
     created_at: bundle.action.createdAt.toISOString(),
     silence_until: bundle.action.silenceUntil.toISOString(),
@@ -114,6 +124,7 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
       evidence: row.evidence,
       bond: row.bond,
       counter_action: row.counterAction,
+      payload_hash: row.payloadHash || null,
     })),
     case: bundle.courtCase
       ? {

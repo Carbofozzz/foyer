@@ -169,3 +169,8 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-14: Sweep always polls an inflight court hash. `courts: 1` on tick only submits a new case. Test/cabinet refresh can land a finalized verdict without waiting for cron.
 - 2026-09-14: Court allow/deny always grants permit (report is the ack). Do not wait on the old engaged `POST ack` window — that skipped the test report card after deny.
 - 2026-09-14: Court IC: a desk spend cap binds that proposer only. Objector label is a role, not a veto of their own cap onto someone else. Houses redeploy (`court_abi` 8).
+- 2026-09-15: SIGN S1 — house `bargain_window_sec` separate from collect (`silence_window_sec`). Rules tab, GET constitution, MCP. Bargain timeout still escalate. OpenAPI `0.49.0`.
+- 2026-09-15: SIGN S2 — SHA-256 of accepted propose/object/revise/withdraw/insist/report bodies (`payload_hash`, `last_write`). Cabinet feed + GET action. Not on-chain. OpenAPI `0.50.0`.
+- 2026-09-15: SIGN S3 — Connect mints sealed `sign_secret`; MCP header `X-Foyer-Sign-Secret` (or HMAC `issued_at`+`sig`); house `require_signed_writes`; rotate kills old bearer and secret. Test tab unsigned. Not on-chain. OpenAPI `0.51.0`.
+- 2026-09-15: SIGN S4 — `agents.prompt_sha`; writes may send `X-Foyer-Prompt-Sha`. Mismatch after a Connect prompt edit is 409. Required when the house requires signed writes. Test tab unsigned. Not on-chain. OpenAPI `0.52.0`.
+- 2026-09-15: Login `ensureHouseForOwner` migrates `require_signed_writes` before selecting the house, so wallet verify does not 500 on leftover Postgres.

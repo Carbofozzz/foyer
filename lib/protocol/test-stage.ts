@@ -10,6 +10,7 @@ import { reportAction } from "./report";
 import { lockedKinds, serializeAction, type HousePrincipal } from "./bundle";
 import { executeAfterAck } from "./execute";
 import { ProtocolError } from "./errors";
+import { houseWindows } from "./house-windows";
 import { isRecord } from "./parse";
 import { sweep, sweepIfBusy } from "./sweep";
 import { MAX_REVISION } from "./types";
@@ -156,6 +157,8 @@ function canon(
     id: serialized.id,
     payload: serialized.payload,
     justification: serialized.justification,
+    payload_hash: serialized.payload_hash,
+    last_write: serialized.last_write,
     revision: serialized.revision,
     silence_until: serialized.silence_until,
     test_pass: true,
@@ -600,22 +603,20 @@ export async function loadTestStage(principal: HousePrincipal, origin?: string) 
   await sweepIfBusy(principal.id, new Date(), { courts: 0, origin, wakes: false });
   const houseAgents = await listStageAgents(principal.id);
   const kinds = lockedKinds(principal);
+  const w = houseWindows(principal);
+  const clocks = { silence_window_sec: w.collect_window_sec, bargain_window_sec: w.bargain_window_sec };
+  const empty = { agents: houseAgents, kinds, ...clocks, current: null as null };
   const actionId = await latestTestActionId(principal.id);
   if (!actionId) {
-    return {
-      agents: houseAgents,
-      kinds,
-      silence_window_sec: principal.silenceWindowSec,
-      current: null,
-    };
+    return empty;
   }
   const [row] = await getDb().select().from(actions).where(eq(actions.id, actionId)).limit(1);
   if (!row) {
-    return { agents: houseAgents, kinds, silence_window_sec: principal.silenceWindowSec, current: null };
+    return empty;
   }
   const [actor] = await getDb().select().from(agents).where(eq(agents.id, row.proposerId)).limit(1);
   if (!actor) {
-    return { agents: houseAgents, kinds, silence_window_sec: principal.silenceWindowSec, current: null };
+    return empty;
   }
   let serialized = await getAction({ agent: actor, principal }, actionId);
   const settled = serialized.verdict?.outcome;
@@ -630,7 +631,7 @@ export async function loadTestStage(principal: HousePrincipal, origin?: string) 
   return {
     agents: houseAgents,
     kinds,
-    silence_window_sec: principal.silenceWindowSec,
+    ...clocks,
     current: {
       live: isLive(serialized),
       action: serialized,
@@ -736,6 +737,7 @@ export async function inspectTestStage(
       principal_id: principal.id,
       type: principal.type,
       constitution: principal.constitution,
+      ...houseWindows(principal),
     },
     action,
     inbox: { items: inbox.items.filter((item) => item.id === actionId) },

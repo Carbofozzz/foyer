@@ -1,4 +1,4 @@
-import { mcpConfig, MCP_PROMPT_LINES } from "@/lib/mcp/config";
+import { mcpConfig, MCP_PROMPT_LINES, promptShaOf } from "@/lib/mcp/config";
 
 export const DEMO_TOKEN = "demo";
 
@@ -56,7 +56,7 @@ export function demoConnect() {
   return {
     agent_key: DEMO_KEY,
     mcp_url: `${DEMO_ORIGIN}/api/mcp`,
-    mcp_config: mcpConfig(DEMO_ORIGIN, DEMO_KEY),
+    mcp_config: mcpConfig(DEMO_ORIGIN, DEMO_KEY, "sgn_demo", promptShaOf("")),
     prompt_lines: [...MCP_PROMPT_LINES],
     wake: "outbound" as const,
     callback_url: null,

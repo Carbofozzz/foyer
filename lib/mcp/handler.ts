@@ -9,8 +9,19 @@ import { ABUSE } from "@/lib/protocol/abuse";
 import { isRecord } from "@/lib/protocol/parse";
 import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
 import { MCP_INBOX_POLL_SEC, publicOrigin } from "@/lib/mcp/config";
+import { houseWindows } from "@/lib/protocol/house-windows";
+import { writeSignFrom } from "@/lib/protocol/write-sign";
 
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: unknown };
+
+const SIGN_FIELDS = {
+  issued_at: { type: "string", description: "ISO time for HMAC writes. Optional if X-Foyer-Sign-Secret is set." },
+  sig: { type: "string", description: "HMAC-SHA256 hex of the canonical write. Optional if X-Foyer-Sign-Secret is set." },
+  prompt_sha: {
+    type: "string",
+    description: "SHA-256 of the Connect prompt. 409 if the owner edited the prompt and you did not refresh.",
+  },
+};
 
 const TOOLS = [
   {
@@ -32,6 +43,7 @@ const TOOLS = [
         justification: { type: "string" },
         evidence: { type: "array" },
         payload: { type: "object" },
+        ...SIGN_FIELDS,
       },
     },
   },
@@ -46,6 +58,7 @@ const TOOLS = [
         justification: { type: "string" },
         evidence: { type: "array" },
         counter_action: { type: "object" },
+        ...SIGN_FIELDS,
       },
     },
   },
@@ -61,7 +74,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       required: ["action_id"],
-      properties: { action_id: { type: "string" } },
+      properties: { action_id: { type: "string" }, ...SIGN_FIELDS },
     },
   },
   {
@@ -78,6 +91,7 @@ const TOOLS = [
         justification: { type: "string" },
         evidence: { type: "array" },
         payload: { type: "object" },
+        ...SIGN_FIELDS,
       },
     },
   },
@@ -87,7 +101,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       required: ["action_id"],
-      properties: { action_id: { type: "string" } },
+      properties: { action_id: { type: "string" }, ...SIGN_FIELDS },
     },
   },
   {
@@ -117,6 +131,7 @@ const TOOLS = [
       required: ["action_id"],
       properties: {
         action_id: { type: "string" },
+        ...SIGN_FIELDS,
       },
     },
   },
@@ -152,7 +167,7 @@ export async function handleMcpPost(request: Request): Promise<Response> {
   const { rpc } = parsed;
   const id = rpc.id ?? null;
   try {
-    const result = await dispatch(auth, rpc.method ?? "initialize", rpc.params, publicOrigin(request));
+    const result = await dispatch(auth, rpc.method ?? "initialize", rpc.params, publicOrigin(request), request);
     return rpcOk(id, result);
   } catch (error) {
     const message =
@@ -186,7 +201,7 @@ async function readRpc(request: Request): Promise<{ rpc: Rpc } | { error: Respon
   }
 }
 
-async function dispatch(auth: HouseAuth, method: string, params: unknown, origin: string) {
+async function dispatch(auth: HouseAuth, method: string, params: unknown, origin: string, request: Request) {
   const quiet =
     method === "initialize" ||
     method === "notifications/initialized" ||
@@ -210,42 +225,44 @@ async function dispatch(auth: HouseAuth, method: string, params: unknown, origin
     const p = isRecord(params) ? params : {};
     const name = typeof p.name === "string" ? p.name : "";
     const args = isRecord(p.arguments) ? p.arguments : {};
-    const data = await callTool(auth, name, args, origin);
+    const data = await callTool(auth, name, args, origin, request);
     return { content: [{ type: "text", text: JSON.stringify(data) }] };
   }
   throw new Error(`Unknown method: ${method}`);
 }
 
-async function callTool(auth: HouseAuth, name: string, args: Record<string, unknown>, origin: string) {
+async function callTool(auth: HouseAuth, name: string, args: Record<string, unknown>, origin: string, request: Request) {
   const now = new Date();
+  const sign = writeSignFrom(request, args);
   if (name === "get_constitution") {
     return {
       principal_id: auth.principal.id,
       type: auth.principal.type,
       constitution: auth.principal.constitution,
+      ...houseWindows(auth.principal),
     };
   }
   if (name === "propose") {
     if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {
       throw new ProtocolError("rate_limited", "Too many proposals from this agent", 429);
     }
-    return proposeAction(auth, args, now, { origin });
+    return proposeAction(auth, args, now, { origin, sign });
   }
   if (name === "object") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return fileObjection(auth, actionId, args, now);
+    return fileObjection(auth, actionId, args, now, { sign });
   }
   if (name === "withdraw") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return withdrawAction(auth, actionId);
+    return withdrawAction(auth, actionId, { sign });
   }
   if (name === "revise") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return reviseAction(auth, actionId, args, now, { origin });
+    return reviseAction(auth, actionId, args, now, { origin, sign });
   }
   if (name === "insist") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return insistAction(auth, actionId, now);
+    return insistAction(auth, actionId, now, { sign });
   }
   if (name === "inbox") return inboxFor(auth);
   if (name === "ack") {
@@ -258,7 +275,7 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
   }
   if (name === "report") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return reportAction(auth, actionId, reportBody(args));
+    return reportAction(auth, actionId, reportBody(args), { sign });
   }
   throw new Error(`Unknown tool: ${name}`);
 }
@@ -278,7 +295,7 @@ export function mcpOptions() {
 function withCors(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Foyer-Sign-Secret, X-Foyer-Issued-At, X-Foyer-Signature, X-Foyer-Prompt-Sha");
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   return new Response(response.body, { status: response.status, headers });
 }

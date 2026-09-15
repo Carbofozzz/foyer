@@ -214,7 +214,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not imple
 
 - **Hosted full-time agents.** Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar. Own key — the gateway never objects. Schema `wake = hosted` is reserved; Connect does not mint it. Do not ship a constitution bot in the gateway to “fill” a chat-only house.
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
-- **Signatures / A2A**, mainnet GenLayer, richer window policy, pin agent version.
+- **Signatures, versions, windows** — [SIGN.md](SIGN.md). S1–S4 shipped (windows, write hashes, signed writes, prompt pin).
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
 - Org: Org 6 shipped (desk label/cap on Connect go to the court packet; the IC applies a proposer's cap). Further slices in [ORG.md](ORG.md).
 - **Notify the principal** on `escalated`: email (N1) and Telegram (N2) — [NOTIFY.md](NOTIFY.md). Not the agent protocol.

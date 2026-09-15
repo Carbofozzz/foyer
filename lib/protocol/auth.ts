@@ -6,6 +6,9 @@ import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
 import { accessFor, canManage, hasGrant, type HouseAccess } from "./members";
 import { ensureAgentPromptColumn } from "./house-clients";
+import { ensureHouseWindowsColumn } from "./house-windows";
+import { ensureWriteHashColumns } from "./write-hash";
+import { ensureWriteSignColumns } from "./write-sign";
 import { readSession } from "./session";
 import type { HousePrincipal } from "./bundle";
 import { DEMO_TOKEN } from "./spawn";
@@ -17,6 +20,9 @@ export async function requireAgent(request: Request) {
     return { error: jsonError("unauthorized", "Agent key required", 401) };
   }
   await ensureAgentPromptColumn();
+  await ensureHouseWindowsColumn();
+  await ensureWriteHashColumns();
+  await ensureWriteSignColumns();
   const db = getDb();
   const [agent] = await db.select().from(agents).where(eq(agents.keyHash, hashSecret(token))).limit(1);
   if (!agent) {
@@ -74,6 +80,9 @@ export async function requireCabinet(token: string, request?: Request, houseId?:
 }
 
 export async function openCabinet(token: string, request?: Request, houseId?: string | null) {
+  await ensureHouseWindowsColumn();
+  await ensureWriteHashColumns();
+  await ensureWriteSignColumns();
   if (token === "me") {
     if (!request) return null;
     const session = readSession(request);

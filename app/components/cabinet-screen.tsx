@@ -254,6 +254,9 @@ export async function CabinetScreen({
                   token={token}
                   houseId={houseId}
                   constitution={principal.constitution}
+                  collectWindowSec={principal.silenceWindowSec}
+                  bargainWindowSec={principal.bargainWindowSec}
+                  requireSignedWrites={Boolean(principal.requireSignedWrites)}
                   canEdit={manage}
                   enroll={enroll}
                   enrollLabel={t.cabinet.enrollment}
@@ -394,6 +397,14 @@ function FeedRow({
           {item.revision > 1 ? ` · ${t.revision.replace("{n}", String(item.revision))}` : ""}
         </p>
         <p className="feed-title">{asked || t.request}</p>
+        {item.payload_hash ? (
+          <p className="hint" title={item.payload_hash}>
+            {t.filedHash.replace("{hash}", item.payload_hash.slice(0, 12))}
+            {item.last_write ? ` · ${item.last_write.signed ? t.writeSigned : t.writeUnsigned}` : ""}
+          </p>
+        ) : item.last_write ? (
+          <p className="hint">{item.last_write.signed ? t.writeSigned : t.writeUnsigned}</p>
+        ) : null}
       </div>
       {item.objections.length > 0 ? (
         <div className="feed-thread">
@@ -410,6 +421,11 @@ function FeedRow({
                     {text ? <span className="feed-said"> — {text}</span> : null}
                   </p>
                   {counter ? <p className="hint">{t.suggestion.replace("{summary}", counter)}</p> : null}
+                  {row.payload_hash ? (
+                    <p className="hint" title={row.payload_hash}>
+                      {t.filedHash.replace("{hash}", row.payload_hash.slice(0, 12))}
+                    </p>
+                  ) : null}
                 </li>
               );
             })}

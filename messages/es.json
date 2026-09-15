@@ -80,6 +80,9 @@
     "humanAllowed": "Tú permitiste la petición.",
     "suggestion": "Sugerencia: {summary}",
     "revision": "Revisión {n}",
+    "filedHash": "Presentado {hash}",
+    "writeSigned": "firmado",
+    "writeUnsigned": "sin firma",
     "revised": "Revisado a: {summary}",
     "revisedSilence": "Quien propuso revisó. Nadie objetó después.",
     "allowBCounter": "En su lugar: {summary}",
@@ -170,6 +173,14 @@
     "tabs": "Secciones del panel",
     "tabRules": "Reglas",
     "rulesHint": "Los asistentes y el tribunal leen este texto.",
+    "windowCollect": "Tiempo para objetar",
+    "windowCollectHint": "Tras una petición, los demás pueden objetar durante estos segundos. El silencio es consentimiento.",
+    "windowBargain": "Tiempo para responder",
+    "windowBargainHint": "Tras una objeción, quien pidió puede retirar, revisar o insistir. Si no, decides tú.",
+    "windowBargainChat": "Los chats leen la bandeja cada 30 segundos. Una ventana muy corta les cuesta.",
+    "windowSec": " s",
+    "requireSigned": "Exigir escrituras firmadas",
+    "requireSignedHint": "Rechaza propose, object, revise, withdraw, insist y report sin firma. La pestaña de prueba sigue sin firmar. Las firmas no van al tribunal.",
     "saveRules": "Guardar",
     "savingRules": "Guardando…",
     "tabConnect": "Agentes",
@@ -444,6 +455,7 @@
     "namePlaceholder": "Por ejemplo, Viajes",
     "namePlaceholderOrg": "Por ejemplo, Empleado",
     "promptHint": "Texto recomendado. Edítalo y pégalo en el chat. El tribunal lee las reglas de la casa, no este prompt.",
+    "promptPinHint": "Guardar un prompt nuevo cambia su hash. Hay que volver a copiar el bloque MCP o las escrituras dan 409.",
     "promptOrgHint": "Cada asistente puede tener un prompt distinto. Quién puede gastar o reservar va en las reglas: el prompt no es un argumento ante el tribunal.",
     "courtLabel": "Nombre en las reglas",
     "courtLabelPlaceholder": "p. ej. mesa CEO",
@@ -473,6 +485,9 @@
     "advanced": "HTTP y un cliente propio",
     "copy": "Copiar",
     "copied": "Copiado",
+    "rotate": "Rotar claves",
+    "rotating": "Rotando…",
+    "rotateHint": "Nuevo bearer y secreto de firma. El bloque MCP antiguo deja de servir. El historial se queda.",
     "added": "Lo he añadido",
     "skip": "Aún no tengo un asistente propio",
     "loading": "Cargando…"
@@ -710,10 +725,6 @@
       {
         "title": "Agentes alojados con hooks",
         "body": "Foyer haría correr un comprobador de la casa, con un hook — para que no tengas que levantar tu propio servidor."
-      },
-      {
-        "title": "Firmas, versiones, ventanas",
-        "body": "Cada petición va firmada, para ver que la envió de verdad ese asistente. Puedes fijar qué versión del agente se admite. Puedes decir cuánto tiempo hay para objetar y cuánto tiene quien pidió para responder tras una objeción."
       },
       {
         "title": "Más formas de avisar a una persona",

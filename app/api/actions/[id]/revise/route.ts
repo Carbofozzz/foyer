@@ -4,6 +4,7 @@ import { sweep } from "@/lib/protocol/sweep";
 import { reviseAction } from "@/lib/protocol/bargain";
 import { isRecord } from "@/lib/protocol/parse";
 import { publicOrigin } from "@/lib/mcp/config";
+import { writeSignFrom } from "@/lib/protocol/write-sign";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 
@@ -24,7 +25,9 @@ async function postRevise(request: Request, context: { params: Promise<{ id: str
   }
   if (!isRecord(body)) return jsonError("bad_request", "JSON object required", 400);
   try {
-    return jsonOk(await reviseAction(auth, id, body, new Date(), { origin: publicOrigin(request) }));
+    return jsonOk(
+      await reviseAction(auth, id, body, new Date(), { origin: publicOrigin(request), sign: writeSignFrom(request, body) }),
+    );
   } catch (error) {
     return protocolFail(error);
   }

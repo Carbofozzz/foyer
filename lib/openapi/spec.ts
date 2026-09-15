@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.48.0",
+      version: "0.52.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -131,6 +131,15 @@ export function openApiSpec(origin: string) {
             callback_url: { type: "string", nullable: true },
             hook_ok: { type: "boolean" },
             callback_secret: { type: "string", description: "Returned once, when Foyer generated it." },
+            sign_secret: {
+              type: "string",
+              description: "HMAC secret for writes (`sgn_`). Shown in Connect; rotate to replace.",
+            },
+            key_gen: { type: "integer" },
+            prompt_sha: {
+              type: "string",
+              description: "SHA-256 of the Connect prompt. Send as X-Foyer-Prompt-Sha or prompt_sha on writes.",
+            },
           },
           required: ["id", "role", "name"],
         },
@@ -140,6 +149,18 @@ export function openApiSpec(origin: string) {
           properties: {
             constitution: { type: "string" },
             locked_kinds: { type: "array", items: { type: "string", enum: [...ACTION_KINDS] } },
+            collect_window_sec: {
+              type: "integer",
+              description: "Seconds others may object after propose or revise. Silence is consent.",
+            },
+            bargain_window_sec: {
+              type: "integer",
+              description: "Seconds the proposer may withdraw, revise, or insist after an objection. Timeout escalates; never auto-court.",
+            },
+            require_signed_writes: {
+              type: "boolean",
+              description: "If true, unsigned propose/object/revise/withdraw/insist/report is 401. Cabinet test stays unsigned.",
+            },
           },
           required: ["constitution"],
         },
@@ -153,6 +174,9 @@ export function openApiSpec(origin: string) {
               maxItems: 8,
               items: { $ref: "#/components/schemas/EvidenceItem" },
             },
+            issued_at: { type: "string", description: "ISO time for HMAC. Optional if X-Foyer-Sign-Secret is set." },
+            sig: { type: "string", description: "HMAC-SHA256 hex. Optional if X-Foyer-Sign-Secret is set." },
+            prompt_sha: { type: "string", description: "SHA-256 of the Connect prompt. 409 if it no longer matches." },
           },
           required: ["payload", "justification"],
         },
@@ -163,13 +187,20 @@ export function openApiSpec(origin: string) {
             justification: { type: "string", maxLength: 2000 },
             evidence: { type: "array", items: { $ref: "#/components/schemas/EvidenceItem" } },
             counter_action: { oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }] },
+            issued_at: { type: "string" },
+            sig: { type: "string" },
+            prompt_sha: { type: "string" },
           },
           required: ["justification"],
         },
         ReportRequest: {
           type: "object",
           description: "Proposer acks a final allow or deny. Empty body is fine.",
-          properties: {},
+          properties: {
+            issued_at: { type: "string" },
+            sig: { type: "string" },
+            prompt_sha: { type: "string" },
+          },
         },
         ActionReport: {
           type: "object",
@@ -270,6 +301,26 @@ export function openApiSpec(origin: string) {
           properties: {
             id: { type: "string" },
             payload: { $ref: "#/components/schemas/ActionPayload" },
+            payload_hash: {
+              oneOf: [{ type: "string" }, { type: "null" }],
+              description: "SHA-256 of the accepted propose or revise body. Null on leftover rows.",
+            },
+            last_write: {
+              oneOf: [
+                {
+                  type: "object",
+                  properties: {
+                    op: { type: "string" },
+                    hash: { type: "string" },
+                    signed: { type: "boolean" },
+                    key_gen: { oneOf: [{ type: "integer" }, { type: "null" }] },
+                  },
+                  required: ["op", "hash", "signed"],
+                },
+                { type: "null" },
+              ],
+              description: "Hash of the last protocol write (propose, object, revise, withdraw, insist, report).",
+            },
             status: {
               type: "string",
               enum: ["open", "bargaining", "withdrawn", "awaiting_ack", "permitted", "executed", "escalated"],

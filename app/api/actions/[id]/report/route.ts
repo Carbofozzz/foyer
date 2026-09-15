@@ -2,6 +2,7 @@ import { requireAgent } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { sweep } from "@/lib/protocol/sweep";
 import { reportAction, reportBody } from "@/lib/protocol/report";
+import { writeSignFrom } from "@/lib/protocol/write-sign";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 
@@ -24,7 +25,8 @@ async function postReport(request: Request, context: { params: Promise<{ id: str
     }
   }
   try {
-    return jsonOk(await reportAction(auth, id, reportBody(body)));
+    const parsed = reportBody(body);
+    return jsonOk(await reportAction(auth, id, parsed, { sign: writeSignFrom(request, parsed) }));
   } catch (error) {
     return protocolFail(error);
   }

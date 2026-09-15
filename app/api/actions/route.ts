@@ -5,6 +5,7 @@ import { ABUSE, readBoundedJson } from "@/lib/protocol/abuse";
 import { proposeAction } from "@/lib/protocol/actions";
 import { isRecord } from "@/lib/protocol/parse";
 import { publicOrigin } from "@/lib/mcp/config";
+import { writeSignFrom } from "@/lib/protocol/write-sign";
 
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS, overLimitKey } from "@/lib/ops/rate-limit";
@@ -32,7 +33,10 @@ async function postPropose(request: Request) {
   }
   if (!isRecord(body)) return jsonError("bad_request", "JSON object required", 400);
   try {
-    const action = await proposeAction(auth, body, new Date(), { origin: publicOrigin(request) });
+    const action = await proposeAction(auth, body, new Date(), {
+      origin: publicOrigin(request),
+      sign: writeSignFrom(request, body),
+    });
     return jsonOk(action, 201);
   } catch (error) {
     return protocolFail(error);

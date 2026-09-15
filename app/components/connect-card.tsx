@@ -25,6 +25,9 @@ type IssuedAgent = {
   prompt_lines?: string[];
   court_label?: string;
   court_cap?: string;
+  sign_secret?: string;
+  key_gen?: number;
+  prompt_sha?: string;
 };
 
 type ConnectPayload = {
@@ -231,6 +234,7 @@ export function ConnectCard({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [savingPrompt, setSavingPrompt] = useState(false);
+  const [rotating, setRotating] = useState(false);
   const [loaded, setLoaded] = useState(Boolean(preview));
 
   const load = useCallback(() => {
@@ -282,8 +286,8 @@ export function ConnectCard({
   const deskDirty =
     Boolean(current) &&
     (selectedDesk.trim() !== storedDesk.trim() ||
-      selectedLabel.trim() !== storedLabel.trim() ||
-      selectedCap.trim() !== storedCap.trim());
+      (houseType === "org" &&
+        (selectedLabel.trim() !== storedLabel.trim() || selectedCap.trim() !== storedCap.trim())));
 
   useEffect(() => {
     setSelectedDesk(current ? current.prompt || defaultAgentPrompt() : defaultAgentPrompt());
@@ -301,8 +305,7 @@ export function ConnectCard({
       body: JSON.stringify({
         id: current.id,
         prompt: selectedDesk,
-        court_label: selectedLabel,
-        court_cap: selectedCap,
+        ...(houseType === "org" ? { court_label: selectedLabel, court_cap: selectedCap } : {}),
       }),
     });
     setSavingPrompt(false);
@@ -311,17 +314,14 @@ export function ConnectCard({
       return;
     }
     const payload = (await response.json()) as {
-      data: { prompt: string; prompt_lines: string[]; court_label?: string; court_cap?: string };
+      data: IssuedAgent & { prompt: string; prompt_lines: string[]; court_label?: string; court_cap?: string };
     };
     setAgents((rows) =>
       rows.map((row) =>
         row.id === current.id
           ? {
               ...row,
-              prompt: payload.data.prompt,
-              prompt_lines: payload.data.prompt_lines,
-              court_label: payload.data.court_label ?? "",
-              court_cap: payload.data.court_cap ?? "",
+              ...payload.data,
             }
           : row,
       ),
@@ -345,8 +345,7 @@ export function ConnectCard({
         callback_url: wake === "callback" ? callbackUrl.trim() : undefined,
         callback_secret: wake === "callback" && callbackSecret.trim() ? callbackSecret.trim() : undefined,
         prompt: deskPrompt,
-        court_label: issueLabel,
-        court_cap: issueCap,
+        ...(houseType === "org" ? { court_label: issueLabel, court_cap: issueCap } : {}),
       }),
     });
     if (!response.ok) {
@@ -373,6 +372,24 @@ export function ConnectCard({
     router.refresh();
   }
 
+  async function rotate() {
+    if (preview || !current) return;
+    setRotating(true);
+    setError(null);
+    const response = await fetch(`/api/cabinet/${token}/connect`, {
+      method: "POST",
+      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
+      body: JSON.stringify({ id: current.id, rotate: true }),
+    });
+    setRotating(false);
+    if (!response.ok) {
+      setError(errorLabel);
+      return;
+    }
+    const payload = (await response.json()) as { data: IssuedAgent };
+    setAgents((rows) => rows.map((row) => (row.id === payload.data.id ? payload.data : row)));
+  }
+
   return (
     <section className={compact ? "stack" : "card stack"}>
       {compact ? null : <h2 className="section-title">{t.title}</h2>}
@@ -393,10 +410,10 @@ export function ConnectCard({
             onCallbackSecret={setCallbackSecret}
             prompt={deskPrompt}
             onPrompt={setDeskPrompt}
-            courtLabel={issueLabel}
-            courtCap={issueCap}
-            onCourtLabel={setIssueLabel}
-            onCourtCap={setIssueCap}
+            courtLabel={houseType === "org" ? issueLabel : undefined}
+            courtCap={houseType === "org" ? issueCap : undefined}
+            onCourtLabel={houseType === "org" ? setIssueLabel : undefined}
+            onCourtCap={houseType === "org" ? setIssueCap : undefined}
             pending={pending}
             onIssue={() => void issue()}
             houseType={houseType}
@@ -458,6 +475,20 @@ export function ConnectCard({
                 <p className="feed-label">{t.configLabel}</p>
                 <pre className="mono snippet">{current.mcp_config}</pre>
                 <CopyButton text={current.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
+                {preview ? null : (
+                  <>
+                    <p className="hint">{t.rotateHint}</p>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={rotating}
+                      aria-busy={rotating}
+                      onClick={() => void rotate()}
+                    >
+                      {rotating ? t.rotating : t.rotate}
+                    </button>
+                  </>
+                )}
               </div>
               <div>
                 <p className="feed-label">{t.promptLabel}</p>
@@ -473,8 +504,10 @@ export function ConnectCard({
                   />
                 )}
                 <p className="hint">{t.promptHint}</p>
+                {preview ? null : <p className="hint">{t.promptPinHint}</p>}
                 {preview ? null : (
                   <>
+                    {houseType === "org" ? (
                     <div className="connect-desk">
                       <label className="connect-field">
                         <span>{t.courtLabel}</span>
@@ -498,6 +531,7 @@ export function ConnectCard({
                       </label>
                       <p className="hint">{t.courtHint}</p>
                     </div>
+                    ) : null}
                     <button
                       type="button"
                       className="ghost"
