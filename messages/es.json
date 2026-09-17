@@ -185,6 +185,7 @@
     "savingRules": "Guardando…",
     "tabConnect": "Agentes",
     "tabTest": "Prueba",
+    "testPathHint": "El recorrido completo pide dos asistentes conectados: uno pide, el otro puede objetar, luego el tribunal. Si solo tienes uno, abre Prueba y hazlo con botones.",
     "tabContacts": "Contactos",
     "contactsLead": "Escribimos aquí solo cuando una petición necesita tu sí o no.",
     "contactsOrgLead": "Añade a la persona por nombre. Conectado es correo y Telegram. Política es cuándo escribimos. Quien está activo recibe un enlace de sí o no en esa carta, sin entrar a Foyer.",
