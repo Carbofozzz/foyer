@@ -1334,6 +1334,17 @@ button.wallet-balance:disabled {
   scrollbar-width: none;
 }
 
+.cabinet-beta {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--info) 28%, var(--hairline));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--info) 8%, var(--card));
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .cabinet-tabs::-webkit-scrollbar {
   display: none;
 }

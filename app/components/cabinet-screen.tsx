@@ -164,6 +164,7 @@ export async function CabinetScreen({
           />
         ))}
         <CabinetInboxRefresh token={token} houseId={houseId} />
+          {seeAgents ? <p className="cabinet-beta">{t.cabinet.testPathHint}</p> : null}
           <nav className="cabinet-tabs segmented" aria-label={t.cabinet.tabs}>
             {tabItems.map((item) => (
               <label key={item.id} className="segment" htmlFor={`cabinet-tab-${item.id}`}>
