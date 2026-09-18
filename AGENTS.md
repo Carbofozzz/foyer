@@ -174,3 +174,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-09-15: SIGN S3 — Connect mints sealed `sign_secret`; MCP header `X-Foyer-Sign-Secret` (or HMAC `issued_at`+`sig`); house `require_signed_writes`; rotate kills old bearer and secret. Test tab unsigned. Not on-chain. OpenAPI `0.51.0`.
 - 2026-09-15: SIGN S4 — `agents.prompt_sha`; writes may send `X-Foyer-Prompt-Sha`. Mismatch after a Connect prompt edit is 409. Required when the house requires signed writes. Test tab unsigned. Not on-chain. OpenAPI `0.52.0`.
 - 2026-09-15: Login `ensureHouseForOwner` migrates `require_signed_writes` before selecting the house, so wallet verify does not 500 on leftover Postgres.
+- 2026-09-18: Inbox loads every live action plus the last 48 settled, then related rows in one batch (`loadActionBundles`). MCP/cabinet no longer walk full house history with N×bundle queries. Loop unchanged.

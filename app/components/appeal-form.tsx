@@ -41,7 +41,6 @@ export function AppealForm({
       setError(true);
       return;
     }
-    window.location.reload();
     router.refresh();
   }
 

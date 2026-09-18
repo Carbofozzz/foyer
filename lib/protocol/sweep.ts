@@ -3,7 +3,8 @@ import { actions, cases, notifications, principals, wakes } from "@/lib/db/schem
 import { getDb } from "@/lib/db";
 import { recordTimeoutAcks } from "./actions";
 import { enterBargain, timeoutBargains } from "./bargain";
-import { engagedIds, loadActionBundle } from "./bundle";
+import { engagedIds, loadActionBundles } from "./bundle";
+import { LIVE_ACTION_STATUSES } from "./types";
 import { stepHouseCourt, findHouseNeedingCourt } from "./court";
 import { executeAfterAck, executeSilenceAllow } from "./execute";
 import { defaultPublicOrigin } from "@/lib/mcp/config";
@@ -45,9 +46,9 @@ export async function sweep(
 
   const courts = options?.courts ?? 0;
 
-  for (const row of openRows) {
-    const bundle = await loadActionBundle(row.id);
-    if (!bundle || bundle.action.status !== "open") continue;
+  const openBundles = await loadActionBundles(openRows.map((row) => row.id));
+  for (const bundle of openBundles) {
+    if (bundle.action.status !== "open") continue;
     const gate = bundle.action.testPass ? "ready" : await requiredWakeGate(bundle.action.id, bundle.action.revision);
     if (gate === "pending") continue;
     if (gate === "failed") {
@@ -74,9 +75,9 @@ export async function sweep(
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "awaiting_ack")));
 
-  for (const row of pending) {
-    const bundle = await loadActionBundle(row.id);
-    if (!bundle || bundle.action.status !== "awaiting_ack") continue;
+  const pendingBundles = await loadActionBundles(pending.map((row) => row.id));
+  for (const bundle of pendingBundles) {
+    if (bundle.action.status !== "awaiting_ack") continue;
     const engaged = engagedIds(
       bundle.action.proposerId,
       bundle.objections.map((item) => item.objectorId),
@@ -85,8 +86,8 @@ export async function sweep(
     const missing = engaged.filter((id) => !acked.has(id));
     const timedOut = bundle.action.ackUntil !== null && bundle.action.ackUntil <= now;
     if (missing.length === 0 || timedOut) {
-      if (missing.length > 0) await recordTimeoutAcks(row.id, missing);
-      await executeAfterAck(row.id);
+      if (missing.length > 0) await recordTimeoutAcks(bundle.action.id, missing);
+      await executeAfterAck(bundle.action.id);
       advanced += 1;
     }
   }
@@ -97,8 +98,6 @@ export async function sweep(
 
   return { advanced };
 }
-
-const LIVE_STATUSES = ["open", "bargaining", "awaiting_ack", "escalated"] as const;
 
 /** Houses with work for tick: live actions, pending wakes, unsent notify, or an open court. */
 export async function findHousesNeedingSweep(): Promise<string[]> {
@@ -111,7 +110,7 @@ export async function findHousesNeedingSweep(): Promise<string[]> {
     await db
       .selectDistinct({ id: actions.principalId })
       .from(actions)
-      .where(inArray(actions.status, [...LIVE_STATUSES])),
+      .where(inArray(actions.status, [...LIVE_ACTION_STATUSES])),
   );
   add(
     await db
@@ -144,7 +143,7 @@ export async function houseNeedsSweep(principalId: string): Promise<boolean> {
   const [live] = await db
     .select({ id: actions.id })
     .from(actions)
-    .where(and(eq(actions.principalId, principalId), inArray(actions.status, [...LIVE_STATUSES])))
+    .where(and(eq(actions.principalId, principalId), inArray(actions.status, [...LIVE_ACTION_STATUSES])))
     .limit(1);
   if (live) return true;
   const [wake] = await db

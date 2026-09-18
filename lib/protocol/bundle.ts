@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { acks, actionReports, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { MAX_REVISION, type KnownActionKind, type ActionPayload, type EvidenceItem, type StoredOutcome } from "./types";
@@ -14,41 +14,120 @@ export type HouseAuth = {
 
 export type ActionRow = typeof actions.$inferSelect;
 
-export async function loadActionBundle(actionId: string) {
+export type ActionBundle = {
+  action: ActionRow;
+  objections: (typeof objections.$inferSelect)[];
+  courtCase: typeof cases.$inferSelect | null;
+  verdict: typeof verdicts.$inferSelect | null;
+  priorVerdict: typeof verdicts.$inferSelect | null;
+  acks: (typeof acks.$inferSelect)[];
+  executions: (typeof executions.$inferSelect)[];
+  report: typeof actionReports.$inferSelect | null;
+};
+
+export async function loadActionBundle(actionId: string): Promise<ActionBundle | null> {
+  const [bundle] = await loadActionBundles([actionId]);
+  return bundle ?? null;
+}
+
+/** One round-trip set per table for many actions (inbox). */
+export async function loadActionBundles(actionIds: string[]): Promise<ActionBundle[]> {
+  const ids = [...new Set(actionIds.filter(Boolean))];
+  if (ids.length === 0) return [];
   const db = getDb();
-  const [action] = await db.select().from(actions).where(eq(actions.id, actionId)).limit(1);
-  if (!action) return null;
+  const actionRows = await db.select().from(actions).where(inArray(actions.id, ids));
+  if (actionRows.length === 0) return [];
+  const found = actionRows.map((row) => row.id);
   const [filed, caseRows, ackRows, execRows, reportRows] = await Promise.all([
-    db.select().from(objections).where(eq(objections.actionId, actionId)),
-    db.select().from(cases).where(eq(cases.actionId, actionId)).orderBy(asc(cases.createdAt), asc(cases.id)).limit(1),
-    db.select().from(acks).where(eq(acks.actionId, actionId)),
-    db.select().from(executions).where(eq(executions.actionId, actionId)),
-    db.select().from(actionReports).where(eq(actionReports.actionId, actionId)).limit(1),
+    db.select().from(objections).where(inArray(objections.actionId, found)),
+    db.select().from(cases).where(inArray(cases.actionId, found)),
+    db.select().from(acks).where(inArray(acks.actionId, found)),
+    db.select().from(executions).where(inArray(executions.actionId, found)),
+    db.select().from(actionReports).where(inArray(actionReports.actionId, found)),
   ]);
-  const courtCase = caseRows[0] ?? null;
+  const caseByAction = new Map<string, typeof cases.$inferSelect>();
+  for (const row of caseRows) {
+    const prev = caseByAction.get(row.actionId);
+    if (
+      !prev ||
+      row.createdAt.getTime() < prev.createdAt.getTime() ||
+      (row.createdAt.getTime() === prev.createdAt.getTime() && row.id < prev.id)
+    ) {
+      caseByAction.set(row.actionId, row);
+    }
+  }
+  const caseIds = [...new Set([...caseByAction.values()].map((row) => row.id))];
+  const verdictRows = caseIds.length
+    ? await db.select().from(verdicts).where(inArray(verdicts.caseId, caseIds))
+    : [];
+  const verdictsByCase = new Map<string, (typeof verdicts.$inferSelect)[]>();
+  for (const row of verdictRows) {
+    const list = verdictsByCase.get(row.caseId) ?? [];
+    list.push(row);
+    verdictsByCase.set(row.caseId, list);
+  }
+  for (const list of verdictsByCase.values()) {
+    list.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+    );
+  }
+  const objectionsByAction = groupBy(filed, (row) => row.actionId);
+  const acksByAction = groupBy(ackRows, (row) => row.actionId);
+  const execsByAction = groupBy(execRows, (row) => row.actionId);
+  const reportByAction = new Map(reportRows.map((row) => [row.actionId, row]));
+  const byId = new Map(actionRows.map((row) => [row.id, row]));
+  const out: ActionBundle[] = [];
+  for (const id of ids) {
+    const action = byId.get(id);
+    if (!action) continue;
+    out.push(
+      assembleBundle(
+        action,
+        objectionsByAction.get(id) ?? [],
+        caseByAction.get(id) ?? null,
+        verdictsByCase.get(caseByAction.get(id)?.id ?? "") ?? [],
+        acksByAction.get(id) ?? [],
+        execsByAction.get(id) ?? [],
+        reportByAction.get(id) ?? null,
+      ),
+    );
+  }
+  return out;
+}
+
+function groupBy<T>(rows: T[], key: (row: T) => string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const k = key(row);
+    const list = map.get(k);
+    if (list) list.push(row);
+    else map.set(k, [row]);
+  }
+  return map;
+}
+
+function assembleBundle(
+  action: ActionRow,
+  filed: (typeof objections.$inferSelect)[],
+  courtCase: typeof cases.$inferSelect | null,
+  verdictList: (typeof verdicts.$inferSelect)[],
+  ackRows: (typeof acks.$inferSelect)[],
+  execRows: (typeof executions.$inferSelect)[],
+  report: typeof actionReports.$inferSelect | null,
+): ActionBundle {
   const currentObjections = filed
     .filter((row) => row.revision === action.revision)
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
-  const verdictList = courtCase
-    ? await db
-        .select()
-        .from(verdicts)
-        .where(eq(verdicts.caseId, courtCase.id))
-        .orderBy(desc(verdicts.createdAt), desc(verdicts.id))
-    : [];
+  const latest = verdictList[0] ?? null;
   return {
     action,
     objections: currentObjections,
     courtCase,
-    verdict: verdictList[0] ?? null,
-    priorVerdict: (() => {
-      const latest = verdictList[0];
-      if (!latest?.appealOf) return null;
-      return verdictList.find((row) => row.id === latest.appealOf) ?? null;
-    })(),
+    verdict: latest,
+    priorVerdict: latest?.appealOf ? verdictList.find((row) => row.id === latest.appealOf) ?? null : null,
     acks: ackRows,
     executions: execRows,
-    report: reportRows[0] ?? null,
+    report,
   };
 }
 
