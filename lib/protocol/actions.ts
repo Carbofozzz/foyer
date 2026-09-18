@@ -1,9 +1,10 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { acks, actions, objections } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "./keys";
 import { ProtocolError } from "./errors";
-import { engagedIds, loadActionBundle, serializeAction, type HouseAuth } from "./bundle";
+import { engagedIds, loadActionBundle, loadActionBundles, serializeAction, type HouseAuth } from "./bundle";
+import { INBOX_RECENT_LIMIT, LIVE_ACTION_STATUSES } from "./types";
 import { parseCounterAction, parseEvidence, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
 import { assertHouseProposeRoom, assertJustification } from "./abuse";
@@ -158,23 +159,39 @@ export async function inboxFor(auth: HouseAuth) {
 
 export async function inboxForPrincipal(principalId: string) {
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(actions)
-    .where(eq(actions.principalId, principalId))
-    .orderBy(desc(actions.createdAt));
+  const live = [...LIVE_ACTION_STATUSES];
+  const [liveRows, recent] = await Promise.all([
+    db
+      .select({ id: actions.id, createdAt: actions.createdAt })
+      .from(actions)
+      .where(and(eq(actions.principalId, principalId), inArray(actions.status, live))),
+    db
+      .select({ id: actions.id, createdAt: actions.createdAt })
+      .from(actions)
+      .where(and(eq(actions.principalId, principalId), notInArray(actions.status, live)))
+      .orderBy(desc(actions.createdAt), desc(actions.id))
+      .limit(INBOX_RECENT_LIMIT),
+  ]);
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  const ordered = [...liveRows, ...recent].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+  );
+  for (const row of ordered) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    ids.push(row.id);
+  }
+  const bundles = await loadActionBundles(ids);
+  const byId = new Map(bundles.map((bundle) => [bundle.action.id, bundle]));
   const items = [];
-  const chunk = 8;
-  for (let i = 0; i < rows.length; i += chunk) {
-    const slice = rows.slice(i, i + chunk);
-    const loaded = await Promise.all(slice.map((row) => loadActionBundle(row.id)));
-    for (const bundle of loaded) {
-      if (!bundle) continue;
-      items.push({
-        type: "action" as const,
-        ...serializeAction(bundle),
-      });
-    }
+  for (const id of ids) {
+    const bundle = byId.get(id);
+    if (!bundle) continue;
+    items.push({
+      type: "action" as const,
+      ...serializeAction(bundle),
+    });
   }
   return { items };
 }

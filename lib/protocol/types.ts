@@ -31,6 +31,12 @@ export const ACTION_STATUSES = [
 ] as const;
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
 
+/** Still on the clock — inbox always includes these, even if older than the history cap. */
+export const LIVE_ACTION_STATUSES = ["open", "bargaining", "awaiting_ack", "escalated"] as const;
+
+/** Settled rows kept on cabinet / MCP inbox besides live ones (~two feed pages). */
+export const INBOX_RECENT_LIMIT = 48;
+
 /** Propose is revision 1. At most two revises. */
 export const MAX_REVISION = 3;
 

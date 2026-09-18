@@ -2,12 +2,14 @@
 
 import { Children, useState, type ReactNode } from "react";
 import { PagedList } from "@/app/components/paged-list";
+import { SHOW_TESTS_COOKIE, writeClientCookie } from "@/app/lib/cabinet-ui";
 
 export function InboxFeed({
   chips,
   testPass,
   needsDecide,
   showToggle,
+  showTests: showTestsStart = false,
   empty,
   emptyNeedsYou,
   showLabel,
@@ -23,6 +25,7 @@ export function InboxFeed({
   testPass: boolean[];
   needsDecide: boolean[];
   showToggle: boolean;
+  showTests?: boolean;
   empty: string;
   emptyNeedsYou: string;
   showLabel: string;
@@ -34,7 +37,7 @@ export function InboxFeed({
   pageOf: string;
   children: ReactNode;
 }) {
-  const [showTests, setShowTests] = useState(false);
+  const [showTests, setShowTests] = useState(showTestsStart);
   const [onlyDecide, setOnlyDecide] = useState(false);
   const rows = Children.toArray(children).filter((_, index) => {
     if (!showTests && testPass[index]) return false;
@@ -56,7 +59,17 @@ export function InboxFeed({
             {onlyDecide ? allEventsLabel : needsYouLabel}
           </button>
           {showToggle ? (
-            <button type="button" className="quiet" onClick={() => setShowTests((open) => !open)}>
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => {
+                setShowTests((open) => {
+                  const next = !open;
+                  writeClientCookie(SHOW_TESTS_COOKIE, next ? "1" : "0");
+                  return next;
+                });
+              }}
+            >
               {showTests ? hideLabel : showLabel}
             </button>
           ) : null}

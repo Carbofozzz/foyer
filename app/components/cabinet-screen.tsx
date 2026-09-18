@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { agents } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
@@ -20,6 +21,7 @@ import { OrgSettingsCard } from "@/app/components/org-settings-card";
 import { MembersCard } from "@/app/components/members-card";
 import { TestStageCard } from "@/app/components/test-stage-card";
 import { InboxFeed } from "@/app/components/inbox-feed";
+import { CABINET_TAB_COOKIE, SHOW_TESTS_COOKIE } from "@/app/lib/cabinet-ui";
 import { CabinetInboxRefresh } from "@/app/components/cabinet-inbox-refresh";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
 import { WalletButton } from "@/app/components/wallet-button";
@@ -88,7 +90,9 @@ export async function CabinetScreen({
   if (manage) tabIds.push("contacts");
   if (seeAgents) tabIds.push("connect", "test");
   if (company) tabIds.push("settings", "people");
-  const currentTab = parseCabinetTab(tab, tabIds);
+  const jar = await cookies();
+  const currentTab = parseCabinetTab(tab || jar.get(CABINET_TAB_COOKIE)?.value, tabIds);
+  const showTests = jar.get(SHOW_TESTS_COOKIE)?.value === "1";
   const tabItems: { id: CabinetTabId; label: string }[] = [
     { id: "inbox", label: t.cabinet.inbox },
     ...(seeRules ? [{ id: "rules" as CabinetTabId, label: t.cabinet.tabRules }] : []),
@@ -207,6 +211,7 @@ export async function CabinetScreen({
                 testPass={hideTest}
                 needsDecide={feedItems.map((item) => item.status === "escalated")}
                 showToggle={hideTest.some(Boolean)}
+                showTests={showTests}
                 empty={t.cabinet.emptyInbox}
                 emptyNeedsYou={t.cabinet.emptyNeedsYou}
                 showLabel={t.cabinet.testRecordsOn}

@@ -120,7 +120,8 @@ export function TestStageCard({
         if (
           data.current?.live ||
           data.current?.action.status === "escalated" ||
-          data.current?.action.status === "awaiting_ack"
+          data.current?.action.status === "awaiting_ack" ||
+          data.current?.action.status === "permitted"
         ) {
           setWatching(true);
         }
