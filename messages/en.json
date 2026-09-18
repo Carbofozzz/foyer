@@ -185,7 +185,7 @@
     "savingRules": "Saving…",
     "tabConnect": "Agents",
     "tabTest": "Test",
-    "testPathHint": "The full path needs two connected assistants: one asks, the other can object, then court. If you only have one, open the Test tab and run that scenario with buttons.",
+    "testPathHint": "The full path needs two assistants: one asks, the other can object, then court. First create two agents on the Agents tab — Test uses those names. If you have no second live chat, open Test and run the same scenario with buttons.",
     "tabContacts": "Contacts",
     "contactsLead": "We write here only when a request needs your yes or no.",
     "contactsOrgLead": "Add a person by name. Connected is email and Telegram. Policy is when we write. Active people get a yes-or-no link in that letter — no Foyer login.",

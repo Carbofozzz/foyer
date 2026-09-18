@@ -185,7 +185,7 @@
     "savingRules": "Kaydediliyor…",
     "tabConnect": "Ajanlar",
     "tabTest": "Test",
-    "testPathHint": "Tüm yolu denemek için iki bağlı asistan gerekir: biri ister, diğeri itiraz edebilir, sonra mahkeme. Yalnızca biriniz varsa Test sekmesini açın, aynı senaryoyu düğmelerle yürütün.",
+    "testPathHint": "Tüm yol için iki asistan gerekir: biri ister, diğeri itiraz edebilir, sonra mahkeme. Önce Ajanlar’da iki tane oluşturun — Test o adları kullanır. İkinci canlı sohbet yoksa Test sekmesini açın, aynı senaryoyu düğmelerle yürütün.",
     "tabContacts": "İletişim",
     "contactsLead": "Yalnızca bir istek evet veya hayır istediğinde yazarız.",
     "contactsOrgLead": "Önce ad. Bağlı: e-posta ve Telegram. Politika: ne zaman yazacağız. Aktif kişi mektupta evet-hayır bağlantısı alır — Foyer girişi yok.",
