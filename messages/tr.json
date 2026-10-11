@@ -167,6 +167,7 @@
     "invite": "Davet et",
     "inviteAddress": "E-posta",
     "inviteRole": "Rol",
+    "inviteMailHint": "Bağlantıyı e-posta ile göndeririz. O adresle oturum açarlar. Yeniden davet yeniden gönderir.",
     "inviting": "Davet ediliyor…",
     "remove": "Kaldır",
     "memberYou": "siz",
@@ -678,7 +679,18 @@
     "telegramLinked": "Telegram bağlandı. Bir istek evet veya hayır istediğinde buraya yazarız.",
     "telegramUnknown": "Bu bağlantı bilinmiyor veya süresi doldu. Kabinde İletişim’i açıp yeniden deneyin.",
     "telegramNeedLink": "Foyer kabininde İletişim’i açın ve bu sohbeti bağlamak için Telegram’ı aç’a dokunun.",
-    "telegramTaken": "Bu Telegram o evde başka bir kişiye bağlı."
+    "telegramTaken": "Bu Telegram o evde başka bir kişiye bağlı.",
+    "inviteKicker": "Davet",
+    "inviteTitle": "Organizasyona katıl",
+    "inviteLead": "{house} için davet edildiniz. Kabininizin yanında açmak için {email} ile oturum açın.",
+    "inviteSignIn": "Kabul etmek için girin",
+    "inviteWrongEmail": "Bu davet başka bir e-posta için. Çıkış yapıp davet edilen adresi kullanın.",
+    "inviteVerify": "Hesap ayarlarında e-postanızı doğrulayıp bu bağlantıyı yeniden açın.",
+    "inviteOpen": "Kabini aç",
+    "inviteAlready": "Bu davet zaten kabul edildi.",
+    "inviteSubject": "Foyer’da {house} daveti",
+    "inviteBody": "Foyer’da {house} için davet edildiniz. Bağlantıyı açıp {email} ile oturum açın.",
+    "inviteJoinedBody": "Foyer’da {house} ekibine eklendiniz. Bağlantıyı {email} olarak açın."
   },
   "admin": {
     "kicker": "Ops",

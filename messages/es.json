@@ -167,6 +167,7 @@
     "invite": "Invitar",
     "inviteAddress": "Correo",
     "inviteRole": "Rol",
+    "inviteMailHint": "Enviamos un enlace por correo. Entran con esa dirección. Invitar de nuevo reenvía el correo.",
     "inviting": "Invitando…",
     "remove": "Quitar",
     "memberYou": "tú",
@@ -678,7 +679,18 @@
     "telegramLinked": "Telegram está enlazado. Escribiremos aquí cuando una petición necesite tu sí o no.",
     "telegramUnknown": "Este enlace es desconocido o caducó. Abre Contactos en el panel e inténtalo de nuevo.",
     "telegramNeedLink": "Abre Contactos en el panel de Foyer y pulsa Abrir Telegram para enlazar este chat.",
-    "telegramTaken": "Este Telegram ya está enlazado a otra persona de esa casa."
+    "telegramTaken": "Este Telegram ya está enlazado a otra persona de esa casa.",
+    "inviteKicker": "Invitación",
+    "inviteTitle": "Unirse a una organización",
+    "inviteLead": "Te invitaron a {house}. Entra con {email} para abrirla junto a tu panel.",
+    "inviteSignIn": "Entrar para aceptar",
+    "inviteWrongEmail": "Esta invitación es para otro correo. Cierra sesión y usa la dirección invitada.",
+    "inviteVerify": "Confirma tu correo en la cuenta y vuelve a abrir este enlace.",
+    "inviteOpen": "Abrir el panel",
+    "inviteAlready": "Esta invitación ya fue aceptada.",
+    "inviteSubject": "Únete a {house} en Foyer",
+    "inviteBody": "Te invitaron a {house} en Foyer. Abre el enlace e inicia sesión con {email}.",
+    "inviteJoinedBody": "Te añadieron a {house} en Foyer. Abre el enlace con la sesión de {email}."
   },
   "admin": {
     "kicker": "Ops",

@@ -167,6 +167,7 @@
     "invite": "Invite",
     "inviteAddress": "Email",
     "inviteRole": "Role",
+    "inviteMailHint": "We email a link. They sign in with that address. Invite again to resend.",
     "inviting": "Inviting…",
     "remove": "Remove",
     "memberYou": "you",
@@ -678,7 +679,18 @@
     "telegramLinked": "Telegram is linked. We will write here when a request needs your yes or no.",
     "telegramUnknown": "This link is unknown or expired. Open Contacts in the cabinet and try again.",
     "telegramNeedLink": "Open Contacts in the Foyer cabinet and tap Open Telegram so we can link this chat.",
-    "telegramTaken": "This Telegram is already linked to another person in that house."
+    "telegramTaken": "This Telegram is already linked to another person in that house.",
+    "inviteKicker": "Invite",
+    "inviteTitle": "Join an organization",
+    "inviteLead": "You were invited to {house}. Sign in with {email} to open it next to your cabinet.",
+    "inviteSignIn": "Sign in to accept",
+    "inviteWrongEmail": "This invite is for a different email. Sign out and use the invited address.",
+    "inviteVerify": "Confirm your email in the account settings, then open this link again.",
+    "inviteOpen": "Open the cabinet",
+    "inviteAlready": "This invite was already accepted.",
+    "inviteSubject": "Join {house} on Foyer",
+    "inviteBody": "You were invited to {house} on Foyer. Open the link and sign in with {email}.",
+    "inviteJoinedBody": "You were added to {house} on Foyer. Open the link while signed in as {email}."
   },
   "admin": {
     "kicker": "Ops",

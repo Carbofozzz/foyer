@@ -1,6 +1,9 @@
 import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 import { houseInvites, houseMembers, principals, users } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
+import { defaultPublicOrigin } from "@/lib/mcp/config";
+import { isLocale } from "@/lib/i18n/config";
+import { notifyCopy, sendMail } from "@/lib/notify/mail";
 import type { HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
@@ -187,15 +190,48 @@ function roleForGrants(grants: CabinetGrant[]): InviteRole {
   return grants.length > 0 ? "operator" : "observer";
 }
 
-/** A known user joins at once; anyone else gets a pending seat claimed on their first verified login. */
-export async function inviteMember(principal: HousePrincipal, rawEmail: string, grants: CabinetGrant[]) {
+async function sendInviteMail(input: {
+  principal: HousePrincipal;
+  email: string;
+  origin: string;
+  locale: string;
+  inviteToken?: string;
+  joined: boolean;
+}) {
+  const base = input.origin.replace(/\/$/, "");
+  const locale = isLocale(input.locale) ? input.locale : "en";
+  const t = notifyCopy(locale);
+  const houseName = input.principal.name.trim() || "Foyer";
+  const url = input.inviteToken
+    ? `${base}/${locale}/invite/${input.inviteToken}`
+    : `${base}/${locale}/cabinet?house=${encodeURIComponent(input.principal.id)}`;
+  const subject = t.inviteSubject.replace("{house}", houseName);
+  const body = (input.joined ? t.inviteJoinedBody : t.inviteBody)
+    .replace("{house}", houseName)
+    .replace("{email}", input.email);
+  try {
+    await sendMail({ to: input.email, subject, text: `${body}\n\n${url}` });
+  } catch {
+    // Membership / invite row is stored; owner can invite again to resend.
+  }
+}
+
+/** A known verified user joins at once; otherwise a pending invite + mail with accept link. */
+export async function inviteMember(
+  principal: HousePrincipal,
+  rawEmail: string,
+  grants: CabinetGrant[],
+  options?: { origin?: string; locale?: string },
+) {
   if (!isOrgHouse(principal)) {
     throw new ProtocolError("forbidden", "Only a company house can invite people", 403);
   }
   const email = parseEmail(rawEmail);
+  const origin = (options?.origin || defaultPublicOrigin()).replace(/\/$/, "");
+  const locale = options?.locale || principal.contactLocale || "en";
   const db = getDb();
   const current = await listMembers(principal);
-  if (current.some((row) => row.email === email)) {
+  if (current.some((row) => row.email === email && !row.pending)) {
     throw new ProtocolError("conflict", "Already a member", 409);
   }
   if (current.filter((row) => row.role !== "owner").length >= HELPER_CAP) {
@@ -204,18 +240,108 @@ export async function inviteMember(principal: HousePrincipal, rawEmail: string, 
   const role = roleForGrants(grants);
   const [known] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (known?.emailVerified) {
-    await db.insert(houseMembers).values({ principalId: principal.id, userId: known.id, role, grants });
+    await db
+      .insert(houseMembers)
+      .values({ principalId: principal.id, userId: known.id, role, grants })
+      .onConflictDoNothing();
+    await db
+      .delete(houseInvites)
+      .where(
+        and(eq(houseInvites.principalId, principal.id), eq(houseInvites.email, email), isNull(houseInvites.acceptedAt)),
+      );
+    await sendInviteMail({ principal, email, origin, locale, joined: true });
+    return listMembers(principal);
+  }
+
+  const raw = mintToken("inv");
+  const tokenHash = hashSecret(raw);
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
+  const [pending] = await db
+    .select()
+    .from(houseInvites)
+    .where(
+      and(eq(houseInvites.principalId, principal.id), eq(houseInvites.email, email), isNull(houseInvites.acceptedAt)),
+    )
+    .limit(1);
+  if (pending) {
+    await db
+      .update(houseInvites)
+      .set({ grants, tokenHash, expiresAt })
+      .where(eq(houseInvites.id, pending.id));
   } else {
     await db.insert(houseInvites).values({
       id: mintToken("inv"),
       principalId: principal.id,
       email,
       grants,
-      tokenHash: hashSecret(mintToken("inv")),
-      expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+      tokenHash,
+      expiresAt,
     });
   }
+  await sendInviteMail({ principal, email, origin, locale, inviteToken: raw, joined: false });
   return listMembers(principal);
+}
+
+/** Accept a mailed invite link after Clerk sign-in with the same verified email. */
+export async function acceptInviteToken(
+  raw: string,
+  user: { id: string; email: string; emailVerified: boolean },
+): Promise<{ principalId: string }> {
+  if (!user.emailVerified) {
+    throw new ProtocolError("forbidden", "Verify your email first", 403);
+  }
+  const tokenHash = hashSecret(raw);
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(houseInvites)
+    .where(and(eq(houseInvites.tokenHash, tokenHash), isNull(houseInvites.acceptedAt), gt(houseInvites.expiresAt, new Date())))
+    .limit(1);
+  if (!row) throw new ProtocolError("not_found", "Unknown or expired invite", 404);
+  if (row.email !== user.email.trim().toLowerCase()) {
+    throw new ProtocolError("forbidden", "Sign in with the invited email", 403);
+  }
+  const grants = parseGrants(row.grants);
+  await db
+    .insert(houseMembers)
+    .values({ principalId: row.principalId, userId: user.id, role: roleForGrants(grants), grants })
+    .onConflictDoNothing();
+  await db
+    .update(houseInvites)
+    .set({ acceptedAt: new Date(), acceptedUserId: user.id })
+    .where(eq(houseInvites.id, row.id));
+  return { principalId: row.principalId };
+}
+
+export async function peekInviteToken(raw: string): Promise<{
+  email: string;
+  houseName: string;
+  principalId: string;
+  expired: boolean;
+  accepted: boolean;
+} | null> {
+  const tokenHash = hashSecret(raw);
+  const db = getDb();
+  const [row] = await db
+    .select({
+      email: houseInvites.email,
+      principalId: houseInvites.principalId,
+      name: principals.name,
+      expiresAt: houseInvites.expiresAt,
+      acceptedAt: houseInvites.acceptedAt,
+    })
+    .from(houseInvites)
+    .innerJoin(principals, eq(principals.id, houseInvites.principalId))
+    .where(eq(houseInvites.tokenHash, tokenHash))
+    .limit(1);
+  if (!row) return null;
+  return {
+    email: row.email,
+    houseName: row.name.trim() || "Foyer",
+    principalId: row.principalId,
+    expired: row.expiresAt <= new Date(),
+    accepted: Boolean(row.acceptedAt),
+  };
 }
 
 /** Turn pending invites for this verified email into memberships. */

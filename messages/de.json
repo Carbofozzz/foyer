@@ -167,6 +167,7 @@
     "invite": "Einladen",
     "inviteAddress": "E-Mail",
     "inviteRole": "Rolle",
+    "inviteMailHint": "Wir senden einen Link per E-Mail. Anmeldung mit dieser Adresse. Erneutes Einladen sendet noch einmal.",
     "inviting": "Einladen…",
     "remove": "Entfernen",
     "memberYou": "Sie",
@@ -678,7 +679,18 @@
     "telegramLinked": "Telegram ist verbunden. Wir schreiben hier, wenn ein Antrag Ihr Ja oder Nein braucht.",
     "telegramUnknown": "Dieser Link ist unbekannt oder abgelaufen. Öffnen Sie Kontakt im Kabinett und versuchen Sie es erneut.",
     "telegramNeedLink": "Öffnen Sie Kontakt im Foyer-Kabinett und tippen Sie auf Telegram öffnen, um diesen Chat zu verbinden.",
-    "telegramTaken": "Dieses Telegram ist in diesem Haus schon mit einer anderen Person verbunden."
+    "telegramTaken": "Dieses Telegram ist in diesem Haus schon mit einer anderen Person verbunden.",
+    "inviteKicker": "Einladung",
+    "inviteTitle": "Einer Organisation beitreten",
+    "inviteLead": "Sie wurden zu {house} eingeladen. Melden Sie sich mit {email} an, um sie neben Ihrem Kabinett zu öffnen.",
+    "inviteSignIn": "Anmelden und annehmen",
+    "inviteWrongEmail": "Diese Einladung gilt für eine andere Adresse. Melden Sie sich ab und nutzen Sie die eingeladene E-Mail.",
+    "inviteVerify": "Bestätigen Sie Ihre E-Mail in den Kontoeinstellungen und öffnen Sie den Link erneut.",
+    "inviteOpen": "Kabinett öffnen",
+    "inviteAlready": "Diese Einladung wurde bereits angenommen.",
+    "inviteSubject": "Einladung zu {house} bei Foyer",
+    "inviteBody": "Sie wurden zu {house} bei Foyer eingeladen. Öffnen Sie den Link und melden Sie sich mit {email} an.",
+    "inviteJoinedBody": "Sie wurden zu {house} bei Foyer hinzugefügt. Öffnen Sie den Link als {email}."
   },
   "admin": {
     "kicker": "Ops",

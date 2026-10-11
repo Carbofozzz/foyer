@@ -1,7 +1,9 @@
+import { publicOrigin } from "@/lib/mcp/config";
 import { cabinetFromToken } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { canManage, inviteMember, listMembers, parseGrants, removeMember, saveMemberGrants } from "@/lib/protocol/members";
 import { isRecord } from "@/lib/protocol/parse";
+import { isLocale } from "@/lib/i18n/config";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
@@ -29,8 +31,19 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return jsonError("bad_request", "email is required", 400);
   }
   const grants = parseGrants(body.grants);
+  const localeHeader = request.headers.get("x-foyer-locale") ?? undefined;
+  const locale = isLocale(localeHeader) ? localeHeader : auth.principal.contactLocale || "en";
   try {
-    return jsonOk({ role: auth.role, items: await inviteMember(auth.principal, body.email, grants) }, 201);
+    return jsonOk(
+      {
+        role: auth.role,
+        items: await inviteMember(auth.principal, body.email, grants, {
+          origin: publicOrigin(request),
+          locale,
+        }),
+      },
+      201,
+    );
   } catch (error) {
     return protocolFail(error);
   }

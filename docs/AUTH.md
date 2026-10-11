@@ -232,17 +232,21 @@ House owner does not become platform admin. A platform admin may still own a per
 
 **Check:** normal user → cabinet, no admin. Listed admin email → admin link + `/api/admin` 200. Spawn 404.
 
-### A2 — Org invite by email
+### A2 — Org invite by email — shipped
 
-- Create org; invite; accept; grants; header switch. No member address.
+- Create org; invite by email; grants; header switch. No member address.
+- Pending invite stores a one-time token hash and emails `/:locale/invite/:token` (Resend; logs in dev if unset).
+- Known verified user is added immediately and emailed a cabinet link.
+- Accept page: Clerk sign-in with the invited email → membership → `cabinet?house=`.
+- Re-invite refreshes the token and resends mail. Claim-on-login by email still works.
 
-**Check:** colleague joins by email without a wallet.
+**Check:** colleague gets mail, signs in with that email, sees the org without a wallet.
 
-### A3 — Admin desk parity + audit
+### A3 — Admin desk parity + audit — shipped
 
 - Overview: waitlist, **users**, houses (owner email), deletes.
 - Mutations → `admin_audit_log`.
-- OpenAPI; update INITIAL / ORG / AGENTS log when behavior ships.
+- OpenAPI `0.54.0`.
 
 **Check:** delete house audits; non-admin 404; MCP smoke.
 

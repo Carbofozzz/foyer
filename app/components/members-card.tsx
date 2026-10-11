@@ -12,6 +12,7 @@ const GRANT_OPTIONS: CabinetGrant[] = ["agents", "treasury", "rules"];
 export function MembersCard({
   token,
   houseId,
+  locale,
   selfEmail,
   canInvite,
   asPanel = false,
@@ -20,6 +21,7 @@ export function MembersCard({
 }: {
   token: string;
   houseId: string;
+  locale: string;
   selfEmail: string | null;
   canInvite: boolean;
   asPanel?: boolean;
@@ -54,7 +56,7 @@ export function MembersCard({
     setPending(true);
     const response = await fetch(`/api/cabinet/${token}/members`, {
       method: "POST",
-      headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
+      headers: cabinetHeaders(houseId, { "content-type": "application/json", "x-foyer-locale": locale }),
       body: JSON.stringify({ email, grants }),
     });
     setPending(false);
@@ -144,6 +146,7 @@ export function MembersCard({
           <button type="submit" className="primary" disabled={pending || !email.trim()} aria-busy={pending}>
             {pending ? t.inviting : t.invite}
           </button>
+          <p className="hint">{t.inviteMailHint}</p>
         </form>
       ) : null}
       {error && items ? <p className="error">{errorLabel}</p> : null}

@@ -298,6 +298,7 @@ export async function CabinetScreen({
                 <MembersCard
                   token={token}
                   houseId={principal.id}
+                  locale={locale}
                   selfEmail={viewer?.email ?? null}
                   canInvite={manage}
                   asPanel
