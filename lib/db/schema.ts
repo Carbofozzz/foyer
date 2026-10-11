@@ -1,6 +1,19 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+/** Person account. Login is Clerk; this row is our identity. */
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  authSubject: text("auth_subject").notNull().unique(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  name: text("name"),
+  /** none | ops | owner. Platform desk only; not a house grant. */
+  platformRole: text("platform_role").notNull().default("none"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+});
+
 export const principals = pgTable("principals", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -23,13 +36,15 @@ export const principals = pgTable("principals", {
   wizardConnectDone: boolean("wizard_connect_done").notNull().default(false),
   wizardHarnessDone: boolean("wizard_harness_done").notNull().default(false),
   testClients: boolean("test_clients").notNull().default(false),
-  isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
   /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. 5+ = desk fields in the packet. */
   courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
-  ownerAddress: text("owner_address").unique(),
+  /** Personal house owner. Null on an org: ownership lives on house_members. */
+  ownerUserId: text("owner_user_id")
+    .unique()
+    .references(() => users.id),
   contactEmail: text("contact_email"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   contactLocale: text("contact_locale").notNull().default("en"),
@@ -278,20 +293,58 @@ export const walletTransfers = pgTable(
   (table) => [uniqueIndex("wallet_transfers_tx").on(table.tx)],
 );
 
-/** Wallet that can open this house. Same SIWE login — no second password. */
+/** User who can open this house. Same Clerk login — no second account. */
 export const houseMembers = pgTable(
   "house_members",
   {
     principalId: text("principal_id")
       .notNull()
       .references(() => principals.id),
-    address: text("address").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     role: text("role").notNull(),
     /** Org helpers: agents | treasury | rules. Empty = activity feed only. Owner ignores this. */
     grants: jsonb("grants").$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.principalId, table.address] })],
+  (table) => [primaryKey({ columns: [table.principalId, table.userId] }), index("house_members_user").on(table.userId)],
+);
+
+/** Org seat waiting for a person who has not signed in yet. Claimed by verified email on login. */
+export const houseInvites = pgTable(
+  "house_invites",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    email: text("email").notNull(),
+    grants: jsonb("grants").$type<string[]>().notNull().default([]),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedUserId: text("accepted_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_invites_email").on(table.email), index("house_invites_principal").on(table.principalId)],
+);
+
+/** Platform desk mutations. Never stores keys or request bodies. */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    op: text("op").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("admin_audit_log_created").on(table.createdAt)],
 );
 
 export const waitlist = pgTable("waitlist", {

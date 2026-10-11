@@ -5,14 +5,14 @@ import { cabinetHeaders } from "@/app/lib/cabinet-request";
 import type { CabinetGrant, MemberRole } from "@/lib/protocol/types";
 import type { Messages } from "@/lib/i18n/load";
 
-type Member = { address: string; role: MemberRole; grants: CabinetGrant[] };
+type Member = { user_id: string | null; email: string; role: MemberRole; grants: CabinetGrant[]; pending: boolean };
 
 const GRANT_OPTIONS: CabinetGrant[] = ["agents", "treasury", "rules"];
 
 export function MembersCard({
   token,
   houseId,
-  selfAddress,
+  selfEmail,
   canInvite,
   asPanel = false,
   t,
@@ -20,14 +20,14 @@ export function MembersCard({
 }: {
   token: string;
   houseId: string;
-  selfAddress: string | null;
+  selfEmail: string | null;
   canInvite: boolean;
   asPanel?: boolean;
   t: Messages["cabinet"];
   errorLabel: string;
 }) {
   const [items, setItems] = useState<Member[] | null>(null);
-  const [address, setAddress] = useState("");
+  const [email, setEmail] = useState("");
   const [grants, setGrants] = useState<CabinetGrant[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
@@ -55,7 +55,7 @@ export function MembersCard({
     const response = await fetch(`/api/cabinet/${token}/members`, {
       method: "POST",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ address, grants }),
+      body: JSON.stringify({ email, grants }),
     });
     setPending(false);
     if (!response.ok) {
@@ -64,7 +64,7 @@ export function MembersCard({
     }
     const payload = (await response.json()) as { data: { items: Member[] } };
     setItems(payload.data.items);
-    setAddress("");
+    setEmail("");
     setError(false);
   }
 
@@ -72,7 +72,7 @@ export function MembersCard({
     const response = await fetch(`/api/cabinet/${token}/members`, {
       method: "PATCH",
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
-      body: JSON.stringify({ address: target, grants: next }),
+      body: JSON.stringify({ email: target, grants: next }),
     });
     if (!response.ok) {
       setError(true);
@@ -83,7 +83,7 @@ export function MembersCard({
   }
 
   async function remove(target: string) {
-    const response = await fetch(`/api/cabinet/${token}/members?address=${encodeURIComponent(target)}`, {
+    const response = await fetch(`/api/cabinet/${token}/members?email=${encodeURIComponent(target)}`, {
       method: "DELETE",
       headers: cabinetHeaders(houseId),
     });
@@ -101,20 +101,21 @@ export function MembersCard({
       {items ? (
         <ul className="member-list">
           {items.map((item) => (
-            <li key={item.address}>
-              <span className="mono">{short(item.address)}</span>
+            <li key={item.email}>
+              <span className="mono">{item.email}</span>
               <span className="muted">
                 {item.role === "owner" ? t.memberOwner : grantSummary(item.grants, t)}
-                {selfAddress && item.address.toLowerCase() === selfAddress.toLowerCase() ? ` · ${t.memberYou}` : ""}
+                {item.pending ? ` · ${t.memberPending}` : ""}
+                {selfEmail && item.email === selfEmail.toLowerCase() ? ` · ${t.memberYou}` : ""}
               </span>
               {canInvite && item.role !== "owner" ? (
                 <>
                   <GrantChecks
                     t={t}
                     value={item.grants}
-                    onChange={(next) => void saveGrants(item.address, next)}
+                    onChange={(next) => void saveGrants(item.email, next)}
                   />
-                  <button type="button" className="ghost" onClick={() => remove(item.address)}>
+                  <button type="button" className="ghost" onClick={() => remove(item.email)}>
                     {t.remove}
                   </button>
                 </>
@@ -131,11 +132,16 @@ export function MembersCard({
         <form className="stack" onSubmit={invite}>
           <label>
             {t.inviteAddress}
-            <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="0x…" />
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t.inviteEmailPlaceholder}
+            />
           </label>
           <GrantChecks t={t} value={grants} onChange={setGrants} />
           <p className="hint">{t.membersGrantsHint}</p>
-          <button type="submit" className="primary" disabled={pending || !address.trim()} aria-busy={pending}>
+          <button type="submit" className="primary" disabled={pending || !email.trim()} aria-busy={pending}>
             {pending ? t.inviting : t.invite}
           </button>
         </form>
@@ -190,9 +196,4 @@ function grantLabel(grant: CabinetGrant, t: Messages["cabinet"]) {
 function grantSummary(grants: CabinetGrant[], t: Messages["cabinet"]) {
   if (grants.length === 0) return t.grantRead;
   return grants.map((grant) => grantLabel(grant, t)).join(" · ");
-}
-
-function short(address: string) {
-  if (address.length < 12) return address;
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }

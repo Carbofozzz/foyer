@@ -5,7 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
 import { sans, serif } from "@/lib/i18n/font";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
-import { WalletProviders } from "@/app/components/wallet-providers";
+import { ClerkProvider } from "@clerk/nextjs";
 
 type Props = {
   children: ReactNode;
@@ -27,37 +27,45 @@ export default async function LocaleLayout({ children, params }: Props) {
   if (!isLocale(locale)) notFound();
   const t = loadMessages(locale);
 
-  return (
+  const page = (
     <html lang={locale} className={`${serif.variable} ${sans.variable}`}>
       <body>
-        <WalletProviders locale={locale}>
-          <div className="app-shell">
-            <header className="topbar">
-              <a className="brand" href={`/${locale}`}>
-                <img src="/brand/foyer-mark.png" alt={t.brand.markAlt} width={36} height={36} />
-                <span className="brand-name">{t.brand.name}</span>
+        <div className="app-shell">
+          <header className="topbar">
+            <a className="brand" href={`/${locale}`}>
+              <img src="/brand/foyer-mark.png" alt={t.brand.markAlt} width={36} height={36} />
+              <span className="brand-name">{t.brand.name}</span>
+            </a>
+            <LanguageSwitcher locale={locale} label={t.nav.locale} />
+          </header>
+          {children}
+          <footer className="site-foot">
+            <p>
+              {t.footer.copy}
+              {" · "}
+              {t.footer.powered}{" "}
+              <a href="https://genlayer.com" target="_blank" rel="noreferrer">
+                GenLayer
               </a>
-              <LanguageSwitcher locale={locale} label={t.nav.locale} />
-            </header>
-            {children}
-            <footer className="site-foot">
-              <p>
-                {t.footer.copy}
-                {" · "}
-                {t.footer.powered}{" "}
-                <a href="https://genlayer.com" target="_blank" rel="noreferrer">
-                  GenLayer
-                </a>
-              </p>
-              <nav className="site-foot-links" aria-label={t.footer.links}>
-                <a href={`/${locale}/roadmap`}>{t.roadmap.open}</a>
-                <a href={`/${locale}/legal`}>{t.legal.open}</a>
-                <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
-              </nav>
-            </footer>
-          </div>
-        </WalletProviders>
+            </p>
+            <nav className="site-foot-links" aria-label={t.footer.links}>
+              <a href={`/${locale}/roadmap`}>{t.roadmap.open}</a>
+              <a href={`/${locale}/legal`}>{t.legal.open}</a>
+              <a href={`/${locale}/privacy`}>{t.privacy.open}</a>
+            </nav>
+          </footer>
+        </div>
       </body>
     </html>
+  );
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) return page;
+  return (
+    <ClerkProvider
+      signInFallbackRedirectUrl={`/${locale}/cabinet`}
+      signUpFallbackRedirectUrl={`/${locale}/cabinet`}
+      afterSignOutUrl={`/${locale}`}
+    >
+      {page}
+    </ClerkProvider>
   );
 }

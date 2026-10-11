@@ -1,17 +1,17 @@
-import { isAdminAddress } from "@/lib/protocol/admin";
 import { jsonOk } from "@/lib/protocol/http";
-import { ensureHouseForOwner } from "@/lib/protocol/houses";
 import { listHousesFor } from "@/lib/protocol/members";
-import { readSession } from "@/lib/protocol/session";
+import { sessionUser } from "@/lib/protocol/session";
+import { isPlatformAdmin, platformRole } from "@/lib/protocol/users";
 
-export async function GET(request: Request) {
-  const session = readSession(request);
-  if (!session) return jsonOk({ address: null, has_house: false, houses: [], admin: false });
-  await ensureHouseForOwner(session.address);
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const user = await sessionUser();
+  if (!user) return jsonOk({ user: null, houses: [], platform_role: "none", admin: false });
   return jsonOk({
-    address: session.address,
-    has_house: true,
-    houses: await listHousesFor(session.address),
-    admin: isAdminAddress(session.address),
+    user: { id: user.id, email: user.email, email_verified: user.emailVerified, name: user.name },
+    houses: await listHousesFor(user.id),
+    platform_role: platformRole(user),
+    admin: isPlatformAdmin(user),
   });
 }

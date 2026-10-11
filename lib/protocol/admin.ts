@@ -9,6 +9,7 @@ import {
   emailConfirmTokens,
   enrollments,
   executions,
+  houseInvites,
   houseMembers,
   houseContacts,
   houseContactPolicies,
@@ -20,12 +21,13 @@ import {
   verdicts,
   waitlist,
   wakes,
+  users,
   walletTransfers,
 } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { ownerKey } from "@/lib/gen/chain";
 import { ProtocolError } from "./errors";
-import { readSession } from "./session";
+import { sessionUser } from "./session";
+import { platformRole, requirePlatformAdmin, type SessionUser } from "./users";
 import { parseWaitlistEmail } from "./waitlist";
 import { isOrgHouse } from "./types";
 import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
@@ -40,7 +42,16 @@ export type AdminContactRow = {
   email: string;
   verified: boolean;
   owner: string | null;
-  spawn: boolean;
+};
+
+export type AdminUserRow = {
+  id: string;
+  email: string;
+  verified: boolean;
+  role: string;
+  created_at: string;
+  last_seen_at: string | null;
+  houses: number;
 };
 
 export type AdminHouseRow = {
@@ -48,7 +59,6 @@ export type AdminHouseRow = {
   name: string;
   owner: string | null;
   type: string;
-  spawn: boolean;
   created_at: string;
   connected: boolean;
   contact_email: string | null;
@@ -68,38 +78,23 @@ export type AdminHouseRow = {
 export type AdminOverview = {
   waitlist: AdminWaitlistRow[];
   contacts: AdminContactRow[];
+  users: AdminUserRow[];
   houses: AdminHouseRow[];
   totals: {
     waitlist: number;
     contacts: number;
+    users: number;
     houses: number;
     live: number;
-    spawn: number;
     agents: number;
     hooks: number;
     escalated: number;
   };
 };
 
-export function configuredAdminAddress(): `0x${string}` | null {
-  const raw = process.env.FOYER_ADMIN_ADDRESS?.trim();
-  if (!raw) return null;
-  return ownerKey(raw);
-}
-
-export function isAdminAddress(address: string | null | undefined): boolean {
-  const admin = configuredAdminAddress();
-  const key = address ? ownerKey(address) : null;
-  return Boolean(admin && key && admin === key);
-}
-
-export function requireAdmin(request: Request): { address: `0x${string}` } {
-  const admin = configuredAdminAddress();
-  if (!admin) throw new ProtocolError("not_found", "Not found", 404);
-  const session = readSession(request);
-  if (!session) throw new ProtocolError("unauthorized", "Sign in required", 401);
-  if (session.address !== admin) throw new ProtocolError("not_found", "Not found", 404);
-  return session;
+/** Session user with platform_role ops|owner; anyone else 404. */
+export async function requireAdmin(): Promise<SessionUser> {
+  return requirePlatformAdmin(await sessionUser());
 }
 
 function iso(value: Date | null | undefined): string | null {
@@ -108,15 +103,14 @@ function iso(value: Date | null | undefined): string | null {
 
 export async function loadAdminOverview(): Promise<AdminOverview> {
   const db = getDb();
-  const [waitlistRows, houseRows, agentRows, actionRows, memberRows] = await Promise.all([
+  const [waitlistRows, houseRows, agentRows, actionRows, memberRows, userRows] = await Promise.all([
     db.select().from(waitlist).orderBy(desc(waitlist.createdAt)),
     db
       .select({
         id: principals.id,
         name: principals.name,
         type: principals.type,
-        isSpawn: principals.isSpawn,
-        ownerAddress: principals.ownerAddress,
+        ownerUserId: principals.ownerUserId,
         createdAt: principals.createdAt,
         wizardConnectDone: principals.wizardConnectDone,
         contactEmail: principals.contactEmail,
@@ -142,10 +136,13 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
         createdAt: actions.createdAt,
       })
       .from(actions),
-    db.select({ principalId: houseMembers.principalId, address: houseMembers.address, role: houseMembers.role }).from(
+    db.select({ principalId: houseMembers.principalId, userId: houseMembers.userId, role: houseMembers.role }).from(
       houseMembers,
     ),
+    db.select().from(users).orderBy(desc(users.createdAt)),
   ]);
+  const emailByUser = new Map(userRows.map((row) => [row.id, row.email]));
+  const housesByUser = new Map<string, number>();
 
   const agentByHouse = new Map<string, { agents: number; hooks: number }>();
   for (const row of agentRows) {
@@ -178,8 +175,9 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
   const ownerByHouse = new Map<string, string>();
   for (const row of memberRows) {
     memberByHouse.set(row.principalId, (memberByHouse.get(row.principalId) ?? 0) + 1);
+    housesByUser.set(row.userId, (housesByUser.get(row.userId) ?? 0) + 1);
     if (row.role === "owner" && !ownerByHouse.has(row.principalId)) {
-      ownerByHouse.set(row.principalId, row.address);
+      ownerByHouse.set(row.principalId, emailByUser.get(row.userId) ?? row.userId);
     }
   }
 
@@ -194,9 +192,8 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     return {
       id: row.id,
       name: row.name,
-      owner: row.ownerAddress ?? ownerByHouse.get(row.id) ?? null,
+      owner: (row.ownerUserId ? emailByUser.get(row.ownerUserId) : null) ?? ownerByHouse.get(row.id) ?? null,
       type: row.type,
-      spawn: row.isSpawn,
       created_at: row.createdAt.toISOString(),
       connected: row.wizardConnectDone || isOrgHouse(row),
       contact_email: row.contactEmail,
@@ -220,8 +217,17 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
       email: row.contact_email as string,
       verified: row.email_verified,
       owner: row.owner,
-      spawn: row.spawn,
     }));
+
+  const userList: AdminUserRow[] = userRows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    verified: row.emailVerified,
+    role: platformRole(row),
+    created_at: row.createdAt.toISOString(),
+    last_seen_at: iso(row.lastSeenAt),
+    houses: housesByUser.get(row.id) ?? 0,
+  }));
 
   return {
     waitlist: waitlistRows.map((row) => ({
@@ -230,13 +236,14 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
       created_at: row.createdAt.toISOString(),
     })),
     contacts,
+    users: userList,
     houses,
     totals: {
       waitlist: waitlistRows.length,
       contacts: contacts.length,
+      users: userList.length,
       houses: houses.length,
-      live: houses.filter((row) => !row.spawn).length,
-      spawn: houses.filter((row) => row.spawn).length,
+      live: houses.length,
       agents: houses.reduce((sum, row) => sum + row.agents, 0),
       hooks: houses.reduce((sum, row) => sum + row.hooks, 0),
       escalated: houses.reduce((sum, row) => sum + row.escalated, 0),
@@ -296,6 +303,7 @@ export async function deleteHouse(houseId: string) {
   await db.delete(houseContacts).where(eq(houseContacts.principalId, id));
   await db.delete(walletTransfers).where(eq(walletTransfers.principalId, id));
   await db.delete(houseMembers).where(eq(houseMembers.principalId, id));
+  await db.delete(houseInvites).where(eq(houseInvites.principalId, id));
   await db.delete(spendReceipts).where(eq(spendReceipts.principalId, id));
   await db.delete(agents).where(eq(agents.principalId, id));
   await db.delete(principals).where(eq(principals.id, id));

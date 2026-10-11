@@ -1,7 +1,7 @@
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { createOrgHouse, destroyOrgHouse, renameOrgHouse } from "@/lib/protocol/houses";
 import { isRecord } from "@/lib/protocol/parse";
-import { readSession } from "@/lib/protocol/session";
+import { sessionUser } from "@/lib/protocol/session";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 
@@ -20,8 +20,8 @@ export async function DELETE(request: Request) {
 }
 
 async function postOrg(request: Request) {
-  const session = readSession(request);
-  if (!session) return jsonError("unauthorized", "Sign in required", 401);
+  const user = await sessionUser();
+  if (!user) return jsonError("unauthorized", "Sign in required", 401);
   let body: unknown;
   try {
     body = await request.json();
@@ -32,32 +32,32 @@ async function postOrg(request: Request) {
     return jsonError("bad_request", "name is required", 400);
   }
   try {
-    return jsonOk(await createOrgHouse(session.address, body.name), 201);
+    return jsonOk(await createOrgHouse(user.id, body.name), 201);
   } catch (error) {
     return protocolFail(error);
   }
 }
 
 async function patchOrg(request: Request) {
-  const session = readSession(request);
-  if (!session) return jsonError("unauthorized", "Sign in required", 401);
+  const user = await sessionUser();
+  if (!user) return jsonError("unauthorized", "Sign in required", 401);
   const body = await orgBody(request);
   if ("error" in body) return body.error;
   if (typeof body.name !== "string") return jsonError("bad_request", "name is required", 400);
   try {
-    return jsonOk(await renameOrgHouse(session.address, body.id, body.name));
+    return jsonOk(await renameOrgHouse(user.id, body.id, body.name));
   } catch (error) {
     return protocolFail(error);
   }
 }
 
 async function deleteOrg(request: Request) {
-  const session = readSession(request);
-  if (!session) return jsonError("unauthorized", "Sign in required", 401);
+  const user = await sessionUser();
+  if (!user) return jsonError("unauthorized", "Sign in required", 401);
   const body = await orgBody(request);
   if ("error" in body) return body.error;
   try {
-    await destroyOrgHouse(session.address, body.id);
+    await destroyOrgHouse(user.id, body.id);
     return jsonOk({ ok: true });
   } catch (error) {
     return protocolFail(error);

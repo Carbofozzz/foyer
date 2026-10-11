@@ -1,9 +1,9 @@
-import { and, eq, sql } from "drizzle-orm";
-import { houseMembers, principals } from "@/lib/db/schema";
+import { and, eq, gt, inArray, isNull } from "drizzle-orm";
+import { houseInvites, houseMembers, principals, users } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { ownerKey } from "@/lib/gen/chain";
 import type { HousePrincipal } from "./bundle";
 import { ProtocolError } from "./errors";
+import { hashSecret, mintToken } from "./keys";
 import {
   CABINET_GRANTS,
   INVITE_ROLES,
@@ -15,6 +15,8 @@ import {
 } from "./types";
 
 const HELPER_CAP = 16;
+const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALL_GRANTS: CabinetGrant[] = [...CABINET_GRANTS];
 
 export type HouseAccess = {
@@ -32,9 +34,11 @@ export type HouseListing = {
 };
 
 export type MemberView = {
-  address: string;
+  user_id: string | null;
+  email: string;
   role: MemberRole;
   grants: CabinetGrant[];
+  pending: boolean;
   created_at: string;
 };
 
@@ -75,70 +79,46 @@ export function canManage(role: MemberRole): boolean {
   return role === "owner";
 }
 
-let grantsReady = false;
-
-export async function ensureHouseMembersSchema() {
-  if (grantsReady) return;
-  const db = getDb();
-  await db.execute(sql`ALTER TABLE house_members ADD COLUMN IF NOT EXISTS grants jsonb`);
-  grantsReady = true;
+function parseEmail(raw: string): string {
+  const email = raw.trim().toLowerCase();
+  if (!email || email.length > 254 || !EMAIL.test(email)) {
+    throw new ProtocolError("bad_request", "email is invalid", 400);
+  }
+  return email;
 }
 
-export async function ensureOwnerRow(principal: HousePrincipal): Promise<void> {
-  const address = principal.ownerAddress ? ownerKey(principal.ownerAddress) : null;
-  if (!address) return;
-  const db = getDb();
-  await db
-    .insert(houseMembers)
-    .values({ principalId: principal.id, address, role: "owner" })
-    .onConflictDoNothing();
-}
-
-export async function accessFor(address: string, houseId: string): Promise<HouseAccess | null> {
-  await ensureHouseMembersSchema();
-  const wallet = ownerKey(address);
-  if (!wallet) return null;
+export async function accessFor(userId: string, houseId: string): Promise<HouseAccess | null> {
+  if (!userId) return null;
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, houseId)).limit(1);
-  if (!principal || principal.isSpawn) return null;
-
-  const owner = principal.ownerAddress ? ownerKey(principal.ownerAddress) : null;
-  if (owner && owner === wallet) {
-    await ensureOwnerRow(principal);
+  if (!principal) return null;
+  if (principal.ownerUserId === userId) {
     return { principal, role: "owner", grants: ALL_GRANTS };
   }
-
   const [row] = await db
     .select()
     .from(houseMembers)
-    .where(and(eq(houseMembers.principalId, houseId), eq(houseMembers.address, wallet)))
+    .where(and(eq(houseMembers.principalId, houseId), eq(houseMembers.userId, userId)))
     .limit(1);
   if (!row || !isMemberRole(row.role)) return null;
   return { principal, role: row.role, grants: grantsForRole(row.role, row.grants) };
 }
 
-export async function listHousesFor(address: string): Promise<HouseListing[]> {
-  const wallet = ownerKey(address);
-  if (!wallet) return [];
+export async function listHousesFor(userId: string): Promise<HouseListing[]> {
+  if (!userId) return [];
   const db = getDb();
-  const own = await db
-    .select()
-    .from(principals)
-    .where(and(eq(principals.ownerAddress, wallet), eq(principals.isSpawn, false)))
-    .limit(1);
-  if (own[0]) await ensureOwnerRow(own[0]);
-
+  const [own] = await db.select().from(principals).where(eq(principals.ownerUserId, userId)).limit(1);
   const rows = await db
     .select({
       id: principals.id,
       name: principals.name,
       type: principals.type,
       role: houseMembers.role,
-      ownerAddress: principals.ownerAddress,
+      ownerUserId: principals.ownerUserId,
     })
     .from(houseMembers)
     .innerJoin(principals, eq(principals.id, houseMembers.principalId))
-    .where(and(eq(houseMembers.address, wallet), eq(principals.isSpawn, false)));
+    .where(eq(houseMembers.userId, userId));
 
   const seen = new Set<string>();
   const list: HouseListing[] = [];
@@ -148,100 +128,177 @@ export async function listHousesFor(address: string): Promise<HouseListing[]> {
     list.push({
       id: row.id,
       name: row.name,
-      type: isOrgHouse({ type: row.type, ownerAddress: row.ownerAddress }) ? "org" : "personal",
+      type: isOrgHouse(row) ? "org" : "personal",
       role: row.role,
-      own: Boolean(row.ownerAddress && ownerKey(row.ownerAddress) === wallet) || row.role === "owner",
+      own: row.ownerUserId === userId || row.role === "owner",
     });
   }
-  if (own[0] && !seen.has(own[0].id)) {
-    list.unshift({
-      id: own[0].id,
-      name: own[0].name,
-      type: isOrgHouse(own[0]) ? "org" : "personal",
-      role: "owner",
-      own: true,
-    });
+  if (own && !seen.has(own.id)) {
+    list.unshift({ id: own.id, name: own.name, type: isOrgHouse(own) ? "org" : "personal", role: "owner", own: true });
   }
   return list.sort((a, b) => Number(b.own) - Number(a.own) || a.name.localeCompare(b.name));
 }
 
 export async function listMembers(principal: HousePrincipal): Promise<MemberView[]> {
-  await ensureHouseMembersSchema();
-  await ensureOwnerRow(principal);
   const db = getDb();
-  const rows = await db.select().from(houseMembers).where(eq(houseMembers.principalId, principal.id));
-  return rows
+  const rows = await db
+    .select({
+      userId: houseMembers.userId,
+      email: users.email,
+      role: houseMembers.role,
+      grants: houseMembers.grants,
+      createdAt: houseMembers.createdAt,
+    })
+    .from(houseMembers)
+    .innerJoin(users, eq(users.id, houseMembers.userId))
+    .where(eq(houseMembers.principalId, principal.id));
+  const pending = await db
+    .select()
+    .from(houseInvites)
+    .where(
+      and(
+        eq(houseInvites.principalId, principal.id),
+        isNull(houseInvites.acceptedAt),
+        gt(houseInvites.expiresAt, new Date()),
+      ),
+    );
+  const members: MemberView[] = rows
     .filter((row) => isMemberRole(row.role))
     .map((row) => ({
-      address: row.address,
+      user_id: row.userId,
+      email: row.email,
       role: row.role as MemberRole,
       grants: grantsForRole(row.role as MemberRole, row.grants),
+      pending: false,
       created_at: row.createdAt.toISOString(),
     }));
+  const invited: MemberView[] = pending.map((row) => ({
+    user_id: null,
+    email: row.email,
+    role: roleForGrants(parseGrants(row.grants)),
+    grants: parseGrants(row.grants),
+    pending: true,
+    created_at: row.createdAt.toISOString(),
+  }));
+  return [...members, ...invited];
 }
 
 function roleForGrants(grants: CabinetGrant[]): InviteRole {
   return grants.length > 0 ? "operator" : "observer";
 }
 
-export async function inviteMember(principal: HousePrincipal, rawAddress: string, grants: CabinetGrant[]) {
+/** A known user joins at once; anyone else gets a pending seat claimed on their first verified login. */
+export async function inviteMember(principal: HousePrincipal, rawEmail: string, grants: CabinetGrant[]) {
   if (!isOrgHouse(principal)) {
     throw new ProtocolError("forbidden", "Only a company house can invite people", 403);
   }
-  const address = ownerKey(rawAddress);
-  if (!address) throw new ProtocolError("bad_request", "address must be a wallet", 400);
-  await ensureHouseMembersSchema();
-  await ensureOwnerRow(principal);
+  const email = parseEmail(rawEmail);
   const db = getDb();
-  const existing = await db.select().from(houseMembers).where(eq(houseMembers.principalId, principal.id));
-  if (existing.some((row) => row.address === address)) {
+  const current = await listMembers(principal);
+  if (current.some((row) => row.email === email)) {
     throw new ProtocolError("conflict", "Already a member", 409);
   }
-  const helpers = existing.filter((row) => row.role !== "owner");
-  if (helpers.length >= HELPER_CAP) {
+  if (current.filter((row) => row.role !== "owner").length >= HELPER_CAP) {
     throw new ProtocolError("forbidden", "Too many helpers", 403);
   }
   const role = roleForGrants(grants);
-  await db.insert(houseMembers).values({ principalId: principal.id, address, role, grants });
+  const [known] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (known?.emailVerified) {
+    await db.insert(houseMembers).values({ principalId: principal.id, userId: known.id, role, grants });
+  } else {
+    await db.insert(houseInvites).values({
+      id: mintToken("inv"),
+      principalId: principal.id,
+      email,
+      grants,
+      tokenHash: hashSecret(mintToken("inv")),
+      expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+    });
+  }
   return listMembers(principal);
 }
 
-export async function saveMemberGrants(principal: HousePrincipal, rawAddress: string, grants: CabinetGrant[]) {
+/** Turn pending invites for this verified email into memberships. */
+export async function claimInvites(user: { id: string; email: string; emailVerified: boolean }) {
+  if (!user.emailVerified) return;
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(houseInvites)
+    .where(
+      and(eq(houseInvites.email, user.email), isNull(houseInvites.acceptedAt), gt(houseInvites.expiresAt, new Date())),
+    );
+  if (rows.length === 0) return;
+  for (const row of rows) {
+    const grants = parseGrants(row.grants);
+    await db
+      .insert(houseMembers)
+      .values({ principalId: row.principalId, userId: user.id, role: roleForGrants(grants), grants })
+      .onConflictDoNothing();
+  }
+  await db
+    .update(houseInvites)
+    .set({ acceptedAt: new Date(), acceptedUserId: user.id })
+    .where(
+      inArray(
+        houseInvites.id,
+        rows.map((row) => row.id),
+      ),
+    );
+}
+
+async function memberTarget(principal: HousePrincipal, rawEmail: string) {
+  const email = parseEmail(rawEmail);
+  const db = getDb();
+  const [row] = await db
+    .select({ userId: houseMembers.userId, role: houseMembers.role })
+    .from(houseMembers)
+    .innerJoin(users, eq(users.id, houseMembers.userId))
+    .where(and(eq(houseMembers.principalId, principal.id), eq(users.email, email)))
+    .limit(1);
+  return { email, row };
+}
+
+export async function saveMemberGrants(principal: HousePrincipal, rawEmail: string, grants: CabinetGrant[]) {
   if (!isOrgHouse(principal)) {
     throw new ProtocolError("forbidden", "Only a company house can invite people", 403);
   }
-  const address = ownerKey(rawAddress);
-  if (!address) throw new ProtocolError("bad_request", "address must be a wallet", 400);
-  await ensureHouseMembersSchema();
   const db = getDb();
-  const [row] = await db
-    .select()
-    .from(houseMembers)
-    .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.address, address)))
-    .limit(1);
-  if (!row) throw new ProtocolError("not_found", "Unknown member", 404);
-  if (row.role === "owner") throw new ProtocolError("forbidden", "The owner cannot be limited", 403);
-  await db
-    .update(houseMembers)
-    .set({ role: roleForGrants(grants), grants })
-    .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.address, address)));
+  const { email, row } = await memberTarget(principal, rawEmail);
+  if (row) {
+    if (row.role === "owner") throw new ProtocolError("forbidden", "The owner cannot be limited", 403);
+    await db
+      .update(houseMembers)
+      .set({ role: roleForGrants(grants), grants })
+      .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.userId, row.userId)));
+    return listMembers(principal);
+  }
+  const updated = await db
+    .update(houseInvites)
+    .set({ grants })
+    .where(
+      and(eq(houseInvites.principalId, principal.id), eq(houseInvites.email, email), isNull(houseInvites.acceptedAt)),
+    )
+    .returning({ id: houseInvites.id });
+  if (updated.length === 0) throw new ProtocolError("not_found", "Unknown member", 404);
   return listMembers(principal);
 }
 
-export async function removeMember(principal: HousePrincipal, rawAddress: string) {
-  const address = ownerKey(rawAddress);
-  if (!address) throw new ProtocolError("bad_request", "address must be a wallet", 400);
+export async function removeMember(principal: HousePrincipal, rawEmail: string) {
   const db = getDb();
-  const [row] = await db
-    .select()
-    .from(houseMembers)
-    .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.address, address)))
-    .limit(1);
+  const { email, row } = await memberTarget(principal, rawEmail);
   if (row?.role === "owner") {
     throw new ProtocolError("forbidden", "The owner cannot be removed", 403);
   }
+  if (row) {
+    await db
+      .delete(houseMembers)
+      .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.userId, row.userId)));
+  }
   await db
-    .delete(houseMembers)
-    .where(and(eq(houseMembers.principalId, principal.id), eq(houseMembers.address, address)));
+    .delete(houseInvites)
+    .where(
+      and(eq(houseInvites.principalId, principal.id), eq(houseInvites.email, email), isNull(houseInvites.acceptedAt)),
+    );
   return listMembers(principal);
 }

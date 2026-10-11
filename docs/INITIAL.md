@@ -4,7 +4,7 @@ Intra-principal court and gateway. Track: **Onchain Justice**.
 
 This file is the product as it exists: the idea, the running implementation, and a short backlog. Further protocol change is [ORCHESTRATE.md](ORCHESTRATE.md). If this file and the code disagree, follow the code, then update this file in the same change.
 
-Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md).
+Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md). Cabinet login replacement (Clerk, no wallet): [AUTH.md](AUTH.md) — agreed; not shipped until slices land.
 
 ---
 
@@ -65,7 +65,9 @@ The gateway client is always an agent. There is no UI path that opens a case aro
 | Secret | Held by | Grants |
 |---|---|---|
 | Agent key (`agk_`) | An agent | Protocol for **that house only**. The key names the house; routes have no principal id. A key from another house is 404. |
-| Wallet session | The principal (RainbowKit, short `personal_sign`) | Cabinet, constitution, appeal, treasury. One wallet is one house. Org members share the same login (`owner` / `operator` / `observer`). Spawn leftover `cab_` links still work. |
+| Clerk session | The principal (email or Google) | Cabinet, constitution, appeal, treasury (read-only). One user is one personal house. Org members sign in the same way. |
+
+Login is Clerk → `users` row (`platform_role` `none` / `ops` / `owner`). No wallet on login. Org invite is by email; spawn is removed; wizard is off. See [AUTH.md](AUTH.md).
 
 ### Protocol
 
@@ -132,26 +134,26 @@ Tick **does not start** court. `findHouseNeedingCourt` only picks a house that a
 
 Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history), rules, connect, test (owner — old harness, redesign later), people (org).
 
-- Wallet login; house treasury is a different address, topped up from the signed-in wallet (Studio faucet below the floor).
+- Clerk login (email / Google). House treasury is a separate address, read-only in the cabinet until BILLING (Studio faucet below the floor still runs server-side for court fees).
 - Owner edits the charter. Operator can appeal / connect / deposit. Observer reads. Owner alone withdraws, invites, writes the charter.
 - Company house is not a wizard choice. Org 1 shipped: extra principal via **Organization**, open with `?house=`; Settings on the org house can rename or delete it ([ORG.md](ORG.md)).
 - Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A checker needs a hook URL. No auto-mint Travel. Prompt is not court evidence.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
-- Ops: `/:locale/cabinet/admin` for the wallet in `FOYER_ADMIN_ADDRESS` (same session). Waitlist emails, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house. No keys, no charter. Unset env → 404.
+- Ops: `/:locale/cabinet/admin` for `platform_role` `ops` / `owner` (bootstrap: `FOYER_ADMIN_EMAILS`). Waitlist, people, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house (audited). No keys, no charter. Everyone else → 404.
 
 Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution text the principal typed is not auto-translated.
 
 ### Onboarding
 
-1. Sign in with the wallet (one wallet, one house). Wizard does not pick company vs personal.
+1. Sign in with email or Google (one user, one personal house). No wizard.
 2. Constitution from a short constructor (editable).
 3. Optional first assistant. Chat = MCP paste after save. A checker needs a hook URL.
-4. Optional house top-up (your wallet or Studio faucet) and a contact email.
+4. Optional contact email.
 
 Success: constitution visible, an agent key issued, the principal knows how to propose. A second **product** guardian is another connected assistant. The test tab walks that propose as a connected assistant.
 
-Onboarding wizard (modal, reopen from the cabinet header): constitution from a short constructor → optional first assistant (issued on save) → house wallet top-up (signed-in wallet or Studio-dev faucet) → optional email (Telegram later). Lock kinds are leftover house settings, not a wizard step.
+The hackathon wizard modal is off. Rules, Connect, and Contacts tabs cover the same steps; a product onboarding is a later UX.
 
 ### Test harness (not the product)
 
@@ -159,7 +161,6 @@ Onboarding wizard (modal, reopen from the cabinet header): constitution from a s
 |---|---|
 | Your agent | Main path |
 | Cabinet test tab | Walk the live loop as house agents |
-| Landing spawn | Throwaway house |
 | Demo / Replay | Static archive; `/replay` redirects to demo |
 
 Copy: the test tab uses the house keys; it is not the product.
@@ -210,8 +211,9 @@ Bonds, court duties, appeal fees, Foyer paying or booking, and a second login ar
 
 ## Backlog (not the next protocol)
 
-Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Do not implement the items below in a way that fights that plan (no new auto-court, no judge-executed `allow_b` / `remedy`).
+Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Product login rewrite is [AUTH.md](AUTH.md) (Clerk; do not fight that plan with new wallet-login features). Do not implement the items below in a way that fights either plan (no new auto-court, no judge-executed `allow_b` / `remedy`).
 
+- **Cabinet Auth (next product track)** — [AUTH.md](AUTH.md). Clerk; no wallet login; new `DATABASE_URL` then cutover; platform admin roles; wizard off; spawn removed. Agent protocol unchanged.
 - **Hosted full-time agents.** Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar. Own key — the gateway never objects. Schema `wake = hosted` is reserved; Connect does not mint it. Do not ship a constitution bot in the gateway to “fill” a chat-only house.
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures, versions, windows** — [SIGN.md](SIGN.md). S1–S4 shipped (windows, write hashes, signed writes, prompt pin).

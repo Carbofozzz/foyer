@@ -9,7 +9,6 @@ import { sweepIfBusy } from "@/lib/protocol/sweep";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { formatWhen } from "@/lib/i18n/when";
-import { CabinetSetup } from "@/app/components/cabinet-wizard";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
@@ -24,7 +23,7 @@ import { InboxFeed } from "@/app/components/inbox-feed";
 import { CABINET_TAB_COOKIE, SHOW_TESTS_COOKIE } from "@/app/lib/cabinet-ui";
 import { CabinetInboxRefresh } from "@/app/components/cabinet-inbox-refresh";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
-import { WalletButton } from "@/app/components/wallet-button";
+import { AccountBar } from "@/app/components/account-bar";
 import { txExplorerUrl } from "@/lib/gen/chain";
 import { ensureAgentPromptColumn } from "@/lib/protocol/house-clients";
 import { canManage, hasGrant, type HouseListing } from "@/lib/protocol/members";
@@ -41,7 +40,7 @@ export async function CabinetScreen({
   memberRole = "owner",
   memberGrants,
   houses = [],
-  viewerAddress = null,
+  viewer = null,
   enroll,
   tab,
   t,
@@ -52,7 +51,7 @@ export async function CabinetScreen({
   memberRole?: MemberRole;
   memberGrants?: CabinetGrant[];
   houses?: HouseListing[];
-  viewerAddress?: string | null;
+  viewer?: { id: string; email: string; admin: boolean } | null;
   enroll?: string;
   tab?: string;
   t: Messages;
@@ -82,8 +81,7 @@ export async function CabinetScreen({
   const seeTreasury = manage || hasGrant(memberRole, grants, "treasury");
   const seeRules = manage || hasGrant(memberRole, grants, "rules");
   const canAppeal = manage;
-  const canDeposit = hasGrant(memberRole, grants, "treasury");
-  const company = signedIn && isOrgHouse(principal) && manage && !principal.isSpawn;
+  const company = signedIn && isOrgHouse(principal) && manage;
   const tabIds: CabinetTabId[] = ["inbox"];
   if (seeRules) tabIds.push("rules");
   if (seeTreasury) tabIds.push("treasury");
@@ -119,39 +117,24 @@ export async function CabinetScreen({
           <h1>
             {isOrgHouse(principal) ? principal.name.trim() || t.cabinet.houseOrg : t.cabinet.kicker}
           </h1>
-          {principal.isSpawn ? <p className="hint">{t.spawn.banner}</p> : null}
           {!manage ? <p className="hint">{grants.length ? t.cabinet.accessLimited : t.cabinet.readOnly}</p> : null}
         </div>
-        {signedIn || manage ? (
+        {signedIn ? (
           <div className="cabinet-head-actions">
-            {manage && !isOrgHouse(principal) ? (
-              <CabinetSetup
-                token={token}
-                houseId={houseId}
-                openOnMount={!principal.wizardConnectDone}
-                wizard={t.wizard}
-                connect={t.connect}
-                charter={t.charter}
-                cabinet={t.cabinet}
-                cabinetError={t.cabinet.error}
-                constitution={principal.constitution}
-                houseType="personal"
-                email={principal.contactEmail ?? ""}
-                locale={locale}
-              />
-            ) : null}
-            {signedIn && !principal.isSpawn ? (
-              <AddOrgForm locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} />
-            ) : null}
-            {signedIn ? (
-              <WalletButton
-                locale={locale}
-                signOutLabel={t.cabinet.signOut}
-                connectLabel={t.home.signIn}
-                adminLabel={t.home.openAdmin}
-                initialAddress={viewerAddress ?? principal.ownerAddress}
-              />
-            ) : null}
+            <AddOrgForm locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} />
+            <AccountBar
+              locale={locale}
+              enabled
+              email={viewer?.email ?? null}
+              admin={viewer?.admin ?? false}
+              t={{
+                signIn: t.home.signIn,
+                signUp: t.home.signUp,
+                signOut: t.cabinet.signOut,
+                admin: t.home.openAdmin,
+                authOff: t.home.authOff,
+              }}
+            />
           </div>
         ) : null}
       </header>
@@ -247,8 +230,6 @@ export async function CabinetScreen({
                   token={token}
                   houseId={houseId}
                   locale={locale}
-                  canDeposit={canDeposit}
-                  canManage={manage}
                   t={t.cabinet}
                   errorLabel={t.cabinet.error}
                 />
@@ -317,7 +298,7 @@ export async function CabinetScreen({
                 <MembersCard
                   token={token}
                   houseId={principal.id}
-                  selfAddress={viewerAddress}
+                  selfEmail={viewer?.email ?? null}
                   canInvite={manage}
                   asPanel
                   t={t.cabinet}

@@ -6,7 +6,9 @@ Org is **not** “every employee signs into Foyer.” Most people with a corpora
 
 This file is the product we want. The live app is still a personal house ([INITIAL.md](INITIAL.md)). The wizard does not switch type. Protocol change stays [ORCHESTRATE.md](ORCHESTRATE.md).
 
-**Extend, do not fork.** Org must not change the personal login, wizard, propose/object/bargain/insist, court, or `sweep`. New tables, routes, and cabinet panes may exist; they sit **beside** the current house. A user who never opens an org sees today’s flow and today’s code paths. If a change would rewrite `ensureHouseForOwner`, agent keys, or default `/cabinet`, it is the wrong change.
+**Extend, do not fork.** Org must not change propose/object/bargain/insist, court, or `sweep`. New tables, routes, and cabinet panes may exist; they sit **beside** the current house. A user who never opens an org sees today’s flow and today’s code paths. Do not rewrite agent keys or default `/cabinet` without `?house=`.
+
+**Exception:** [AUTH.md](AUTH.md) intentionally replaces wallet login with Clerk (`ensureHouseForOwner` → user-owned personal house; `house_members` by `user_id`; invite by email; wizard off). Org slices still must not fork the agent protocol.
 
 ---
 
@@ -86,9 +88,9 @@ Same loop: propose → object → bargain → insist → court → report. Permi
 
 ## Implementation plan
 
-Do not start a later slice before the previous one is done. After each slice: this file, [INITIAL.md](INITIAL.md) (one bullet), `AGENTS.md` log. **Forbidden in every slice:** edits to propose/object/bargain/insist, `contracts/court.py` outcomes, `sweep()` control flow, `ensureHouseForOwner`, unique personal `owner_address`, default `/cabinet` without `?house=`, wizard type dropdown.
+Do not start a later slice before the previous one is done. After each slice: this file, [INITIAL.md](INITIAL.md) (one bullet), `AGENTS.md` log. **Forbidden in every Org slice:** edits to propose/object/bargain/insist, `contracts/court.py` outcomes, `sweep()` control flow, default `/cabinet` without `?house=`. Login / `ensureHouseForOwner` / member identity changes belong only to [AUTH.md](AUTH.md).
 
-Demo, spawn, and a user with only a personal house must behave as today.
+Demo and a user with only a personal house must behave as today (spawn is removed under AUTH). After AUTH ships, org invite is email, not `0x`.
 
 ### Org 1 — Second principal — shipped
 

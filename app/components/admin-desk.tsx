@@ -51,6 +51,7 @@ export function AdminDesk({
       <p className="muted admin-totals">
         {a.totals
           .replace("{waitlist}", String(totals.waitlist))
+          .replace("{users}", String(totals.users))
           .replace("{houses}", String(totals.live))
           .replace("{agents}", String(totals.agents))
           .replace("{hooks}", String(totals.hooks))
@@ -123,7 +124,39 @@ export function AdminDesk({
                 <tr key={`${row.email}:${row.owner ?? "none"}`}>
                   <td className="mono">{row.email}</td>
                   <td>{row.verified ? a.yes : a.no}</td>
-                  <td className="mono muted">{row.owner ? shortAddr(row.owner) : "—"}</td>
+                  <td className="mono muted">{row.owner ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="section-title">{a.users}</h2>
+      {overview.users.length === 0 ? (
+        <p className="empty">{a.usersEmpty}</p>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>{a.colEmail}</th>
+                <th>{a.colVerified}</th>
+                <th>{a.colRole}</th>
+                <th>{a.colHouses}</th>
+                <th>{a.colAt}</th>
+                <th>{a.colSeen}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.users.map((row) => (
+                <tr key={row.id}>
+                  <td className="mono">{row.email}</td>
+                  <td>{row.verified ? a.yes : a.no}</td>
+                  <td>{row.role}</td>
+                  <td className="tabular">{row.houses}</td>
+                  <td className="muted">{formatWhen(row.created_at, locale)}</td>
+                  <td className="muted">{row.last_seen_at ? formatWhen(row.last_seen_at, locale) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,20 +190,18 @@ export function AdminDesk({
             <tbody>
               {overview.houses.map((row) => {
                 const key = `house:${row.id}`;
-                const label = row.owner ? shortAddr(row.owner) : row.id;
+                const label = row.owner ?? row.id;
                 return (
                   <tr key={row.id}>
                     <td className="mono" title={row.owner ?? row.id}>
-                      {row.owner ? shortAddr(row.owner) : "—"}
+                      {row.owner ?? "—"}
                     </td>
                     <td>
-                      {row.spawn
-                        ? a.spawn
-                        : row.type === "org"
-                          ? row.name.trim()
-                            ? `${t.home.typeOrg} · ${row.name.trim()}`
-                            : t.home.typeOrg
-                          : t.home.typePersonal}
+                      {row.type === "org"
+                        ? row.name.trim()
+                          ? `${t.home.typeOrg} · ${row.name.trim()}`
+                          : t.home.typeOrg
+                        : t.home.typePersonal}
                       {row.connected ? "" : ` · ${a.notConnected}`}
                     </td>
                     <td className="muted">{formatWhen(row.created_at, locale)}</td>
@@ -209,8 +240,4 @@ export function AdminDesk({
       )}
     </>
   );
-}
-
-function shortAddr(value: string) {
-  return `${value.slice(0, 6)}…${value.slice(-4)}`;
 }

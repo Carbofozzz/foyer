@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.52.0",
+      version: "0.53.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -68,7 +68,7 @@ export function openApiSpec(origin: string) {
       securitySchemes: {
         agentKey: { type: "http", scheme: "bearer", bearerFormat: "agk_" },
         enrollKey: { type: "http", scheme: "bearer", bearerFormat: "enr_" },
-        cabinetSession: { type: "apiKey", in: "cookie", name: "foyer_session" },
+        cabinetSession: { type: "apiKey", in: "cookie", name: "__session" },
         cronSecret: { type: "http", scheme: "bearer", bearerFormat: "CRON_SECRET" },
       },
       responses: {
@@ -529,12 +529,12 @@ export function openApiSpec(origin: string) {
         parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
         get: operation({
           id: "listMembers",
-          summary: "People who can open this house with their wallet",
+          summary: "People (by email) who can open this house, plus pending email invites",
           auth: "session",
         }),
         post: operation({
           id: "inviteMember",
-          summary: "Invite a wallet to this org cabinet with section grants (agents, treasury, rules; owner only)",
+          summary: "Invite an email to this org cabinet with section grants (agents, treasury, rules; owner only). Claimed on that verified login.",
           auth: "session",
           created: true,
         }),
@@ -638,7 +638,7 @@ export function openApiSpec(origin: string) {
       "/api/admin": {
         get: operation({
           id: "getAdminOverview",
-          summary: "Waitlist emails and house stats for the FOYER_ADMIN_ADDRESS session",
+          summary: "Waitlist, users, and house stats for a platform_role ops|owner session (else 404)",
           auth: "session",
         }),
         post: operation({

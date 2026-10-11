@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
+import { DEMO_TOKEN } from "@/lib/demo/preview";
 import { bearerToken, jsonError } from "./http";
 import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
@@ -9,9 +10,8 @@ import { ensureAgentPromptColumn } from "./house-clients";
 import { ensureHouseWindowsColumn } from "./house-windows";
 import { ensureWriteHashColumns } from "./write-hash";
 import { ensureWriteSignColumns } from "./write-sign";
-import { readSession } from "./session";
+import { sessionUser } from "./session";
 import type { HousePrincipal } from "./bundle";
-import { DEMO_TOKEN } from "./spawn";
 import type { CabinetGrant, MemberRole } from "./types";
 
 export async function requireAgent(request: Request) {
@@ -42,7 +42,7 @@ export async function requireAgent(request: Request) {
 export async function cabinetFromToken(token: string, request: Request) {
   const opened = await openCabinet(token, request);
   if (opened) return opened;
-  if (token === "me" && !readSession(request)) {
+  if (token === "me" && !(await sessionUser())) {
     return { error: jsonError("unauthorized", "Sign in required", 401) };
   }
   return { error: jsonError("not_found", "Unknown house", 404) };
@@ -53,7 +53,7 @@ type CabinetAuth = Awaited<ReturnType<typeof cabinetFromToken>>;
 export function needOperate(auth: CabinetAuth): CabinetAuth {
   if ("error" in auth) return auth;
   if (!hasGrant(auth.role, auth.grants, "agents") && !hasGrant(auth.role, auth.grants, "treasury")) {
-    return { error: jsonError("forbidden", "This wallet can only watch", 403) };
+    return { error: jsonError("forbidden", "This account can only watch", 403) };
   }
   return auth;
 }
@@ -61,7 +61,7 @@ export function needOperate(auth: CabinetAuth): CabinetAuth {
 export function needGrant(auth: CabinetAuth, grant: CabinetGrant): CabinetAuth {
   if ("error" in auth) return auth;
   if (!hasGrant(auth.role, auth.grants, grant)) {
-    return { error: jsonError("forbidden", "This wallet cannot do that here", 403) };
+    return { error: jsonError("forbidden", "This account cannot do that here", 403) };
   }
   return auth;
 }
@@ -85,15 +85,15 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
   await ensureWriteSignColumns();
   if (token === "me") {
     if (!request) return null;
-    const session = readSession(request);
-    if (!session) return null;
+    const user = await sessionUser();
+    if (!user) return null;
     const wanted = houseId?.trim() || request.headers.get("x-foyer-house")?.trim() || null;
     if (wanted) {
-      const access = await accessFor(session.address, wanted);
+      const access = await accessFor(user.id, wanted);
       if (!access) return null;
       return asCabinet(access.principal, access.role, "me", access.grants);
     }
-    const principal = await findHouseByOwner(session.address);
+    const principal = await findHouseByOwner(user.id);
     if (!principal) return null;
     return asCabinet(principal, "owner", "me", ["agents", "treasury", "rules"]);
   }
@@ -109,7 +109,6 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
 }
 
 function asCabinet(principal: HousePrincipal, role: MemberRole, token: string, grants: HouseAccess["grants"] = []) {
-  if (principal.isSpawn) return { principal, role: "observer" as const, token, grants: [] as HouseAccess["grants"] };
   return { principal, role, token, grants };
 }
 

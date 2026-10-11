@@ -69,10 +69,7 @@ export async function stepHouseCourt(
   return false;
 }
 
-const liveHouse = and(
-  eq(principals.isSpawn, false),
-  or(isNotNull(principals.ownerAddress), eq(principals.type, "org")),
-);
+const liveHouse = or(isNotNull(principals.ownerUserId), eq(principals.type, "org"));
 
 export async function findHouseNeedingCourt(_now: Date): Promise<string | null> {
   const db = getDb();

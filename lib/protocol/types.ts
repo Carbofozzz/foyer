@@ -53,12 +53,15 @@ export type WakeStatus = (typeof WAKE_STATUSES)[number];
 export const PRINCIPAL_TYPES = ["personal", "org"] as const;
 export type PrincipalType = (typeof PRINCIPAL_TYPES)[number];
 
-/** Company house from POST /api/orgs. A leftover type=org row with owner_address is not one. */
-export function isOrgHouse(row: { type: string; ownerAddress: string | null }): boolean {
-  return row.type === "org" && !row.ownerAddress;
+/** Company house from POST /api/orgs. A type=org row with owner_user_id is not one. */
+export function isOrgHouse(row: { type: string; ownerUserId: string | null }): boolean {
+  return row.type === "org" && !row.ownerUserId;
 }
 
-/** Wallet roles inside one house. Same SIWE login — not a second account. */
+export const PLATFORM_ROLES = ["none", "ops", "owner"] as const;
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+/** User roles inside one house. Same Clerk login — not a second account. */
 export const MEMBER_ROLES = ["owner", "operator", "observer"] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
 export const INVITE_ROLES = ["operator", "observer"] as const;

@@ -47,7 +47,7 @@ export async function loadHouseWalletView(principal: HousePrincipal): Promise<Ho
     balance_wei: wei.toString(),
     withdrawable: formatGen(available),
     court_contract: principal.courtContract,
-    owner: principal.ownerAddress,
+    owner: null,
     studio_faucet: studioFaucetAvailable(),
     transfers: await listTransfers(principal.id),
   };
@@ -72,7 +72,7 @@ export async function recordDeposit(
   const from = asHexAddress(input.from);
   const tx = parseTx(input.tx);
   if (!from) throw new ProtocolError("bad_request", "from must be an address", 400);
-  const payer = input.payer ? ownerKey(input.payer) : principal.ownerAddress ? ownerKey(principal.ownerAddress) : null;
+  const payer = input.payer ? ownerKey(input.payer) : null;
   if (payer && payer !== ownerKey(from)) {
     throw new ProtocolError("forbidden", "Deposit must come from the signed-in wallet", 403);
   }
@@ -98,7 +98,7 @@ export async function withdrawTo(
   input: { to: string; gen: string },
 ): Promise<HouseWalletView> {
   const wallet = await ensureHouseWallet(principal);
-  const to = asHexAddress(input.to) ?? (principal.ownerAddress ? asHexAddress(principal.ownerAddress) : null);
+  const to = asHexAddress(input.to);
   if (!to) throw new ProtocolError("bad_request", "to must be an address", 400);
   let wei: bigint;
   try {

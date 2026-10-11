@@ -2,18 +2,18 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
 import type { AdminOverview } from "@/lib/protocol/admin";
 import { AdminDesk } from "@/app/components/admin-desk";
-import { WalletButton } from "@/app/components/wallet-button";
+import { AccountBar } from "@/app/components/account-bar";
 
 export function AdminCabinet({
   locale,
   t,
   overview,
-  address,
+  email,
 }: {
   locale: Locale;
   t: Messages;
-  overview?: AdminOverview;
-  address?: string;
+  overview: AdminOverview;
+  email: string;
 }) {
   const a = t.admin;
   return (
@@ -23,19 +23,22 @@ export function AdminCabinet({
           <h1>{a.kicker}</h1>
           <p className="hint">{a.lead}</p>
         </div>
-        <WalletButton
+        <AccountBar
           locale={locale}
-          signOutLabel={t.home.signOut}
-          connectLabel={a.signIn}
-          signingInLabel={t.home.signingIn}
-          cabinetLabel={t.home.openCabinet}
-          adminLabel={t.home.openAdmin}
-          initialAddress={address ?? null}
+          enabled
+          email={email}
+          t={{
+            signIn: t.home.signIn,
+            signUp: t.home.signUp,
+            signOut: t.home.signOut,
+            cabinet: t.home.openCabinet,
+            authOff: t.home.authOff,
+          }}
         />
       </header>
       <section className="cabinet-panel">
         <div className="cabinet-scroll stack admin-desk">
-          {!overview ? <p className="hint">{a.needSignIn}</p> : <AdminDesk locale={locale} t={t} initial={overview} />}
+          <AdminDesk locale={locale} t={t} initial={overview} />
         </div>
       </section>
     </main>
