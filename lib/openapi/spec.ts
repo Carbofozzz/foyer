@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.54.0",
+      version: "0.56.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -92,6 +92,57 @@ export function openApiSpec(origin: string) {
             },
           },
           required: ["error"],
+        },
+        Plan: {
+          type: "object",
+          properties: {
+            credits: { type: "integer" },
+            free_remaining: { type: "integer" },
+            free_quota: { type: "integer" },
+            free_used: { type: "integer" },
+            free_period_end: { type: "string", nullable: true },
+            subscription_credits: { type: "integer" },
+            on_demand: { type: "integer" },
+            feature_org: { type: "boolean" },
+            in_grace: { type: "boolean" },
+            subscription_plan_id: { type: "string", nullable: true },
+            subscription_period_end: { type: "string", nullable: true },
+            subscription_grace_until: { type: "string", nullable: true },
+            org_frozen_at: { type: "string", nullable: true },
+            gate: { type: "boolean" },
+          },
+          required: ["credits", "feature_org", "gate"],
+        },
+        PricingCatalog: {
+          type: "object",
+          properties: {
+            plans: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  code: { type: "string" },
+                  kind: { type: "string" },
+                  label: { type: "string" },
+                  credits: { type: "integer" },
+                  price_cents: { type: "integer" },
+                  currency: { type: "string" },
+                  feature_org: { type: "boolean" },
+                  rollover: { type: "boolean" },
+                },
+              },
+            },
+          },
+          required: ["plans"],
+        },
+        PlanRedeemRequest: {
+          type: "object",
+          properties: {
+            op: { type: "string", enum: ["redeem"] },
+            code: { type: "string" },
+          },
+          required: ["op", "code"],
         },
         ActionPayload: {
           type: "object",
@@ -552,6 +603,21 @@ export function openApiSpec(origin: string) {
           auth: "session",
         }),
       },
+      "/api/cabinet/{token}/plan": {
+        get: operation({
+          id: "getCabinetPlan",
+          summary: "Court credit balance and subscription flags for this house",
+          auth: "session",
+          ok: "Plan",
+        }),
+        post: operation({
+          id: "postCabinetPlan",
+          summary: "Redeem a voucher code into this house (owner or treasury grant)",
+          auth: "session",
+          body: "PlanRedeemRequest",
+          ok: "Plan",
+        }),
+      },
       "/api/cabinet/{token}/contacts": {
         parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
         get: operation({
@@ -659,6 +725,13 @@ export function openApiSpec(origin: string) {
           body: "WaitlistRequest",
           ok: "WaitlistOk",
           created: true,
+        }),
+      },
+      "/api/pricing": {
+        get: operation({
+          id: "listPricing",
+          summary: "Public plan catalog (Free / Pro / packs) for the pricing page",
+          ok: "PricingCatalog",
         }),
       },
     },

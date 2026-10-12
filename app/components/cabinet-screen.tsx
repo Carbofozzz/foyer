@@ -12,7 +12,7 @@ import { formatWhen } from "@/lib/i18n/when";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
-import { TreasuryCard } from "@/app/components/treasury-card";
+import { PlanCard } from "@/app/components/plan-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { AddOrgForm } from "@/app/components/add-org-form";
@@ -29,6 +29,8 @@ import { ensureAgentPromptColumn } from "@/lib/protocol/house-clients";
 import { canManage, hasGrant, type HouseListing } from "@/lib/protocol/members";
 import { isOrgHouse, type CabinetGrant, type MemberRole } from "@/lib/protocol/types";
 import { notifyReasonKey } from "@/lib/notify/reasons";
+import { loadPlanView } from "@/lib/billing/account";
+import { findHouseByOwner } from "@/lib/protocol/houses";
 
 type FeedCopy = Messages["cabinet"];
 type InboxItem = Awaited<ReturnType<typeof inboxForPrincipal>>["items"][number];
@@ -58,6 +60,15 @@ export async function CabinetScreen({
 }) {
   await ensureAgentPromptColumn();
   await sweepIfBusy(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
+  const personalHouse =
+    viewer && isOrgHouse(principal)
+      ? await findHouseByOwner(viewer.id)
+      : !isOrgHouse(principal)
+        ? principal
+        : null;
+  const orgUnlocked = personalHouse
+    ? (await loadPlanView(personalHouse.id, true)).feature_org
+    : false;
   const db = getDb();
   const houseAgents = await db.select().from(agents).where(eq(agents.principalId, principal.id));
   const inbox = await inboxForPrincipal(principal.id);
@@ -78,13 +89,13 @@ export async function CabinetScreen({
   const manage = canManage(memberRole);
   const grants = memberGrants ?? (manage ? (["agents", "treasury", "rules"] as CabinetGrant[]) : []);
   const seeAgents = hasGrant(memberRole, grants, "agents");
-  const seeTreasury = manage || hasGrant(memberRole, grants, "treasury");
+  const seePlan = manage || hasGrant(memberRole, grants, "treasury");
   const seeRules = manage || hasGrant(memberRole, grants, "rules");
   const canAppeal = manage;
   const company = signedIn && isOrgHouse(principal) && manage;
   const tabIds: CabinetTabId[] = ["inbox"];
   if (seeRules) tabIds.push("rules");
-  if (seeTreasury) tabIds.push("treasury");
+  if (seePlan) tabIds.push("plan");
   if (manage) tabIds.push("contacts");
   if (seeAgents) tabIds.push("connect", "test");
   if (company) tabIds.push("settings", "people");
@@ -94,7 +105,7 @@ export async function CabinetScreen({
   const tabItems: { id: CabinetTabId; label: string }[] = [
     { id: "inbox", label: t.cabinet.inbox },
     ...(seeRules ? [{ id: "rules" as CabinetTabId, label: t.cabinet.tabRules }] : []),
-    ...(seeTreasury ? [{ id: "treasury" as CabinetTabId, label: t.cabinet.treasury }] : []),
+    ...(seePlan ? [{ id: "plan" as CabinetTabId, label: t.cabinet.plan }] : []),
     ...(manage ? [{ id: "contacts" as CabinetTabId, label: t.cabinet.tabContacts }] : []),
     ...(seeAgents
       ? [
@@ -121,7 +132,13 @@ export async function CabinetScreen({
         </div>
         {signedIn ? (
           <div className="cabinet-head-actions">
-            <AddOrgForm locale={locale} currentId={principal.id} houses={houses} t={t.cabinet} />
+            <AddOrgForm
+              locale={locale}
+              currentId={principal.id}
+              houses={houses}
+              orgUnlocked={orgUnlocked}
+              t={t.cabinet}
+            />
             <AccountBar
               locale={locale}
               enabled
@@ -151,7 +168,6 @@ export async function CabinetScreen({
           />
         ))}
         <CabinetInboxRefresh token={token} houseId={houseId} />
-          {seeAgents ? <p className="cabinet-beta">{t.cabinet.testPathHint}</p> : null}
           <nav className="cabinet-tabs segmented" aria-label={t.cabinet.tabs}>
             {tabItems.map((item) => (
               <label key={item.id} className="segment" htmlFor={`cabinet-tab-${item.id}`}>
@@ -224,12 +240,11 @@ export async function CabinetScreen({
                 ))}
               </InboxFeed>
             </div>
-            {seeTreasury ? (
-              <div data-cabinet-pane="treasury">
-                <TreasuryCard
+            {seePlan ? (
+              <div data-cabinet-pane="plan">
+                <PlanCard
                   token={token}
                   houseId={houseId}
-                  locale={locale}
                   t={t.cabinet}
                   errorLabel={t.cabinet.error}
                 />

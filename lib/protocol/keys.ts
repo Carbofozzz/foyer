@@ -30,7 +30,12 @@ export type TokenPrefix =
   | "sgn"
   | "usr"
   | "inv"
-  | "aud";
+  | "aud"
+  | "bil"
+  | "bld"
+  | "vou"
+  | "vrdm"
+  | "bpl";
 
 export function mintToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(18).toString("base64url")}`;

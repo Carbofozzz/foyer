@@ -250,7 +250,7 @@ House owner does not become platform admin. A platform admin may still own a per
 
 **Check:** delete house audits; non-admin 404; MCP smoke.
 
-BILLING (not Auth): top-up / crypto; `platform_role` already ready.
+Billing track: [BILLING.md](BILLING.md) (credits, Plan tab, vouchers/Stripe); `platform_role` already ready.
 
 ---
 

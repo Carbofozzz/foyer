@@ -478,3 +478,112 @@ export const notifications = pgTable(
     index("notifications_status").on(table.status),
   ],
 );
+
+/** Admin-editable product plans (Free / Pro / packs). Prices in minor units. */
+export const billingPlans = pgTable("billing_plans", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  /** free | subscription | pack */
+  kind: text("kind").notNull(),
+  label: text("label").notNull(),
+  /** Credits granted per period (sub/free) or per purchase (pack). */
+  credits: integer("credits").notNull().default(0),
+  priceCents: integer("price_cents").notNull().default(0),
+  currency: text("currency").notNull().default("usd"),
+  featureOrg: boolean("feature_org").notNull().default(false),
+  /** Subscription leftovers roll; Free never does. */
+  rollover: boolean("rollover").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One billing wallet per house (personal or org). */
+export const billingAccounts = pgTable("billing_accounts", {
+  principalId: text("principal_id")
+    .primaryKey()
+    .references(() => principals.id),
+  /** On-demand / pack credits — never expire. */
+  creditBalance: integer("credit_balance").notNull().default(0),
+  /** Subscription pool — rolls on renew, burns after grace. */
+  subscriptionCredits: integer("subscription_credits").notNull().default(0),
+  /** Anniversary start for Free tier (first login). Null until first Free use / ensure. */
+  freeAnchorAt: timestamp("free_anchor_at", { withTimezone: true }),
+  freeUsedInPeriod: integer("free_used_in_period").notNull().default(0),
+  freePeriodEnd: timestamp("free_period_end", { withTimezone: true }),
+  /** Active subscription plan id, if any. */
+  subscriptionPlanId: text("subscription_plan_id").references(() => billingPlans.id),
+  subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
+  subscriptionGraceUntil: timestamp("subscription_grace_until", { withTimezone: true }),
+  featureOrg: boolean("feature_org").notNull().default(false),
+  orgFrozenAt: timestamp("org_frozen_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const billingLedger = pgTable(
+  "billing_ledger",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    /** Signed delta: +grant / −debit / −burn. */
+    delta: integer("delta").notNull(),
+    /** grant_voucher | grant_admin | debit_court | burn_sub | adjust */
+    reason: text("reason").notNull(),
+    provider: text("provider").notNull().default("manual_admin"),
+    externalId: text("external_id"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    caseId: text("case_id"),
+    voucherId: text("voucher_id"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("billing_ledger_idempotency").on(table.idempotencyKey),
+    uniqueIndex("billing_ledger_case_debit").on(table.caseId),
+    index("billing_ledger_principal").on(table.principalId),
+  ],
+);
+
+export const vouchers = pgTable(
+  "vouchers",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull().unique(),
+    /** credits | subscription | feature_org | bundle */
+    kind: text("kind").notNull(),
+    credits: integer("credits").notNull().default(0),
+    planId: text("plan_id").references(() => billingPlans.id),
+    durationSec: integer("duration_sec"),
+    maxRedemptions: integer("max_redemptions").notNull().default(1),
+    redeemedCount: integer("redeemed_count").notNull().default(0),
+    boundEmail: text("bound_email"),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    createdBy: text("created_by").references(() => users.id),
+    meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("vouchers_code").on(table.code)],
+);
+
+export const voucherRedemptions = pgTable(
+  "voucher_redemptions",
+  {
+    id: text("id").primaryKey(),
+    voucherId: text("voucher_id")
+      .notNull()
+      .references(() => vouchers.id),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    userId: text("user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("voucher_redemptions_voucher").on(table.voucherId),
+    index("voucher_redemptions_principal").on(table.principalId),
+  ],
+);

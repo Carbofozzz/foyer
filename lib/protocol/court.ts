@@ -19,6 +19,7 @@ import { asEvidence, asPayload } from "./parse";
 import { urlsIn } from "./links";
 import { normalizeCourtOutcome } from "./verdict";
 import { ensureAgentPromptColumn } from "./house-clients";
+import { debitCourtCredit, maySubmitCourt } from "@/lib/billing/account";
 import { REASON_NO_FEE, REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
 
 const ERROR_ESCALATE: VerdictAnswer = {
@@ -56,6 +57,11 @@ export async function stepHouseCourt(
 ): Promise<boolean> {
   const inflight = await findInflightCase(principal.id);
   if (inflight) {
+    try {
+      await debitCourtCredit(principal.id, inflight.id);
+    } catch {
+      /* balance race — still poll the on-chain case */
+    }
     await advanceCase(inflight, principal, now);
     return true;
   }
@@ -255,6 +261,10 @@ async function submitForCase(
   now?: Date,
 ): Promise<void> {
   if (row.tx) return;
+  if (!(await maySubmitCourt(principal.id, row.id))) {
+    // Leave the case bare — top-up then tick/retry submits. Do not burn tx error budget.
+    return;
+  }
   const wallet = await ensureHouseWallet(principal);
   if ((await ensureCourtFunds(wallet.address)) < COURT_FLOOR_WEI) {
     if (now) await applyVerdict(row, principal, now, NO_FEE, "offline", null);
@@ -274,6 +284,11 @@ async function submitForCase(
   const db = getDb();
   await db.update(cases).set({ tx: hash, status: "open", contract: contractAddress }).where(eq(cases.id, row.id));
   await recordCourtTx(principal, hash, contractAddress);
+  try {
+    await debitCourtCredit(principal.id, row.id);
+  } catch {
+    // Tx already landed; ledger retry on a later poll via maySubmitCourt/debit idempotency.
+  }
 }
 
 async function noteSubmitFail(row: CaseRow, principal: HousePrincipal, now?: Date): Promise<void> {

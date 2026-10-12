@@ -49,6 +49,7 @@ export default async function LocaleLayout({ children, params }: Props) {
               </a>
             </p>
             <nav className="site-foot-links" aria-label={t.footer.links}>
+              <a href={`/${locale}/pricing`}>{t.pricing.open}</a>
               <a href={`/${locale}/roadmap`}>{t.roadmap.open}</a>
               <a href={`/${locale}/legal`}>{t.legal.open}</a>
               <a href={`/${locale}/privacy`}>{t.privacy.open}</a>

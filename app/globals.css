@@ -171,6 +171,180 @@ a {
   margin-top: 0.4rem;
 }
 
+.pricing {
+  display: grid;
+  gap: 2.4rem;
+  padding-bottom: 3.5rem;
+}
+
+.pricing-head .lead {
+  max-width: 44rem;
+}
+
+.pricing-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .pricing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Flex, not grid: a stretched card must not hand its spare height to the button row. */
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem;
+}
+
+.pricing-card.is-featured {
+  box-shadow: var(--shadow-raised);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.pricing-card > .primary {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.pricing-name {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.pricing-price {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.pricing-unit {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.pricing-blurb {
+  margin: 0;
+  color: var(--muted);
+}
+
+.pricing-checks,
+.pricing-notes,
+.pricing-packs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pricing-checks {
+  display: grid;
+  gap: 0.55rem;
+  padding-bottom: 0.4rem;
+}
+
+.pricing-checks li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.pricing-yes {
+  color: var(--ok);
+  font-weight: 600;
+  flex: none;
+  width: 1rem;
+}
+
+.pricing-no {
+  color: var(--muted);
+  flex: none;
+  width: 1rem;
+}
+
+.pricing-section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.pricing-section .section-title {
+  margin: 0;
+}
+
+.pricing-table-wrap {
+  overflow-x: auto;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-table th,
+.pricing-table td {
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  font-weight: 400;
+}
+
+.pricing-table thead th {
+  font-weight: 600;
+  width: 9rem;
+}
+
+.pricing-table tbody th {
+  text-align: left;
+}
+
+.pricing-packs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pricing-packs li {
+  display: flex;
+  gap: 1.2rem;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 13rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.pricing-packs span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-notes {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 48rem;
+}
+
+.pricing-notes li {
+  padding-left: 1rem;
+  border-left: 2px solid var(--line);
+}
+
 /* The sign-in button stands on the page — a card around one button read as a stray box. */
 .home-gate {
   display: inline-flex;
@@ -839,6 +1013,12 @@ button.ghost-danger {
 }
 
 button[type="submit"]:disabled,
+span.ghost.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 button.ghost:disabled,
 button:disabled {
   opacity: 0.5;
@@ -1371,7 +1551,7 @@ button.wallet-balance:disabled {
 }
 
 .cabinet-panel:has(#cabinet-tab-inbox:checked) [data-cabinet-pane="inbox"],
-.cabinet-panel:has(#cabinet-tab-treasury:checked) [data-cabinet-pane="treasury"],
+.cabinet-panel:has(#cabinet-tab-plan:checked) [data-cabinet-pane="plan"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
@@ -1382,12 +1562,13 @@ button.wallet-balance:disabled {
 }
 
 .cabinet-panel:has(#cabinet-tab-inbox:checked) label[for="cabinet-tab-inbox"],
-.cabinet-panel:has(#cabinet-tab-treasury:checked) label[for="cabinet-tab-treasury"],
+.cabinet-panel:has(#cabinet-tab-plan:checked) label[for="cabinet-tab-plan"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) label[for="cabinet-tab-test"],
 .cabinet-panel:has(#cabinet-tab-contacts:checked) label[for="cabinet-tab-contacts"],
-.cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
+.cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"],
+.cabinet-panel:has(#cabinet-tab-settings:checked) label[for="cabinet-tab-settings"] {
   background: var(--card);
   color: var(--ink);
   font-weight: 500;

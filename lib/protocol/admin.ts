@@ -4,6 +4,8 @@ import {
   actionReports,
   actions,
   agents,
+  billingAccounts,
+  billingLedger,
   cases,
   decideTokens,
   emailConfirmTokens,
@@ -19,6 +21,7 @@ import {
   spendReceipts,
   telegramLinkTokens,
   verdicts,
+  voucherRedemptions,
   waitlist,
   wakes,
   users,
@@ -31,6 +34,10 @@ import { platformRole, requirePlatformAdmin, type SessionUser } from "./users";
 import { parseWaitlistEmail } from "./waitlist";
 import { isOrgHouse } from "./types";
 import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
+import { ensureBillingSchema } from "@/lib/billing/ensure";
+import { grantCredits } from "@/lib/billing/account";
+import { createVoucher, listVouchers, revokeVoucher, serializeVoucher } from "@/lib/billing/vouchers";
+import { mintToken } from "./keys";
 
 export type AdminWaitlistRow = {
   email: string;
@@ -75,11 +82,14 @@ export type AdminHouseRow = {
   last_action_at: string | null;
 };
 
+export type AdminVoucherRow = ReturnType<typeof serializeVoucher>;
+
 export type AdminOverview = {
   waitlist: AdminWaitlistRow[];
   contacts: AdminContactRow[];
   users: AdminUserRow[];
   houses: AdminHouseRow[];
+  vouchers: AdminVoucherRow[];
   totals: {
     waitlist: number;
     contacts: number;
@@ -229,6 +239,9 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     houses: housesByUser.get(row.id) ?? 0,
   }));
 
+  await ensureBillingSchema();
+  const voucherRows = await listVouchers(40);
+
   return {
     waitlist: waitlistRows.map((row) => ({
       email: row.email,
@@ -238,6 +251,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     contacts,
     users: userList,
     houses,
+    vouchers: voucherRows.map(serializeVoucher),
     totals: {
       waitlist: waitlistRows.length,
       contacts: contacts.length,
@@ -249,6 +263,53 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
       escalated: houses.reduce((sum, row) => sum + row.escalated, 0),
     },
   };
+}
+
+export async function adminCreateVoucher(
+  actor: SessionUser,
+  input: {
+    code: string;
+    kind?: string;
+    credits?: number;
+    max_redemptions?: number;
+    bound_email?: string | null;
+    duration_sec?: number | null;
+  },
+) {
+  const kindRaw = input.kind ?? "credits";
+  if (kindRaw !== "credits" && kindRaw !== "subscription" && kindRaw !== "feature_org" && kindRaw !== "bundle") {
+    throw new ProtocolError("bad_request", "kind is invalid", 400);
+  }
+  return createVoucher({
+    code: input.code,
+    kind: kindRaw,
+    credits: input.credits,
+    planId: kindRaw === "subscription" || kindRaw === "bundle" ? "bpl_pro" : null,
+    maxRedemptions: input.max_redemptions,
+    boundEmail: input.bound_email,
+    durationSec: input.duration_sec,
+    createdBy: actor.id,
+  });
+}
+
+export async function adminRevokeVoucher(code: string) {
+  return revokeVoucher(code);
+}
+
+export async function adminGrantCredits(houseId: string, credits: number, note?: string) {
+  const id = houseId.trim();
+  if (!id) throw new ProtocolError("bad_request", "house_id is required", 400);
+  const db = getDb();
+  const [house] = await db.select({ id: principals.id }).from(principals).where(eq(principals.id, id)).limit(1);
+  if (!house) throw new ProtocolError("not_found", "Unknown house", 404);
+  return grantCredits({
+    principalId: id,
+    credits,
+    reason: "grant_admin",
+    provider: "manual_admin",
+    idempotencyKey: `admin_grant:${id}:${mintToken("bld")}`,
+    note: note ?? "Ops grant",
+  });
 }
 
 export async function deleteWaitlistEmail(raw: string) {
@@ -302,6 +363,10 @@ export async function deleteHouse(houseId: string) {
   }
   await db.delete(houseContacts).where(eq(houseContacts.principalId, id));
   await db.delete(walletTransfers).where(eq(walletTransfers.principalId, id));
+  await ensureBillingSchema();
+  await db.delete(voucherRedemptions).where(eq(voucherRedemptions.principalId, id));
+  await db.delete(billingLedger).where(eq(billingLedger.principalId, id));
+  await db.delete(billingAccounts).where(eq(billingAccounts.principalId, id));
   await db.delete(houseMembers).where(eq(houseMembers.principalId, id));
   await db.delete(houseInvites).where(eq(houseInvites.principalId, id));
   await db.delete(spendReceipts).where(eq(spendReceipts.principalId, id));

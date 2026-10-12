@@ -28,16 +28,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         admin={isPlatformAdmin(user)}
       />
       <ProductOutline outline={t.outline} />
-      <section className="card stack">
-        <p className="kicker">{t.spawn.kicker}</p>
-        <h2 className="section-title">{t.spawn.title}</h2>
-        <p className="hint">{t.spawn.lead}</p>
-        <div className="row">
-          <a className="ghost" href={`/${locale}/cabinet/demo`}>
-            {t.spawn.run}
-          </a>
-        </div>
-      </section>
       <WaitlistForm locale={locale} t={t.waitlist} />
     </main>
   );

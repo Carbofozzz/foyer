@@ -23,6 +23,23 @@ export const DEMO_CASES: DemoCase[] = [
 const DEMO_ORIGIN = "https://foyerapp.dev";
 const DEMO_KEY = "agk_demo";
 
+export const DEMO_PLAN = {
+  credits: 12,
+  free_remaining: 2,
+  free_quota: 3,
+  free_used: 1,
+  free_period_end: null,
+  subscription_credits: 5,
+  on_demand: 5,
+  feature_org: false,
+  in_grace: false,
+  subscription_plan_id: null,
+  subscription_period_end: null,
+  subscription_grace_until: null,
+  org_frozen_at: null,
+  gate: true,
+};
+
 export const DEMO_TREASURY = {
   address: "0x1111111111111111111111111111111111111111",
   balance: "12.4000",

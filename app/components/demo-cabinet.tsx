@@ -4,15 +4,15 @@ import { formatWhen } from "@/lib/i18n/when";
 import { parseCabinetTab, type CabinetTabId } from "@/app/components/cabinet-desk";
 import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
-import { TreasuryCard } from "@/app/components/treasury-card";
+import { PlanCard } from "@/app/components/plan-card";
 import { RulesCard } from "@/app/components/rules-card";
 import { InboxFeed } from "@/app/components/inbox-feed";
 import { StatusPill, outcomeTone, statusTone } from "@/app/components/status-pill";
-import { DEMO_CASES, DEMO_TOKEN, DEMO_TREASURY, demoConnect, type DemoCase } from "@/lib/demo/preview";
+import { DEMO_CASES, DEMO_TOKEN, DEMO_PLAN, demoConnect, type DemoCase } from "@/lib/demo/preview";
 
-const TABS: { id: CabinetTabId; key: "inbox" | "treasury" | "tabRules" | "tabConnect" | "tabContacts" }[] = [
+const TABS: { id: CabinetTabId; key: "inbox" | "plan" | "tabRules" | "tabConnect" | "tabContacts" }[] = [
   { id: "inbox", key: "inbox" },
-  { id: "treasury", key: "treasury" },
+  { id: "plan", key: "plan" },
   { id: "rules", key: "tabRules" },
   { id: "contacts", key: "tabContacts" },
   { id: "connect", key: "tabConnect" },
@@ -88,15 +88,8 @@ export function DemoCabinet({
               ))}
             </InboxFeed>
           </div>
-          <div data-cabinet-pane="treasury">
-            <TreasuryCard
-              token={DEMO_TOKEN}
-              locale={locale}
-              locked
-              preview={DEMO_TREASURY}
-              t={t.cabinet}
-              errorLabel={t.cabinet.error}
-            />
+          <div data-cabinet-pane="plan">
+            <PlanCard token={DEMO_TOKEN} locked preview={DEMO_PLAN} t={t.cabinet} errorLabel={t.cabinet.error} />
           </div>
           <div data-cabinet-pane="rules">
             <RulesCard

@@ -47,6 +47,8 @@ export async function ensurePersonalHouseForUser(userId: string) {
   }
   const house = await findHouseByOwner(userId);
   if (!house) throw new ProtocolError("internal", "Failed to open house", 500);
+  const { ensureBillingAccount } = await import("@/lib/billing/account");
+  await ensureBillingAccount(house.id, { personal: true });
   return house;
 }
 
@@ -56,7 +58,10 @@ export async function createOrgHouse(userId: string, rawName: string) {
   if (!name || name.length > ORG_NAME) {
     throw new ProtocolError("bad_request", "name is required", 400);
   }
-  await ensurePersonalHouseForUser(userId);
+  const personal = await ensurePersonalHouseForUser(userId);
+  const { assertFeatureOrg, ensureBillingAccount } = await import("@/lib/billing/account");
+  await ensureBillingAccount(personal.id, { personal: true });
+  await assertFeatureOrg(personal.id);
   const db = getDb();
   const owned = await db
     .select({ id: principals.id })
