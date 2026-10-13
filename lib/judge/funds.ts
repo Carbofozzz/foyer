@@ -1,12 +1,13 @@
 import { studioDevnet, studionet } from "genlayer-js/chains";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { resolveChain, walletBalance } from "./onchain";
+import { DEFAULT_FLOOR_WEI, resolvePlatformThresholds } from "./platform-thresholds";
 
 /**
- * A court write is cheap to execute but the RPC asks for the whole fee budget
- * up front: about 0.1 GEN for a deploy. Below this floor nothing is submitted.
+ * Env / hard default floor (0.3 GEN). Prefer `resolvePlatformThresholds()` at runtime —
+ * ops may override this in the admin desk.
  */
-export const COURT_FLOOR_WEI = BigInt(3) * BigInt(10) ** BigInt(17); // 0.3 GEN
+export const COURT_FLOOR_WEI = DEFAULT_FLOOR_WEI;
 
 const TOP_UP_WEI = BigInt(2) * BigInt(10) ** BigInt(18); // 2 GEN
 
@@ -62,12 +63,14 @@ export async function requestStudioFaucet(address: string): Promise<bigint> {
 }
 
 /**
- * Balance of the house wallet, topped up from the Studio faucet when it cannot
+ * Balance of an address, topped up from the Studio faucet when it cannot
  * cover a court fee. Returns the balance so the caller can skip a doomed tx.
+ * Used for the platform wallet (B2); leftover house wallets no longer pay courts.
  */
 export async function ensureCourtFunds(address: string): Promise<bigint> {
+  const { floorWei } = await resolvePlatformThresholds();
   const balance = (await walletBalance(address)) ?? BigInt(0);
-  if (balance >= COURT_FLOOR_WEI) return balance;
+  if (balance >= floorWei) return balance;
   if (!faucetUrl()) return balance;
   try {
     await requestStudioFaucet(address);

@@ -2,7 +2,9 @@ import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import {
   adminCreateVoucher,
   adminGrantCredits,
+  adminPlatformFaucet,
   adminRevokeVoucher,
+  adminSavePlatformThresholds,
   deleteHouse,
   deleteWaitlistEmail,
   loadAdminOverview,
@@ -72,6 +74,15 @@ async function postAdmin(request: Request) {
         typeof body.note === "string" ? body.note : undefined,
       );
       await auditAdmin(actor, { op: body.op, targetType: "house", targetId: body.house_id.trim() });
+    } else if (body.op === "platform_faucet") {
+      await adminPlatformFaucet();
+      await auditAdmin(actor, { op: body.op, targetType: "platform", targetId: "wallet" });
+    } else if (body.op === "platform_thresholds") {
+      if (typeof body.floor_gen !== "string" || typeof body.alert_gen !== "string") {
+        return jsonError("bad_request", "floor_gen and alert_gen are required", 400);
+      }
+      await adminSavePlatformThresholds(body.floor_gen, body.alert_gen);
+      await auditAdmin(actor, { op: body.op, targetType: "platform", targetId: "thresholds" });
     } else {
       return jsonError("bad_request", "unknown op", 400);
     }

@@ -1,12 +1,12 @@
 # Billing — court credits, subscription, vouchers
 
-Agreed plan. Implement in slices B0–B4 below. Discussion notes (Russian) lived in `.local/BILLING.md`.
+Agreed plan. Implement in slices B0–B5 below. Discussion notes (Russian) lived in `.local/BILLING.md`.
 
 This is **not** a protocol change. Agent loop stays [ORCHESTRATE.md](ORCHESTRATE.md). Auth customer identity is [AUTH.md](AUTH.md) (`user_id` / verified email). Org product stays [ORG.md](ORG.md); Org 7 (paid create) is gated here. Notify channel for billing mail follows [NOTIFY.md](NOTIFY.md) (verified owner email). Do not fork propose/object/bargain/insist/court outcomes.
 
 **Not the goal:** Foyer as the agent’s bank (Stripe adapters that pay or book for the agent). Only the right to use **court / org / quota**.
 
-**Testnet note:** While GenLayer is on testnet, **Stripe (B4) is optional** — vouchers + ops grant carry the product. Ship B2–B3 (freeze/sweep/mail, crypto) before fiat checkout.
+**Testnet note:** While GenLayer is on testnet, **Stripe (B5) is optional** — vouchers + ops grant carry the product. B2 platform wallet is shipped; next B3–B4 (freeze/sweep/mail, crypto) before fiat checkout.
 
 ---
 
@@ -24,7 +24,9 @@ The human pays Foyer (subscription, packs, or voucher). Foyer sponsors the court
 |---|---|
 | **Unit** | `court_credit` = one case with a successful judge submit (`cases.tx` set). |
 | **Paths** | Free + on-demand packs + subscription in the same model. |
-| **Who pays GenLayer** | Platform wallet (v1). User need not see GEN. |
+| **Who pays GenLayer** | One platform wallet (B2): deploys every house IC, is its `admin`, signs and pays every `judge`. User need not see GEN. |
+| **Low GEN alert** | Email every address in `FOYER_ADMIN_EMAILS` when platform balance drops below a **configurable** alert threshold (env/ops; default above `COURT_FLOOR_WEI`). Idempotent: one mail while low, again only after recovery then a new dip. |
+| **Court gas stats** | Persist per court write (deploy / judge / resubmit): case id, tx hash, estimated fee wei, optional actual/delta from balance. Ops-only; feed credit pricing later. Never shown in the cabinet. |
 | **Charge timing** | Debit **only after** successful submit (tx hash). RPC / network / no hash → no debit, no refund path. |
 | **One credit per case** | Resubmit of the same case does not take a second credit. |
 | **Outcomes** | `allow` / `deny` / `escalate` are all valid; **no refund** after tx (`escalate` is a decision). On-chain error after tx: no second debit, no refund. |
@@ -43,7 +45,7 @@ The human pays Foyer (subscription, packs, or voucher). Foyer sponsors the court
 | **Org after lapse** | After grace → **freeze** (no access, data kept). Renew before sweep → unfreeze same org. |
 | **Org sweep** | After **6 months** frozen → standard house **cascade delete** (same as admin desk). |
 | **Billing email** | Pre mail **3 days** before `period_end` and **3 days** before sweep. No required grace-day mail. |
-| **Providers** | Pluggable: `voucher` + `manual_admin` first; crypto (B3); **Stripe last (B4)**, optional on GenLayer testnet. Same grant path. |
+| **Providers** | Pluggable: `voucher` + `manual_admin` first; crypto (B4); **Stripe last (B5)**, optional on GenLayer testnet. Same grant path. |
 | **Vouchers** | From day one (testnet). Common or email-bound; max redemptions; activate window + duration after redeem. |
 
 ---
@@ -77,7 +79,13 @@ Numbers stay in admin, not in this file.
 
 Separate **user money → Foyer** from **Foyer → GenLayer**.
 
-v1 = platform hot wallet pays the IC. Debit `court_credit` when `cases.tx` is written. House sealed wallet may remain for IC admin compatibility or move to platform-signed writes later — not a product blocker.
+Today (until B2): each house has its own sealed wallet. It deploys the house IC, is that IC's `admin`, and pays every `judge`; on Studio chains `ensureCourtFunds` tops it up from the faucet. Off Studio there is no faucet, so every house wallet is empty and every court escalates.
+
+After B2: one **platform wallet** signs everything. Key in env (`GENLAYER_PLATFORM_KEY`), never in Postgres, never per house. It deploys each house IC (still one IC per house), is its `admin`, submits `judge`, reads `get_verdict`. Debit `court_credit` when `cases.tx` is written — credits are what the human pays for, GEN is Foyer's cost.
+
+**Alert vs floor:** `COURT_FLOOR_WEI` stops submit (case waits). A separate **alert threshold** (higher) triggers mail to `FOYER_ADMIN_EMAILS` so ops can top up before courts stall. Both values are configurable; floor stays a hard gate.
+
+**Gas stats:** every platform-signed court write records fee data (estimate at submit; refine from balance or receipt when available). Aggregate on the ops desk to set pack / Pro prices against real GenLayer cost.
 
 Race on two insists: reserve/confirm or atomic debit with tx write — implementation detail.
 
@@ -179,14 +187,30 @@ Same Clerk session; no second login for org.
 ### B1 — Subscription + Free + pricing page — shipped (2026-10-12)
 
 - Seeded plans: Free / Pro / packs (`ensureDefaultPlans`). Free anniversary from first login; spend Free → sub → on-demand.
-- Activate Pro via subscription voucher (Stripe only in B4). Pack vouchers stay on-demand.
+- Activate Pro via subscription voucher (Stripe only in B5). Pack vouchers stay on-demand.
 - Public `/:locale/pricing` + `GET /api/pricing` from `billing_plans`.
 - Grace 5d; burn **subscription** leftovers only; Free resets without accumulation.
 - `POST /api/orgs` requires personal `feature_org`.
 
 **Check:** Free M then block; Pro rollover on renew; grace burn does not leave fake on-demand residue.
 
-### B2 — Org freeze / sweep + billing mail
+### B2 — Platform court wallet — shipped (2026-10-13)
+
+Credits are only honest if Foyer can actually pay the court. Do this before any money flow beyond vouchers.
+
+- `GENLAYER_PLATFORM_KEY` (env, sealed with `FOYER_SEAL_SECRET` like the house keys today); one address for the whole deploy. Preview and production may hold different keys.
+- `ensureHouseCourt` deploys with the platform key; constructor `admin` = platform address. `judge` / `get_verdict` sign with the same key. Still one IC per house.
+- Bump `court_abi`: houses whose IC `admin` is a house wallet redeploy on the next court. Inflight cases keep `cases.contract` and finish with the house wallet that submitted them.
+- Faucet top-up (`ensureCourtFunds`) targets the platform address on Studio chains only. Off Studio, ops funds it by hand.
+- Below `COURT_FLOOR_WEI` on the platform wallet: no submit, the case **waits** (no debit, no offline escalate). Not the user's fault — no credit burn, case not ended.
+- **Low-balance mail (required):** when balance is under the alert threshold (`GENLAYER_PLATFORM_ALERT_WEI` or ops setting; must be at or above floor), email every `FOYER_ADMIN_EMAILS` address (same mail path as other platform mail). One send per low episode; clear the latch when balance recovers above the threshold. Tick / court path both may check; do not spam every minute.
+- **Court gas stats (required):** table e.g. `court_gas_stats` — `case_id` (nullable for bare deploy), `tx`, `kind` (`deploy` \| `judge` \| `resubmit`), `estimated_wei`, `actual_wei` (nullable until known), `balance_before_wei` / `balance_after_wei` optional, `created_at`. Write on every platform submit; never expose in the cabinet. Ops desk: sums, p50/p95 estimate, cost-per-credit vs pack/Pro prices. Optional `gen_cost_wei` on the billing ledger debit row for join convenience.
+- Ops desk: platform address, GEN balance, floor vs alert flags, last low-balance mail time, recent gas rows.
+- House sealed wallets stop paying. The key export row leaves the cabinet; leftover wallets stay in Postgres until a later cleanup.
+
+**Check:** empty house wallet still gets a verdict; below floor → wait, no debit; below alert → one admin mail, no second until recovery; gas row per judge submit; leftover IC redeploys once; cabinet shows no GEN address.
+
+### B3 — Org freeze / sweep + billing mail
 
 Product lifecycle without fiat. Do this before payment providers.
 
@@ -197,17 +221,17 @@ Product lifecycle without fiat. Do this before payment providers.
 
 **Check:** lapse → freeze; renew → same org; 6 months → gone; mails fire once (idempotent).
 
-### B3 — Crypto provider
+### B4 — Crypto provider
 
 - Same grant interface as vouchers; optional UX (not login).
 - Useful on testnet / mainnet-adjacent without waiting on Stripe.
 
 **Check:** crypto payment → same ledger grant; replay safe.
 
-### B4 — Stripe (fiat) — last; optional on GenLayer testnet
+### B5 — Stripe (fiat) — last; optional on GenLayer testnet
 
 - Checkout + webhook → same grant path (idempotent).
-- Not required to run the product on GenLayer testnet (vouchers + ops grant + B2–B3 suffice).
+- Not required to run the product on GenLayer testnet (vouchers + ops grant + B2–B4 suffice).
 - Ship when leaving “voucher-only” public test or when fiat is needed.
 
 **Check:** paid Pro → org create; webhook replay safe.
@@ -235,6 +259,9 @@ Product lifecycle without fiat. Do this before payment providers.
 | Sub leftovers look like packs | Burn after grace; keep on-demand separate in ledger |
 | Org zombie forever | Freeze then 6-month cascade sweep |
 | Price drift | Admin plans feed pricing page — one source |
+| Platform wallet runs dry | Floor stops submit (case waits); alert threshold emails admins once per dip; ops desk shows balance |
+| Blind credit pricing | Court gas stats per tx; ops aggregates before changing pack/Pro prices |
+| One hot key for every house | Env only, sealed; rotate = new address + `court_abi` bump |
 
 ---
 
@@ -245,6 +272,9 @@ Product lifecycle without fiat. Do this before payment providers.
 3. Email-bound voucher wrong email → fail.
 4. `max_redemptions=1` second redeem → dead.
 5. Past `ends_at` → cannot redeem; expired `duration` drops org entitlement → freeze path.
-6. Stripe webhook (B4) idempotent when that slice ships.
+6. Stripe webhook (B5) idempotent when that slice ships.
 7. Propose/object without credit still works; only paid court path is gated.
 8. Pre-expiry and pre-sweep mail at 3 days; no required grace-day mail.
+9. House with an empty own wallet still gets a verdict (platform wallet pays); platform below floor → case waits, no debit.
+10. Platform below alert threshold → one mail to each `FOYER_ADMIN_EMAILS`; no repeat until balance recovers then dips again.
+11. Each platform court submit leaves a `court_gas_stats` row usable for cost-per-credit analysis.

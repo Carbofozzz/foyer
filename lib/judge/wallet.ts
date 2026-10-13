@@ -128,16 +128,17 @@ export async function recordCourtTx(
   principal: HousePrincipal,
   tx: string | null,
   to: string | null,
+  fromAddress?: string | null,
 ): Promise<void> {
   if (!tx || !tx.startsWith("0x")) return;
-  const wallet = principal.walletAddress;
-  if (!wallet) return;
+  const from = (fromAddress && asHexAddress(fromAddress)) || principal.walletAddress;
+  if (!from) return;
   await insertTransfer({
     principalId: principal.id,
     kind: "court",
     tx,
-    fromAddress: wallet,
-    toAddress: to && asHexAddress(to) ? to : wallet,
+    fromAddress: from,
+    toAddress: to && asHexAddress(to) ? to : from,
     amountWei: "0",
   });
 }

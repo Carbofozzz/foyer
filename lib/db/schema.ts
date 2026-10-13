@@ -537,6 +537,8 @@ export const billingLedger = pgTable(
     idempotencyKey: text("idempotency_key").notNull(),
     caseId: text("case_id"),
     voucherId: text("voucher_id"),
+    /** Platform GEN estimate for this court debit (ops only). */
+    genCostWei: text("gen_cost_wei"),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -546,6 +548,39 @@ export const billingLedger = pgTable(
     index("billing_ledger_principal").on(table.principalId),
   ],
 );
+
+/** Per platform court write — deploy / judge / resubmit. Ops cost analysis only. */
+export const courtGasStats = pgTable(
+  "court_gas_stats",
+  {
+    id: text("id").primaryKey(),
+    caseId: text("case_id"),
+    tx: text("tx"),
+    /** deploy | judge | resubmit */
+    kind: text("kind").notNull(),
+    estimatedWei: text("estimated_wei").notNull().default("0"),
+    actualWei: text("actual_wei"),
+    balanceBeforeWei: text("balance_before_wei"),
+    balanceAfterWei: text("balance_after_wei"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("court_gas_stats_case").on(table.caseId),
+    index("court_gas_stats_created").on(table.createdAt),
+  ],
+);
+
+/** Latch for low-GEN admin mail + ops threshold overrides (one row). */
+export const platformWalletState = pgTable("platform_wallet_state", {
+  id: text("id").primaryKey(),
+  lowAlertLatched: boolean("low_alert_latched").notNull().default(false),
+  lowAlertAt: timestamp("low_alert_at", { withTimezone: true }),
+  /** Submit floor override (wei). Null → env / default 0.3 GEN. */
+  floorWei: text("floor_wei"),
+  /** Alert threshold override (wei). Null → env / default 1 GEN. */
+  alertWei: text("alert_wei"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const vouchers = pgTable(
   "vouchers",

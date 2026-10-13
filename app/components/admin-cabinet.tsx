@@ -37,7 +37,7 @@ export function AdminCabinet({
         />
       </header>
       <section className="cabinet-panel">
-        <div className="cabinet-scroll stack admin-desk">
+        <div className="cabinet-scroll">
           <AdminDesk locale={locale} t={t} initial={overview} />
         </div>
       </section>

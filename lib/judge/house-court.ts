@@ -2,12 +2,17 @@ import { and, eq, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { actions, cases, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
-import { COURT_FLOOR_WEI, ensureCourtFunds } from "./funds";
-import { ensureHouseWallet } from "./house-wallet";
-import { deployHouseCourt } from "./onchain";
+import { ensureCourtFunds } from "./funds";
+import { recordCourtGas } from "./gas-stats";
+import { deployHouseCourt, walletBalance } from "./onchain";
+import { platformWallet } from "./platform-wallet";
+import { resolvePlatformThresholds } from "./platform-thresholds";
 
-/** Desk label matches who proposes; another desk's spend cap is not a veto. */
-export const COURT_ABI = 8;
+/**
+ * 9 = platform wallet is IC admin (B2).
+ * Leftover houses with court_abi < 9 redeploy on the next court.
+ */
+export const COURT_ABI = 9;
 
 /** One Intelligent Contract per house. Redeploys when the stored ABI is stale. */
 export async function ensureHouseCourt(principal: HousePrincipal): Promise<string | null> {
@@ -21,15 +26,28 @@ export async function ensureHouseCourt(principal: HousePrincipal): Promise<strin
   if (principal.courtContract && /^0x[a-fA-F0-9]{40}$/.test(principal.courtContract)) {
     await stampInflightCases(principal.id, principal.courtContract);
   }
-  const wallet = await ensureHouseWallet(principal);
-  if ((await ensureCourtFunds(wallet.address)) < COURT_FLOOR_WEI) return null;
-  const deployed = await deployHouseCourt(wallet.accountKey);
+
+  const platform = platformWallet();
+  if (!platform) return null;
+  const { floorWei } = await resolvePlatformThresholds();
+  if ((await ensureCourtFunds(platform.address)) < floorWei) return null;
+
+  const balanceBefore = (await walletBalance(platform.address)) ?? BigInt(0);
+  const deployed = await deployHouseCourt(platform.accountKey);
   if (!deployed) return null;
+
+  await recordCourtGas({
+    caseId: null,
+    tx: deployed.hash,
+    kind: "deploy",
+    estimatedWei: deployed.estimatedWei,
+    balanceBeforeWei: balanceBefore,
+  }).catch(() => undefined);
 
   const db = getDb();
   const claimed = await db
     .update(principals)
-    .set({ courtContract: deployed, courtAbi: COURT_ABI })
+    .set({ courtContract: deployed.address, courtAbi: COURT_ABI })
     .where(
       and(
         eq(principals.id, principal.id),
@@ -53,7 +71,7 @@ export async function ensureHouseCourt(principal: HousePrincipal): Promise<strin
     principal.courtAbi = fresh.courtAbi ?? COURT_ABI;
     return fresh.courtContract;
   }
-  return deployed;
+  return deployed.address;
 }
 
 async function stampInflightCases(principalId: string, address: string): Promise<void> {

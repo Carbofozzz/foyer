@@ -37,6 +37,10 @@ import { ensureHouseContactsSchema } from "@/lib/notify/house-contacts";
 import { ensureBillingSchema } from "@/lib/billing/ensure";
 import { grantCredits } from "@/lib/billing/account";
 import { createVoucher, listVouchers, revokeVoucher, serializeVoucher } from "@/lib/billing/vouchers";
+import { loadPlatformCourtView, type PlatformCourtView } from "@/lib/judge/platform-status";
+import { requestStudioFaucet, studioFaucetAvailable } from "@/lib/judge/funds";
+import { platformWallet } from "@/lib/judge/platform-wallet";
+import { savePlatformThresholds } from "@/lib/judge/platform-thresholds";
 import { mintToken } from "./keys";
 
 export type AdminWaitlistRow = {
@@ -90,6 +94,7 @@ export type AdminOverview = {
   users: AdminUserRow[];
   houses: AdminHouseRow[];
   vouchers: AdminVoucherRow[];
+  platform: PlatformCourtView;
   totals: {
     waitlist: number;
     contacts: number;
@@ -240,7 +245,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
   }));
 
   await ensureBillingSchema();
-  const voucherRows = await listVouchers(40);
+  const [voucherRows, platform] = await Promise.all([listVouchers(40), loadPlatformCourtView()]);
 
   return {
     waitlist: waitlistRows.map((row) => ({
@@ -252,6 +257,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     users: userList,
     houses,
     vouchers: voucherRows.map(serializeVoucher),
+    platform,
     totals: {
       waitlist: waitlistRows.length,
       contacts: contacts.length,
@@ -310,6 +316,21 @@ export async function adminGrantCredits(houseId: string, credits: number, note?:
     idempotencyKey: `admin_grant:${id}:${mintToken("bld")}`,
     note: note ?? "Ops grant",
   });
+}
+
+/** Studio faucet → platform court wallet. */
+export async function adminPlatformFaucet(): Promise<void> {
+  if (!studioFaucetAvailable()) {
+    throw new ProtocolError("bad_request", "Studio faucet is not available on this network", 400);
+  }
+  const wallet = platformWallet();
+  if (!wallet) throw new ProtocolError("bad_request", "GENLAYER_PLATFORM_KEY is not set", 400);
+  await requestStudioFaucet(wallet.address);
+}
+
+/** Save floor / alert thresholds (decimal GEN) for the platform wallet. */
+export async function adminSavePlatformThresholds(floorGen: string, alertGen: string): Promise<void> {
+  await savePlatformThresholds({ floorGen, alertGen });
 }
 
 export async function deleteWaitlistEmail(raw: string) {

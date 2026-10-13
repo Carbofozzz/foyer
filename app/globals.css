@@ -2167,8 +2167,35 @@ label.segment {
   }
 }
 
+.admin-desk {
+  display: grid;
+  gap: 1rem;
+}
+
 .admin-desk .section-title {
-  margin-top: 1.4rem;
+  margin: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tabs .segment {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.admin-pane {
+  min-width: 0;
 }
 
 .admin-totals {

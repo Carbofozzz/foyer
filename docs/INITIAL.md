@@ -4,7 +4,7 @@ Intra-principal court and gateway. Track: **Onchain Justice**.
 
 This file is the product as it exists: the idea, the running implementation, and a short backlog. Further protocol change is [ORCHESTRATE.md](ORCHESTRATE.md). If this file and the code disagree, follow the code, then update this file in the same change.
 
-Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md). Cabinet login: [AUTH.md](AUTH.md). Court credits / subscription / vouchers: [BILLING.md](BILLING.md) — B0–B1 shipped; B2–B3 next; Stripe is B4 (optional on GenLayer testnet).
+Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md). Cabinet login: [AUTH.md](AUTH.md). Court credits / subscription / vouchers: [BILLING.md](BILLING.md) — B0–B2 shipped; next B3 freeze/mail, B4 crypto; Stripe is B5 (optional on GenLayer testnet).
 
 ---
 
@@ -214,7 +214,7 @@ Bonds, court duties, appeal fees, Foyer paying or booking, and a second login ar
 Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Product login rewrite is [AUTH.md](AUTH.md) (Clerk; do not fight that plan with new wallet-login features). Do not implement the items below in a way that fights either plan (no new auto-court, no judge-executed `allow_b` / `remedy`).
 
 - **Cabinet Auth** — [AUTH.md](AUTH.md). Clerk; A0–A3 largely shipped; prod cutover when ready.
-- **Billing** — [BILLING.md](BILLING.md). B0–B1 shipped. Next: B2 freeze/sweep/mail, B3 crypto, B4 Stripe last (optional on GenLayer testnet).
+- **Billing** — [BILLING.md](BILLING.md). B0–B1 shipped. B2 platform court wallet shipped. Next: B3 freeze/sweep/mail, B4 crypto, B5 Stripe last (optional on GenLayer testnet).
 - **Hosted full-time agents.** Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar. Own key — the gateway never objects. Schema `wake = hosted` is reserved; Connect does not mint it. Do not ship a constitution bot in the gateway to “fill” a chat-only house.
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures, versions, windows** — [SIGN.md](SIGN.md). S1–S4 shipped (windows, write hashes, signed writes, prompt pin).

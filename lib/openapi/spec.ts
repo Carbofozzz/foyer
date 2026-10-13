@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.56.0",
+      version: "0.57.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -704,7 +704,7 @@ export function openApiSpec(origin: string) {
       "/api/admin": {
         get: operation({
           id: "getAdminOverview",
-          summary: "Waitlist, users, and house stats for a platform_role ops|owner session (else 404)",
+          summary: "Waitlist, users, houses, vouchers, and platform court wallet / gas stats (ops|owner; else 404)",
           auth: "session",
         }),
         post: operation({

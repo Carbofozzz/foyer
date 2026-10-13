@@ -109,7 +109,7 @@ async function refreshAccountState(
       patch.subscriptionPlanId = null;
       patch.subscriptionPeriodEnd = null;
       patch.subscriptionGraceUntil = null;
-      // Freeze path is B4.
+      // Freeze path is B3.
     }
   }
 

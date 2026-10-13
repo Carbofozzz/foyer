@@ -2,13 +2,18 @@ import { after } from "next/server";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { actions, agents, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { COURT_FLOOR_WEI, ensureCourtFunds } from "@/lib/judge/funds";
-import { ensureHouseCourt } from "@/lib/judge/house-court";
+import { ensureCourtFunds } from "@/lib/judge/funds";
+import { ensureHouseCourt, COURT_ABI } from "@/lib/judge/house-court";
 import { ensureHouseWallet } from "@/lib/judge/house-wallet";
+import { checkPlatformBalanceAlert } from "@/lib/judge/platform-alert";
+import { platformWallet } from "@/lib/judge/platform-wallet";
+import { resolvePlatformThresholds } from "@/lib/judge/platform-thresholds";
+import { recordCourtGas, stampLedgerGenCost } from "@/lib/judge/gas-stats";
 import {
   inspectJudgeTx,
   readJudgeVerdict,
   submitJudgeWrite,
+  walletBalance,
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
 import { executeAfterAck } from "./execute";
@@ -20,19 +25,12 @@ import { urlsIn } from "./links";
 import { normalizeCourtOutcome } from "./verdict";
 import { ensureAgentPromptColumn } from "./house-clients";
 import { debitCourtCredit, maySubmitCourt } from "@/lib/billing/account";
-import { REASON_NO_FEE, REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
+import { REASON_SUBMIT_FAIL, REASON_TX_ERROR } from "@/lib/notify/reasons";
 
 const ERROR_ESCALATE: VerdictAnswer = {
   outcome: "escalate",
   remedy_action: null,
   reasoning: REASON_TX_ERROR,
-  objection_grounded: false,
-};
-
-const NO_FEE: VerdictAnswer = {
-  outcome: "escalate",
-  remedy_action: null,
-  reasoning: REASON_NO_FEE,
   objection_grounded: false,
 };
 
@@ -206,6 +204,16 @@ async function advanceCase(row: CaseRow, principal: HousePrincipal, now: Date): 
 async function readCaseVerdict(principal: HousePrincipal, row: CaseRow): Promise<VerdictAnswer | null> {
   const contract = row.contract || principal.courtContract;
   if (!contract) return null;
+  // Platform-admin ICs (abi >= 9). Inflight leftover ICs still need the house key.
+  const usesPlatform =
+    !row.contract || row.contract === principal.courtContract
+      ? principal.courtAbi >= COURT_ABI
+      : false;
+  if (usesPlatform) {
+    const platform = platformWallet();
+    if (!platform) return null;
+    return readJudgeVerdict(contract, row.id, platform.accountKey);
+  }
   const wallet = await ensureHouseWallet(principal);
   return readJudgeVerdict(contract, row.id, wallet.accountKey);
 }
@@ -265,27 +273,53 @@ async function submitForCase(
     // Leave the case bare — top-up then tick/retry submits. Do not burn tx error budget.
     return;
   }
-  const wallet = await ensureHouseWallet(principal);
-  if ((await ensureCourtFunds(wallet.address)) < COURT_FLOOR_WEI) {
-    if (now) await applyVerdict(row, principal, now, NO_FEE, "offline", null);
+  const platform = platformWallet();
+  if (!platform) {
+    // Misconfigured deploy — wait; not the house's fault.
+    await checkPlatformBalanceAlert().catch(() => undefined);
+    return;
+  }
+  const funded = await ensureCourtFunds(platform.address);
+  await checkPlatformBalanceAlert().catch(() => undefined);
+  const { floorWei } = await resolvePlatformThresholds();
+  if (funded < floorWei) {
+    // Platform dry: case waits. No debit, no offline escalate.
     return;
   }
   const contractAddress = await ensureHouseCourt(principal);
   if (!contractAddress) {
-    await noteSubmitFail(row, principal, now);
+    // Deploy failed or still under floor — wait, do not burn the house error budget.
     return;
   }
 
-  const hash = await submitJudgeWrite(wallet.accountKey, contractAddress, row.id, await buildJudgeInput(row, action));
-  if (!hash) {
+  const balanceBefore = (await walletBalance(platform.address)) ?? BigInt(0);
+  const kind = row.txErrors > 0 ? ("resubmit" as const) : ("judge" as const);
+  const submitted = await submitJudgeWrite(
+    platform.accountKey,
+    contractAddress,
+    row.id,
+    await buildJudgeInput(row, action),
+  );
+  if (!submitted) {
     await noteSubmitFail(row, principal, now);
     return;
   }
   const db = getDb();
-  await db.update(cases).set({ tx: hash, status: "open", contract: contractAddress }).where(eq(cases.id, row.id));
-  await recordCourtTx(principal, hash, contractAddress);
+  await db
+    .update(cases)
+    .set({ tx: submitted.hash, status: "open", contract: contractAddress })
+    .where(eq(cases.id, row.id));
+  await recordCourtGas({
+    caseId: row.id,
+    tx: submitted.hash,
+    kind,
+    estimatedWei: submitted.estimatedWei,
+    balanceBeforeWei: balanceBefore,
+  }).catch(() => undefined);
+  await recordCourtTx(principal, submitted.hash, contractAddress, platform.address);
   try {
     await debitCourtCredit(principal.id, row.id);
+    await stampLedgerGenCost(row.id, submitted.estimatedWei).catch(() => undefined);
   } catch {
     // Tx already landed; ledger retry on a later poll via maySubmitCourt/debit idempotency.
   }
