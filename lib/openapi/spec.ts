@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.57.0",
+      version: "0.59.1",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -110,8 +110,60 @@ export function openApiSpec(origin: string) {
             subscription_grace_until: { type: "string", nullable: true },
             org_frozen_at: { type: "string", nullable: true },
             gate: { type: "boolean" },
+            plan: {
+              type: "object",
+              properties: {
+                code: { type: "string" },
+                label: { type: "string" },
+                kind: { type: "string" },
+                status: { type: "string", enum: ["free", "active", "grace", "frozen"] },
+                period_end: { type: "string", nullable: true },
+                grace_until: { type: "string", nullable: true },
+              },
+              required: ["code", "label", "kind", "status"],
+            },
+            ledger: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  delta: { type: "integer" },
+                  reason: { type: "string" },
+                  provider: { type: "string" },
+                  note: { type: "string", nullable: true },
+                  case_id: { type: "string", nullable: true },
+                  created_at: { type: "string" },
+                },
+                required: ["id", "delta", "reason", "provider", "created_at"],
+              },
+            },
+            crypto: {
+              type: "object",
+              properties: {
+                enabled: { type: "boolean" },
+                pay_to: { type: "string", nullable: true },
+                offers: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      plan_id: { type: "string" },
+                      code: { type: "string" },
+                      kind: { type: "string" },
+                      label: { type: "string" },
+                      credits: { type: "integer" },
+                      amount_wei: { type: "string" },
+                      amount_gen: { type: "string" },
+                      feature_org: { type: "boolean" },
+                    },
+                  },
+                },
+              },
+              required: ["enabled", "offers"],
+            },
           },
-          required: ["credits", "feature_org", "gate"],
+          required: ["credits", "feature_org", "gate", "plan", "ledger", "crypto"],
         },
         PricingCatalog: {
           type: "object",
@@ -128,6 +180,7 @@ export function openApiSpec(origin: string) {
                   credits: { type: "integer" },
                   price_cents: { type: "integer" },
                   currency: { type: "string" },
+                  price_wei: { type: "string" },
                   feature_org: { type: "boolean" },
                   rollover: { type: "boolean" },
                 },
@@ -136,13 +189,16 @@ export function openApiSpec(origin: string) {
           },
           required: ["plans"],
         },
-        PlanRedeemRequest: {
+        PlanWriteRequest: {
           type: "object",
           properties: {
-            op: { type: "string", enum: ["redeem"] },
-            code: { type: "string" },
+            op: { type: "string", enum: ["redeem", "crypto_checkout", "crypto_confirm"] },
+            code: { type: "string", description: "Redeem voucher" },
+            plan_code: { type: "string", description: "crypto_checkout plan code" },
+            checkout_id: { type: "string", description: "crypto_confirm checkout id" },
+            tx: { type: "string", description: "crypto_confirm GenLayer tx hash" },
           },
-          required: ["op", "code"],
+          required: ["op"],
         },
         ActionPayload: {
           type: "object",
@@ -606,15 +662,16 @@ export function openApiSpec(origin: string) {
       "/api/cabinet/{token}/plan": {
         get: operation({
           id: "getCabinetPlan",
-          summary: "Court credit balance and subscription flags for this house",
+          summary: "Court credit balance, GEN offers, and subscription flags for this house",
           auth: "session",
           ok: "Plan",
         }),
         post: operation({
           id: "postCabinetPlan",
-          summary: "Redeem a voucher code into this house (owner or treasury grant)",
+          summary:
+            "Redeem a voucher, open a GEN checkout, or confirm a platform transfer (owner or treasury grant)",
           auth: "session",
-          body: "PlanRedeemRequest",
+          body: "PlanWriteRequest",
           ok: "Plan",
         }),
       },

@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { billingAccounts, billingLedger } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "@/lib/protocol/keys";
@@ -6,7 +6,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { ensureBillingSchema } from "./ensure";
 import { billingGateEnabled } from "./gate";
 import { addMonthsClamp, SUB_GRACE_MS } from "./calendar";
-import { ensureDefaultPlans, getPlanByCode, PLAN_FREE } from "./plans";
+import { ensureDefaultPlans, getPlanByCode, getPlanById, PLAN_FREE } from "./plans";
 
 export async function ensureBillingAccount(principalId: string, options?: { personal?: boolean }) {
   await ensureBillingSchema();
@@ -109,7 +109,7 @@ async function refreshAccountState(
       patch.subscriptionPlanId = null;
       patch.subscriptionPeriodEnd = null;
       patch.subscriptionGraceUntil = null;
-      // Freeze path is B3.
+      if (!account.orgFrozenAt) patch.orgFrozenAt = now;
     }
   }
 
@@ -169,7 +169,7 @@ export async function creditBalance(principalId: string): Promise<number> {
 export type GrantInput = {
   principalId: string;
   credits: number;
-  reason: "grant_voucher" | "grant_admin" | "adjust" | "grant_sub";
+  reason: "grant_voucher" | "grant_admin" | "adjust" | "grant_sub" | "grant_crypto";
   provider: string;
   idempotencyKey: string;
   externalId?: string | null;
@@ -241,7 +241,12 @@ export async function activateSubscription(
   principalId: string,
   planId: string,
   credits: number,
-  options?: { durationSec?: number | null; idempotencyKey?: string; voucherId?: string | null },
+  options?: {
+    durationSec?: number | null;
+    idempotencyKey?: string;
+    voucherId?: string | null;
+    provider?: string;
+  },
 ): Promise<void> {
   await ensureBillingAccount(principalId);
   const db = getDb();
@@ -288,7 +293,7 @@ export async function activateSubscription(
       principalId,
       credits,
       reason: "grant_sub",
-      provider: options?.voucherId ? "voucher" : "foyer",
+      provider: options?.provider ?? (options?.voucherId ? "voucher" : "foyer"),
       idempotencyKey: options?.idempotencyKey ?? `sub_grant:${principalId}:${Date.now()}`,
       voucherId: options?.voucherId,
       note: "Subscription credits",
@@ -394,6 +399,16 @@ export async function debitCourtCredit(principalId: string, caseId: string): Pro
   });
 }
 
+export type PlanLedgerRow = {
+  id: string;
+  delta: number;
+  reason: string;
+  provider: string;
+  note: string | null;
+  case_id: string | null;
+  created_at: string;
+};
+
 export type PlanView = {
   credits: number;
   free_remaining: number;
@@ -409,11 +424,85 @@ export type PlanView = {
   subscription_grace_until: string | null;
   org_frozen_at: string | null;
   gate: boolean;
+  /** Current product tier for the Plan tab. */
+  plan: {
+    code: string;
+    label: string;
+    kind: string;
+    /** free | active | grace | frozen */
+    status: "free" | "active" | "grace" | "frozen";
+    period_end: string | null;
+    grace_until: string | null;
+  };
+  ledger: PlanLedgerRow[];
+  crypto: {
+    enabled: boolean;
+    pay_to: string | null;
+    offers: Array<{
+      plan_id: string;
+      code: string;
+      kind: string;
+      label: string;
+      credits: number;
+      amount_wei: string;
+      amount_gen: string;
+      feature_org: boolean;
+    }>;
+  };
 };
+
+const LEDGER_LIMIT = 40;
+
+/** Recent credit movements for the Plan tab (skips zero-delta mail markers). */
+export async function listPlanLedger(principalId: string, limit = LEDGER_LIMIT): Promise<PlanLedgerRow[]> {
+  await ensureBillingSchema();
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: billingLedger.id,
+      delta: billingLedger.delta,
+      reason: billingLedger.reason,
+      provider: billingLedger.provider,
+      note: billingLedger.note,
+      caseId: billingLedger.caseId,
+      createdAt: billingLedger.createdAt,
+    })
+    .from(billingLedger)
+    .where(and(eq(billingLedger.principalId, principalId), ne(billingLedger.reason, "billing_mail")))
+    .orderBy(desc(billingLedger.createdAt))
+    .limit(limit);
+  return rows.map((row) => ({
+    id: row.id,
+    delta: row.delta,
+    reason: row.reason,
+    provider: row.provider,
+    note: row.note,
+    case_id: row.caseId,
+    created_at: row.createdAt.toISOString(),
+  }));
+}
 
 export async function loadPlanView(principalId: string, personal = true): Promise<PlanView> {
   const account = await ensureBillingAccount(principalId, { personal });
   const breakdown = await creditBreakdown(principalId, personal);
+  const { loadCryptoCatalog } = await import("./crypto");
+  const crypto = await loadCryptoCatalog();
+  const ledger = await listPlanLedger(principalId);
+
+  const freePlan = await getPlanByCode(PLAN_FREE);
+  const subPlan = account.subscriptionPlanId ? await getPlanById(account.subscriptionPlanId) : null;
+  const onPaidTier = Boolean(
+    account.featureOrg ||
+      breakdown.in_grace ||
+      (account.subscriptionPeriodEnd && account.subscriptionPeriodEnd > new Date()),
+  );
+  let status: PlanView["plan"]["status"] = "free";
+  if (account.orgFrozenAt && !account.featureOrg) status = "frozen";
+  else if (breakdown.in_grace) status = "grace";
+  else if (onPaidTier && subPlan) status = "active";
+
+  const planRow = status === "free" || !subPlan ? freePlan : subPlan;
+
   return {
     credits: breakdown.available,
     free_remaining: breakdown.free_remaining,
@@ -429,6 +518,16 @@ export async function loadPlanView(principalId: string, personal = true): Promis
     subscription_grace_until: account.subscriptionGraceUntil?.toISOString() ?? null,
     org_frozen_at: account.orgFrozenAt?.toISOString() ?? null,
     gate: billingGateEnabled(),
+    plan: {
+      code: planRow?.code ?? PLAN_FREE,
+      label: planRow?.label ?? "Free",
+      kind: planRow?.kind ?? "free",
+      status,
+      period_end: account.subscriptionPeriodEnd?.toISOString() ?? null,
+      grace_until: account.subscriptionGraceUntil?.toISOString() ?? null,
+    },
+    ledger,
+    crypto,
   };
 }
 

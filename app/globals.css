@@ -345,6 +345,145 @@ a {
   border-left: 2px solid var(--line);
 }
 
+/* Cabinet Plan tab — same card language as /pricing. */
+.plan-desk {
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.plan-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .plan-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.plan-block {
+  min-width: 0;
+}
+
+.plan-block .feed-label {
+  margin: 0;
+}
+
+.plan-status {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-balance-lines li {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.plan-balance-key {
+  color: var(--muted);
+}
+
+.plan-balance-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.plan-history {
+  grid-column: 1 / -1;
+}
+
+.plan-ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.plan-ledger > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-ledger > li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.plan-ledger-main {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.plan-ledger-delta {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 2.5rem;
+  flex: none;
+}
+
+.plan-ledger-delta.is-in {
+  color: var(--ok);
+}
+
+.plan-ledger-delta.is-out {
+  color: var(--danger);
+}
+
+.plan-ledger-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.plan-ledger-copy strong {
+  font-weight: 600;
+}
+
+.plan-block .pricing-packs {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.plan-block .pricing-packs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.plan-block .pricing-packs li > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.plan-block .pricing-packs span {
+  display: block;
+}
+
+.plan-block .error {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
 /* The sign-in button stands on the page — a card around one button read as a stray box. */
 .home-gate {
   display: inline-flex;

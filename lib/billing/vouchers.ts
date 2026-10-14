@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { voucherRedemptions, vouchers } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { mintToken } from "@/lib/protocol/keys";
@@ -102,24 +102,33 @@ export async function redeemVoucher(input: RedeemInput) {
   const db = getDb();
   const now = new Date();
 
+  const [found] = await db.select().from(vouchers).where(eq(vouchers.code, code)).limit(1);
+  if (!found) throw new ProtocolError("not_found", "Unknown code", 404);
+  if (found.startsAt && found.startsAt > now) {
+    throw new ProtocolError("conflict", "This code is not active yet", 409);
+  }
+  if (found.endsAt && found.endsAt <= now) {
+    throw new ProtocolError("conflict", "This code has expired", 409);
+  }
+  if (found.redeemedCount >= found.maxRedemptions) {
+    throw new ProtocolError("conflict", "This code has no redemptions left", 409);
+  }
+  if (found.boundEmail) {
+    const email = input.email?.trim().toLowerCase() ?? "";
+    if (!email || email !== found.boundEmail) {
+      throw new ProtocolError("forbidden", "This code is bound to another email", 403);
+    }
+  }
+
   const result = await db.transaction(async (tx) => {
-    await tx.execute(sql`select id from vouchers where code = ${code} for update`);
-    const [voucher] = await tx.select().from(vouchers).where(eq(vouchers.code, code)).limit(1);
-    if (!voucher) throw new ProtocolError("not_found", "Unknown code", 404);
-    if (voucher.startsAt && voucher.startsAt > now) {
-      throw new ProtocolError("conflict", "This code is not active yet", 409);
-    }
-    if (voucher.endsAt && voucher.endsAt <= now) {
-      throw new ProtocolError("conflict", "This code has expired", 409);
-    }
-    if (voucher.redeemedCount >= voucher.maxRedemptions) {
+    const claimed = await tx
+      .update(vouchers)
+      .set({ redeemedCount: sql`${vouchers.redeemedCount} + 1` })
+      .where(and(eq(vouchers.id, found.id), lt(vouchers.redeemedCount, found.maxRedemptions)))
+      .returning();
+    const voucher = claimed[0];
+    if (!voucher) {
       throw new ProtocolError("conflict", "This code has no redemptions left", 409);
-    }
-    if (voucher.boundEmail) {
-      const email = input.email?.trim().toLowerCase() ?? "";
-      if (!email || email !== voucher.boundEmail) {
-        throw new ProtocolError("forbidden", "This code is bound to another email", 403);
-      }
     }
 
     const redemptionId = mintToken("vrdm");
@@ -129,10 +138,6 @@ export async function redeemVoucher(input: RedeemInput) {
       principalId: input.principalId,
       userId: input.userId ?? null,
     });
-    await tx
-      .update(vouchers)
-      .set({ redeemedCount: sql`${vouchers.redeemedCount} + 1` })
-      .where(eq(vouchers.id, voucher.id));
 
     return { voucher, redemptionId };
   });

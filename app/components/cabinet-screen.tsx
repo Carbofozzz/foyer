@@ -245,6 +245,7 @@ export async function CabinetScreen({
                 <PlanCard
                   token={token}
                   houseId={houseId}
+                  locale={locale}
                   t={t.cabinet}
                   errorLabel={t.cabinet.error}
                 />
@@ -260,6 +261,8 @@ export async function CabinetScreen({
                   bargainWindowSec={principal.bargainWindowSec}
                   requireSignedWrites={Boolean(principal.requireSignedWrites)}
                   canEdit={manage}
+                  houseKind={isOrgHouse(principal) ? "org" : "personal"}
+                  charter={t.charter}
                   enroll={enroll}
                   enrollLabel={t.cabinet.enrollment}
                   t={t.cabinet}

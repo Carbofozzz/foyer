@@ -36,7 +36,8 @@ export type TokenPrefix =
   | "vou"
   | "vrdm"
   | "bpl"
-  | "cgs";
+  | "cgs"
+  | "bco";
 
 export function mintToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(18).toString("base64url")}`;

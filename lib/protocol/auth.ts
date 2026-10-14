@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 import { agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { DEMO_TOKEN } from "@/lib/demo/preview";
-import { bearerToken, jsonError } from "./http";
+import { assertOrgNotFrozen, isOrgPrincipal } from "@/lib/billing/org-lifecycle";
+import { ProtocolError } from "./errors";
+import { bearerToken, jsonError, protocolFail } from "./http";
 import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
 import { accessFor, canManage, hasGrant, type HouseAccess } from "./members";
@@ -36,12 +38,26 @@ export async function requireAgent(request: Request) {
   if (!principal) {
     return { error: jsonError("not_found", "Unknown house", 404) };
   }
+  if (isOrgPrincipal(principal)) {
+    try {
+      await assertOrgNotFrozen(principal.id);
+    } catch (error) {
+      return { error: protocolFail(error) };
+    }
+  }
   return { agent, principal };
 }
 
 export async function cabinetFromToken(token: string, request: Request) {
-  const opened = await openCabinet(token, request);
-  if (opened) return opened;
+  try {
+    const opened = await openCabinet(token, request);
+    if (opened) return opened;
+  } catch (error) {
+    if (error instanceof ProtocolError) {
+      return { error: jsonError(error.code, error.message, error.status) };
+    }
+    throw error;
+  }
   if (token === "me" && !(await sessionUser())) {
     return { error: jsonError("unauthorized", "Sign in required", 401) };
   }
@@ -91,6 +107,9 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     if (wanted) {
       const access = await accessFor(user.id, wanted);
       if (!access) return null;
+      if (isOrgPrincipal(access.principal)) {
+        await assertOrgNotFrozen(access.principal.id);
+      }
       return asCabinet(access.principal, access.role, "me", access.grants);
     }
     const principal = await findHouseByOwner(user.id);
@@ -115,7 +134,15 @@ function asCabinet(principal: HousePrincipal, role: MemberRole, token: string, g
 export async function requireCabinetRequest(request: Request) {
   const token = bearerToken(request);
   if (token === "me" || !token) {
-    const opened = await openCabinet("me", request);
+    let opened;
+    try {
+      opened = await openCabinet("me", request);
+    } catch (error) {
+      if (error instanceof ProtocolError) {
+        return { error: jsonError(error.code, error.message, error.status) };
+      }
+      throw error;
+    }
     if (!opened) return { error: jsonError("unauthorized", "Sign in required", 401) };
     return opened;
   }

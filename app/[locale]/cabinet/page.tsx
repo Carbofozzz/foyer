@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { openCabinet } from "@/lib/protocol/auth";
+import { ProtocolError } from "@/lib/protocol/errors";
 import { incomingRequest } from "@/lib/protocol/incoming";
 import { listHousesFor } from "@/lib/protocol/members";
 import { sessionUser } from "@/lib/protocol/session";
@@ -23,7 +24,16 @@ export default async function CabinetMePage({
   const request = await incomingRequest();
   const user = await sessionUser();
   if (!user) redirect(`/${locale}`);
-  const opened = await openCabinet("me", request, house);
+  let opened;
+  try {
+    opened = await openCabinet("me", request, house);
+  } catch (error) {
+    // Frozen org — send the owner back to the personal cabinet (Plan / renew).
+    if (error instanceof ProtocolError && house) {
+      redirect(`/${locale}/cabinet?tab=plan`);
+    }
+    throw error;
+  }
   if (!opened) {
     if (house) notFound();
     redirect(`/${locale}`);

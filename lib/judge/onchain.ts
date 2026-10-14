@@ -115,6 +115,38 @@ export async function inspectJudgeTx(hash: string): Promise<CourtTxPhase> {
   }
 }
 
+export type NativeTransferView = {
+  phase: CourtTxPhase;
+  from: string | null;
+  to: string | null;
+  valueWei: bigint;
+};
+
+/** Read a native GEN transfer for crypto checkout verification. */
+export async function readNativeTransfer(hash: string): Promise<NativeTransferView | null> {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) return null;
+  const chain = resolveChain();
+  if (!chain) return null;
+  try {
+    const client = createClient({ chain });
+    const tx = await client.getTransaction({ hash: hash as TransactionHash });
+    const from = String(tx.from_address ?? tx.sender ?? "");
+    const to = String(tx.to_address ?? tx.recipient ?? "");
+    let valueWei = BigInt(0);
+    if (typeof tx.value === "bigint") valueWei = tx.value;
+    else if (typeof tx.value === "number" && Number.isFinite(tx.value)) valueWei = BigInt(Math.trunc(tx.value));
+    else if (typeof tx.value === "string" && /^\d+$/.test(tx.value)) valueWei = BigInt(tx.value);
+    return {
+      phase: courtTxPhase(tx),
+      from: asAddress(from) ?? null,
+      to: asAddress(to) ?? null,
+      valueWei,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function readJudgeVerdict(
   contractAddress: string,
   caseId: string,

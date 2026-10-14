@@ -15,6 +15,7 @@ const DEFAULTS: Array<typeof billingPlans.$inferInsert> = [
     credits: Number(process.env.FOYER_FREE_COURTS ?? 3) || 3,
     priceCents: 0,
     currency: "usd",
+    priceWei: "0",
     featureOrg: false,
     rollover: false,
     active: true,
@@ -28,6 +29,7 @@ const DEFAULTS: Array<typeof billingPlans.$inferInsert> = [
     credits: Number(process.env.FOYER_PRO_COURTS ?? 20) || 20,
     priceCents: Number(process.env.FOYER_PRO_PRICE_CENTS ?? 0) || 0,
     currency: "usd",
+    priceWei: "0",
     featureOrg: true,
     rollover: true,
     active: true,
@@ -41,6 +43,7 @@ const DEFAULTS: Array<typeof billingPlans.$inferInsert> = [
     credits: 5,
     priceCents: Number(process.env.FOYER_PACK5_PRICE_CENTS ?? 0) || 0,
     currency: "usd",
+    priceWei: "0",
     featureOrg: false,
     rollover: false,
     active: true,
@@ -54,6 +57,7 @@ const DEFAULTS: Array<typeof billingPlans.$inferInsert> = [
     credits: 20,
     priceCents: Number(process.env.FOYER_PACK20_PRICE_CENTS ?? 0) || 0,
     currency: "usd",
+    priceWei: "0",
     featureOrg: false,
     rollover: false,
     active: true,
@@ -95,6 +99,7 @@ export async function listActivePlans() {
 }
 
 export function serializePlan(row: typeof billingPlans.$inferSelect) {
+  const priceWei = (row.priceWei ?? "0").trim() || "0";
   return {
     id: row.id,
     code: row.code,
@@ -103,6 +108,7 @@ export function serializePlan(row: typeof billingPlans.$inferSelect) {
     credits: row.credits,
     price_cents: row.priceCents,
     currency: row.currency,
+    price_wei: priceWei,
     feature_org: row.featureOrg,
     rollover: row.rollover,
   };

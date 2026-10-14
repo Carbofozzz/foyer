@@ -5,6 +5,7 @@ import { deployEnv } from "@/lib/ops/client";
 import { writeRequestLog } from "@/lib/ops/log";
 import { recordTick } from "@/lib/ops/tick";
 import { checkPlatformBalanceAlert } from "@/lib/judge/platform-alert";
+import { runBillingLifecycle } from "@/lib/billing/org-lifecycle";
 
 export const maxDuration = 120;
 
@@ -41,6 +42,11 @@ async function runTick(request: Request) {
       advanced += result.advanced;
     }
     const platform = await checkPlatformBalanceAlert().catch(() => null);
+    const billing = await runBillingLifecycle(now).catch(() => ({
+      pre_expiry: 0,
+      pre_sweep: 0,
+      orgs_deleted: 0,
+    }));
     await recordTick({ startedAt, houses: houses.length, advanced, ok: true });
     await writeRequestLog(request, "tick", 200, Date.now() - startedAt.getTime()).catch(() => undefined);
     return jsonOk({
@@ -50,6 +56,7 @@ async function runTick(request: Request) {
       at: now.toISOString(),
       platform_balance_wei: platform?.balance_wei ?? null,
       platform_below_alert: platform?.below_alert ?? null,
+      billing,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "tick failed";

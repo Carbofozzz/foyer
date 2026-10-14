@@ -6,7 +6,7 @@ This is **not** a protocol change. Agent loop stays [ORCHESTRATE.md](ORCHESTRATE
 
 **Not the goal:** Foyer as the agent’s bank (Stripe adapters that pay or book for the agent). Only the right to use **court / org / quota**.
 
-**Testnet note:** While GenLayer is on testnet, **Stripe (B5) is optional** — vouchers + ops grant carry the product. B2 platform wallet is shipped; next B3–B4 (freeze/sweep/mail, crypto) before fiat checkout.
+**Testnet note:** While GenLayer is on testnet, **Stripe (B5) is optional** — vouchers + ops grant + GEN crypto carry the product. B2–B4 shipped; B5 fiat last.
 
 ---
 
@@ -166,7 +166,7 @@ Same Clerk session; no second login for org.
 
 ## Surfaces
 
-- **Cabinet tab Plan** — balance, plan status, top-up (Stripe later), redeem code. Hide GEN address in tech/admin.
+- **Cabinet tab Plan** — balance, plan status, GEN crypto checkout (when `price_wei` set), redeem code. Card top-up is B5.
 - **Public pricing** — `/:locale/pricing` (or replace landing stub): Free / Pro columns with checkmarks, pack SKUs, CTA. Copy and amounts from admin plans.
 - **Ops admin** — plans (M, N, prices), vouchers, manual grant.
 
@@ -210,7 +210,7 @@ Credits are only honest if Foyer can actually pay the court. Do this before any 
 
 **Check:** empty house wallet still gets a verdict; below floor → wait, no debit; below alert → one admin mail, no second until recovery; gas row per judge submit; leftover IC redeploys once; cabinet shows no GEN address.
 
-### B3 — Org freeze / sweep + billing mail
+### B3 — Org freeze / sweep + billing mail — shipped (2026-10-14)
 
 Product lifecycle without fiat. Do this before payment providers.
 
@@ -221,10 +221,13 @@ Product lifecycle without fiat. Do this before payment providers.
 
 **Check:** lapse → freeze; renew → same org; 6 months → gone; mails fire once (idempotent).
 
-### B4 — Crypto provider
+### B4 — Crypto provider — shipped
 
-- Same grant interface as vouchers; optional UX (not login).
-- Useful on testnet / mainnet-adjacent without waiting on Stripe.
+- Same grant path as vouchers (`activateSubscription` / `grantCredits`, provider `crypto`).
+- `billing_checkouts` + `billing_plans.price_wei`; payee = platform wallet (`GENLAYER_PLATFORM_KEY`).
+- Plan tab: `crypto_checkout` → send GEN → `crypto_confirm` with tx hash; verify finalized transfer value/to.
+- Replay-safe: unique checkout `tx` + ledger `crypto:{checkoutId}`.
+- Env: `FOYER_*_PRICE_WEI`, optional `FOYER_CRYPTO`, `FOYER_PRO_DURATION_DAYS`.
 
 **Check:** crypto payment → same ledger grant; replay safe.
 
@@ -272,7 +275,7 @@ Product lifecycle without fiat. Do this before payment providers.
 3. Email-bound voucher wrong email → fail.
 4. `max_redemptions=1` second redeem → dead.
 5. Past `ends_at` → cannot redeem; expired `duration` drops org entitlement → freeze path.
-6. Stripe webhook (B5) idempotent when that slice ships.
+6. GEN checkout: finalize transfer to platform → grant; same tx twice → no double grant. Stripe webhook (B5) idempotent when that slice ships.
 7. Propose/object without credit still works; only paid court path is gated.
 8. Pre-expiry and pre-sweep mail at 3 days; no required grace-day mail.
 9. House with an empty own wallet still gets a verdict (platform wallet pays); platform below floor → case waits, no debit.

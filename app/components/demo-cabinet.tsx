@@ -89,7 +89,14 @@ export function DemoCabinet({
             </InboxFeed>
           </div>
           <div data-cabinet-pane="plan">
-            <PlanCard token={DEMO_TOKEN} locked preview={DEMO_PLAN} t={t.cabinet} errorLabel={t.cabinet.error} />
+            <PlanCard
+              token={DEMO_TOKEN}
+              locale={locale}
+              locked
+              preview={DEMO_PLAN}
+              t={t.cabinet}
+              errorLabel={t.cabinet.error}
+            />
           </div>
           <div data-cabinet-pane="rules">
             <RulesCard

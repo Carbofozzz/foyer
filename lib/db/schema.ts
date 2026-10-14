@@ -490,6 +490,8 @@ export const billingPlans = pgTable("billing_plans", {
   credits: integer("credits").notNull().default(0),
   priceCents: integer("price_cents").notNull().default(0),
   currency: text("currency").notNull().default("usd"),
+  /** Native GEN price for crypto checkout (wei as decimal string). 0 = not sold for GEN. */
+  priceWei: text("price_wei").notNull().default("0"),
   featureOrg: boolean("feature_org").notNull().default(false),
   /** Subscription leftovers roll; Free never does. */
   rollover: boolean("rollover").notNull().default(false),
@@ -497,6 +499,34 @@ export const billingPlans = pgTable("billing_plans", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Crypto (GEN) checkout intent — grant after a verified transfer to the platform wallet. */
+export const billingCheckouts = pgTable(
+  "billing_checkouts",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => billingPlans.id),
+    userId: text("user_id").references(() => users.id),
+    amountWei: text("amount_wei").notNull(),
+    payTo: text("pay_to").notNull(),
+    /** pending | paid | expired | canceled */
+    status: text("status").notNull().default("pending"),
+    tx: text("tx"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("billing_checkouts_tx").on(table.tx),
+    index("billing_checkouts_principal").on(table.principalId),
+    index("billing_checkouts_status").on(table.status),
+  ],
+);
 
 /** One billing wallet per house (personal or org). */
 export const billingAccounts = pgTable("billing_accounts", {

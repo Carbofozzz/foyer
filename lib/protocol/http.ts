@@ -9,10 +9,30 @@ export function jsonError(code: string, message: string, status: number): NextRe
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
-export function protocolFail(error: unknown): NextResponse {
-  if (error instanceof ProtocolError) {
-    return jsonError(error.code, error.message, error.status);
+function asProtocolError(error: unknown): ProtocolError | null {
+  if (error instanceof ProtocolError) return error;
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    "message" in error &&
+    "status" in error &&
+    typeof (error as { code: unknown }).code === "string" &&
+    typeof (error as { message: unknown }).message === "string" &&
+    typeof (error as { status: unknown }).status === "number"
+  ) {
+    const pe = error as { code: string; message: string; status: number };
+    return new ProtocolError(pe.code, pe.message, pe.status);
   }
+  if (error && typeof error === "object" && "cause" in error) {
+    return asProtocolError((error as { cause: unknown }).cause);
+  }
+  return null;
+}
+
+export function protocolFail(error: unknown): NextResponse {
+  const pe = asProtocolError(error);
+  if (pe) return jsonError(pe.code, pe.message, pe.status);
   return jsonError("internal", "Unexpected error", 500);
 }
 

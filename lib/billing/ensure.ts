@@ -92,6 +92,25 @@ export async function ensureBillingSchema(): Promise<void> {
       `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS voucher_redemptions_voucher ON voucher_redemptions (voucher_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS voucher_redemptions_principal ON voucher_redemptions (principal_id)`);
+      await db.execute(sql`ALTER TABLE billing_plans ADD COLUMN IF NOT EXISTS price_wei text NOT NULL DEFAULT '0'`);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS billing_checkouts (
+          id text PRIMARY KEY,
+          principal_id text NOT NULL REFERENCES principals(id),
+          plan_id text NOT NULL REFERENCES billing_plans(id),
+          user_id text REFERENCES users(id),
+          amount_wei text NOT NULL,
+          pay_to text NOT NULL,
+          status text NOT NULL DEFAULT 'pending',
+          tx text,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          expires_at timestamptz NOT NULL,
+          paid_at timestamptz
+        )
+      `);
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS billing_checkouts_tx ON billing_checkouts (tx)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS billing_checkouts_principal ON billing_checkouts (principal_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS billing_checkouts_status ON billing_checkouts (status)`);
     })().catch((error) => {
       ready = null;
       throw error;

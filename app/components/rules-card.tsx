@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cabinetHeaders } from "@/app/lib/cabinet-request";
+import { defaultCharter, type HouseKind } from "@/lib/i18n/charter";
 import type { Messages } from "@/lib/i18n/load";
 import { MCP_INBOX_POLL_SEC } from "@/lib/mcp/config";
 
@@ -15,6 +16,8 @@ export function RulesCard({
   requireSignedWrites = false,
   canEdit,
   locked = false,
+  houseKind = "personal",
+  charter,
   enroll,
   enrollLabel,
   t,
@@ -28,6 +31,8 @@ export function RulesCard({
   requireSignedWrites?: boolean;
   canEdit: boolean;
   locked?: boolean;
+  houseKind?: HouseKind;
+  charter?: Messages["charter"];
   enroll?: string;
   enrollLabel: string;
   t: Messages["cabinet"];
@@ -45,6 +50,8 @@ export function RulesCard({
     collect !== String(collectWindowSec) ||
     bargain !== String(bargainWindowSec) ||
     requireSigned !== requireSignedWrites;
+  const empty = !text.trim();
+  const starter = charter ? defaultCharter(charter, houseKind) : "";
 
   useEffect(() => {
     setText(constitution);
@@ -52,6 +59,12 @@ export function RulesCard({
     setBargain(String(bargainWindowSec));
     setRequireSigned(requireSignedWrites);
   }, [constitution, collectWindowSec, bargainWindowSec, requireSignedWrites]);
+
+  function insertDefault() {
+    if (locked || !starter) return;
+    setText(starter);
+    setError(false);
+  }
 
   async function save() {
     setPending(true);
@@ -81,6 +94,9 @@ export function RulesCard({
       {canEdit || locked ? (
         <>
           <p className="hint">{t.rulesHint}</p>
+          {empty && !locked && starter ? (
+            <p className="hint">{t.rulesEmptyHint}</p>
+          ) : null}
           <textarea
             className="charter-edit"
             value={text}
@@ -88,6 +104,11 @@ export function RulesCard({
             rows={12}
             disabled={locked}
           />
+          {!locked && starter ? (
+            <button type="button" className="ghost" disabled={pending} onClick={insertDefault}>
+              {t.insertDefaultRules}
+            </button>
+          ) : null}
           <div className="connect-desk">
             <label className="connect-field">
               <span>{t.windowCollect}</span>
@@ -139,10 +160,14 @@ export function RulesCard({
         </>
       ) : (
         <>
-          <p className="charter">{constitution}</p>
+          {constitution.trim() ? (
+            <p className="charter">{constitution}</p>
+          ) : (
+            <p className="muted">{t.rulesEmptyRead}</p>
+          )}
           <p className="hint">
             {t.windowCollect}: {collectWindowSec}
-            {t.windowSec} ·             {t.windowBargain}: {bargainWindowSec}
+            {t.windowSec} · {t.windowBargain}: {bargainWindowSec}
             {t.windowSec}
             {requireSignedWrites ? ` · ${t.requireSigned}` : ""}
           </p>

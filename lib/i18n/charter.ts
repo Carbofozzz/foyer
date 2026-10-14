@@ -23,6 +23,21 @@ export type CharterAnswers = {
   human: string;
 };
 
+/** Sensible starter rules when the house was created without the wizard. */
+export function defaultCharter(lines: CharterLines, type: HouseKind = "personal"): string {
+  return assembleCharter(
+    {
+      spendLimit: "200",
+      price: "balance",
+      promises: true,
+      security: true,
+      human: "",
+    },
+    lines,
+    type,
+  );
+}
+
 export function assembleCharter(
   answers: CharterAnswers,
   lines: CharterLines,
