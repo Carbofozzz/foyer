@@ -19,7 +19,7 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - The gateway client is always an agent. The UI must not create a case around the API, and the gateway must never write an objection on an agent's behalf.
 - Court outcomes: `allow` | `deny` | `escalate` (yes / no / human). `allow` permits the original payload. `deny` permits nothing — never someone else's `counter_action`. Archive rows may still say `allow_a` / `allow_b` / `remedy`.
 - The court IC does not write a `remedy_action`. If the charter is silent or contradictory, the outcome is `escalate`.
-- A verdict also answers `objection_grounded`. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
+- A verdict also answers `objection_grounded`. The **platform** wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
@@ -189,3 +189,5 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-14: Billing **B3 shipped** — after grace, `org_frozen_at` + org cabinet/API 403; renew clears freeze; tick sends pre-expiry / pre-sweep mail (3 days, ledger idempotency) and cascade-deletes orgs after 6 months frozen; OpenAPI `0.58.0`.
 - 2026-10-14: Billing **B4 shipped** — GEN crypto checkout to the platform wallet (`billing_checkouts`, `price_wei`); Plan `crypto_checkout` / `crypto_confirm` verifies finalized transfer then grants like a voucher (replay-safe); OpenAPI `0.59.0`.
 - 2026-10-14: Cabinet **Plan** tab — pricing-style blocks: tariff, credit pools, top-up stub/GEN, redeem code, ledger history; OpenAPI `0.59.1`.
+- 2026-10-14: Docs — [BILLING.md](docs/BILLING.md) / INITIAL / ORG / AUTH mark B0–B4 shipped; next slice B5 Stripe (optional on GenLayer testnet).
+- 2026-10-16: Hobby cron — `vercel.json` is `0 0 * * *` (once a day). `CRON_INTERVAL_SEC` default is 86400 so health does not mark that tick stale. Reads still close windows and poll an inflight court hash; a new court submit still waits for tick.

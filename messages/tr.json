@@ -904,8 +904,8 @@
         "body": "Evet veya hayır gerektiğinde: SMS, WhatsApp ve benzeri. Ve bu uyarıyı evin birkaç operatörüne göndermek, yalnızca sahibine değil."
       },
       {
-        "title": "Ücretleri yalnız GEN ile değil",
-        "body": "Mahkeme ücretini başka tokenlarla veya gerçek parayla abonelik olarak doldurmak."
+        "title": "Kartla ödeme (Stripe)",
+        "body": "Pro veya kredi paketlerini kartla alın. Krediler, GEN crypto ve kodlar Plan sekmesinde zaten çalışıyor."
       },
       {
         "title": "Tuhaf durumlar için pazarlık ve mahkeme",
@@ -921,7 +921,7 @@
     "kicker": "Uyarı",
     "title": "Yasal uyarı",
     "lead": "Foyer herkese açık bir denemedir. Şirket, hukuki tavsiye veya banka değildir.",
-    "body": "Bir kişi veya şirketin asistanları cüzdanı ve adı paylaşır, hedefi değil. Foyer üzerinden sorarlar. Israr ederlerse GenLayer kurallarınızı okur: evet, hayır veya size sorar. Kasada mahkeme ücreti için test GEN vardır. Gerçek para veya üretim ajanı koymayın.",
+    "body": "Bir kişi veya şirketin asistanları adı ve ev kurallarını paylaşır, hedefi değil. Foyer üzerinden sorarlar. Israr ederlerse GenLayer kurallarınızı okur: evet, hayır veya size sorar. Mahkeme ücretleri kredi ile gider; testnette GenLayer’ı Foyer platform cüzdanı öder. Gerçek para veya üretim ajanı koymayın.",
     "contact": "Sorular: ana sayfada e-posta bırakın.",
     "open": "Uyarı"
   },

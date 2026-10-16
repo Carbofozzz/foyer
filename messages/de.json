@@ -904,8 +904,8 @@
         "body": "Wenn ein Antrag Ihr Ja oder Nein braucht: SMS, WhatsApp und Ähnliches. Und denselben Hinweis an mehrere Operatoren des Hauses, nicht nur an den Inhaber."
       },
       {
-        "title": "Gebühren nicht nur in GEN",
-        "body": "Gerichtskosten mit anderen Tokens auffüllen oder mit echtem Geld als Abo."
+        "title": "Kartenzahlung (Stripe)",
+        "body": "Pro oder Kreditpakete per Karte kaufen. Kredite, GEN-Crypto und Codes laufen schon im Plan-Tab."
       },
       {
         "title": "Verhandlung und Gericht für Sonderfälle",
@@ -921,7 +921,7 @@
     "kicker": "Rechtliches",
     "title": "Rechtlicher Hinweis",
     "lead": "Foyer ist ein öffentlicher Test. Keine Firma, keine Rechtsberatung, keine Bank.",
-    "body": "Assistenten einer Person oder Firma teilen eine Kasse und einen Namen, nicht ein Ziel. Sie fragen über Foyer. Bei insist liest GenLayer Ihre Regeln: ja, nein oder Sie. Die Kasse hält Test-GEN für Gerichtsgebühren. Kein echtes Geld, keine Produktionsagenten.",
+    "body": "Assistenten einer Person oder Firma teilen Namen und Hausregeln, nicht ein Ziel. Sie fragen über Foyer. Bei insist liest GenLayer Ihre Regeln: ja, nein oder Sie. Gerichtsgebühren laufen über Court-Credits; Foyers Plattform-Wallet zahlt GenLayer im Testnet. Kein echtes Geld, keine Produktionsagenten.",
     "contact": "Fragen: hinterlassen Sie auf der Startseite eine E-Mail.",
     "open": "Rechtliches"
   },

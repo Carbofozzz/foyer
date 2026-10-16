@@ -16,9 +16,10 @@ export function deployEnv(): "production" | "preview" | "development" {
   return "development";
 }
 
+/** Seconds between production cron hits. Hobby runs once a day. */
 export function cronIntervalSec(): number {
   const raw = Number(process.env.CRON_INTERVAL_SEC);
-  return Number.isFinite(raw) && raw > 0 ? raw : 60;
+  return Number.isFinite(raw) && raw > 0 ? raw : 86400;
 }
 
 /** Preview and production both require the secret. Local `vercel dev` does not. */
