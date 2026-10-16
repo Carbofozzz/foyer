@@ -918,18 +918,61 @@
     ]
   },
   "legal": {
-    "kicker": "Legal",
-    "title": "Legal notice",
-    "lead": "Foyer is a public test. Not a company, not legal advice, not a bank.",
-    "body": "Assistants of one person or company share a name and house rules, not a goal. They ask through Foyer. If they insist, GenLayer reads your rules and answers yes, no, or ask you. Court fees use court credits; Foyer’s platform wallet pays GenLayer on testnet. Do not put real money or production agents here.",
-    "contact": "Questions: leave an email on the home page.",
-    "open": "Legal"
+    "kicker": "Terms",
+    "title": "Terms of use",
+    "lead": "Foyer (foyerapp.dev) is the house for the assistants of one person or one company, and for the rules they share. This is a public test on GenLayer testnet. Not a bank and not legal advice.",
+    "sections": [
+      {
+        "title": "Account",
+        "body": "You sign in with email or Google. One account opens one personal house. A company house is separate, and the people you invite share it."
+      },
+      {
+        "title": "The service",
+        "body": "Assistants ask through Foyer. Your rules decide. If they insist, GenLayer reads those rules and answers yes, no, or ask a person. A pass lets the assistant act with its own tools. Foyer does not pay, book, or send for you."
+      },
+      {
+        "title": "Credits",
+        "body": "Court uses court credits. Foyer’s platform wallet pays the GenLayer fee on testnet. Credits are not cash and not GEN in a wallet of yours."
+      },
+      {
+        "title": "What you send",
+        "body": "Rules, requests, and objections are yours. Do not put secrets or real money here. A case on GenLayer is public testnet data."
+      },
+      {
+        "title": "Stopping",
+        "body": "You can stop at any time. Ask from the email on the account, using the home page, and we delete the house data we hold. A transaction already on GenLayer stays."
+      }
+    ],
+    "contact": "Questions: leave your email on the home page.",
+    "open": "Terms"
   },
   "privacy": {
     "kicker": "Privacy",
-    "title": "What we store",
-    "lead": "Only what the house needs to run.",
-    "body": "Wallet address when you sign in — that is the account. Email if you join the waitlist. Confirmed house email or a linked Telegram chat for yes-or-no mail when a request escalates. Hashed IP on public writes, for rate limits, no request bodies. Agent keys stay in your runtime; we keep a hash. Rules, cases, and transfers sit in our database for your house. Court transactions go to GenLayer.",
+    "title": "Privacy policy",
+    "lead": "Foyer (foyerapp.dev) stores only what a house needs to run. We do not sell personal data and we do not use it for advertising.",
+    "sections": [
+      {
+        "title": "Sign-in",
+        "body": "You sign in with email or Google, through Clerk. From Google we receive your email, your name, and the account id that recognizes you. We do not ask for Gmail, Drive, Calendar, contacts, or any other Google data. We use this only to open your house, match an invite, and send house mail."
+      },
+      {
+        "title": "House data",
+        "body": "We store the rules you write, requests, objections, and verdicts. A contact email or a Telegram chat, if you add one, is for a yes-or-no ping. Court credits, redeem codes, and checkout records stay on the plan. Agent keys stay in your assistant; we keep a hash. Public writes store a hashed IP for rate limits, not the request body. A waitlist email is stored if you leave one."
+      },
+      {
+        "title": "Court",
+        "body": "A case sent to GenLayer is a public testnet transaction: the rules snapshot, the objections, and the yes, no, or human answer. The platform wallet pays the fee."
+      },
+      {
+        "title": "Who else sees it",
+        "body": "Clerk runs sign-in. GenLayer runs the court. Telegram receives a ping only if you link it. We do not pass your data to advertisers."
+      },
+      {
+        "title": "How long",
+        "body": "We keep this while the house exists. Ask from the email on the account, using the home page, and we delete the house data we hold. A transaction already on GenLayer cannot be erased."
+      }
+    ],
+    "contact": "Questions or deletion: leave your account email on the home page.",
     "open": "Privacy"
   }
 }

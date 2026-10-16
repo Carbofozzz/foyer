@@ -191,3 +191,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-14: Cabinet **Plan** tab — pricing-style blocks: tariff, credit pools, top-up stub/GEN, redeem code, ledger history; OpenAPI `0.59.1`.
 - 2026-10-14: Docs — [BILLING.md](docs/BILLING.md) / INITIAL / ORG / AUTH mark B0–B4 shipped; next slice B5 Stripe (optional on GenLayer testnet).
 - 2026-10-16: Hobby cron — `vercel.json` is `0 0 * * *` (once a day). `CRON_INTERVAL_SEC` default is 86400 so health does not mark that tick stale. Reads still close windows and poll an inflight court hash; a new court submit still waits for tick.
+- 2026-10-16: Terms and privacy match live login. Account is email or Google via Clerk; Google data is email, name, and account id only. Wallet address is not the account. Pages: `/:locale/legal`, `/:locale/privacy`.

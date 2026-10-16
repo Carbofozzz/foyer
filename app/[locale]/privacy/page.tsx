@@ -13,9 +13,13 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       <p className="kicker">{d.kicker}</p>
       <h1>{d.title}</h1>
       <p className="lead">{d.lead}</p>
-      <section className="card stack">
-        <p>{d.body}</p>
-      </section>
+      {d.sections.map((section) => (
+        <section className="card stack" key={section.title}>
+          <h2 className="section-title">{section.title}</h2>
+          <p>{section.body}</p>
+        </section>
+      ))}
+      <p className="hint">{d.contact}</p>
     </main>
   );
 }

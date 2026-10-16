@@ -918,18 +918,61 @@
     ]
   },
   "legal": {
-    "kicker": "Legal",
-    "title": "Aviso legal",
-    "lead": "Foyer es una prueba pública. No es una empresa, ni un consejo jurídico, ni un banco.",
-    "body": "Los asistentes de una persona o empresa comparten nombre y reglas de la casa, no un objetivo. Piden por Foyer. Si insisten, GenLayer lee tus reglas y responde sí, no o preguntarte. Las tasas del tribunal usan créditos; la cartera de plataforma de Foyer paga GenLayer en testnet. No pongas dinero real ni agentes de producción.",
-    "contact": "Preguntas: deja un correo en la portada.",
-    "open": "Legal"
+    "kicker": "Condiciones",
+    "title": "Condiciones de uso",
+    "lead": "Foyer (foyerapp.dev) es la casa de los asistentes de una persona o una empresa, y de las reglas que comparten. Es una prueba pública en la testnet de GenLayer. No es un banco ni un consejo jurídico.",
+    "sections": [
+      {
+        "title": "Cuenta",
+        "body": "Entras con correo o con Google. Una cuenta abre una casa personal. La casa de una empresa es aparte, y la comparten las personas que invitas."
+      },
+      {
+        "title": "El servicio",
+        "body": "Los asistentes piden por Foyer. Deciden tus reglas. Si insisten, GenLayer lee esas reglas y responde sí, no o preguntar a una persona. Un pase deja que el asistente actúe con sus propias herramientas. Foyer no paga, no reserva y no envía por ti."
+      },
+      {
+        "title": "Créditos",
+        "body": "El tribunal usa créditos. La cartera de plataforma de Foyer paga la comisión de GenLayer en testnet. Los créditos no son dinero ni GEN en una cartera tuya."
+      },
+      {
+        "title": "Lo que envías",
+        "body": "Las reglas, las peticiones y las objeciones son tuyas. No pongas secretos ni dinero real. Un caso en GenLayer son datos públicos de testnet."
+      },
+      {
+        "title": "Cierre",
+        "body": "Puedes dejarlo cuando quieras. Escribe desde el correo de la cuenta por la portada y borramos los datos de la casa que guardamos nosotros. Una transacción que ya está en GenLayer se queda."
+      }
+    ],
+    "contact": "Preguntas: deja tu correo en la portada.",
+    "open": "Condiciones"
   },
   "privacy": {
     "kicker": "Privacidad",
-    "title": "Qué guardamos",
-    "lead": "Solo lo que la casa necesita para funcionar.",
-    "body": "La dirección de cartera al entrar es la cuenta. Correo si te apuntas a la lista. Correo de la casa confirmado o un chat de Telegram enlazado para el sí o no cuando una petición escala. Hash de IP en escrituras públicas, para el límite, sin cuerpos. Las claves de agente quedan en tu runtime; guardamos un hash. Reglas, casos y transferencias están en nuestra base de tu casa. Las transacciones del tribunal van a GenLayer.",
+    "title": "Política de privacidad",
+    "lead": "Foyer (foyerapp.dev) guarda solo lo que una casa necesita para funcionar. No vendemos datos personales ni los usamos para publicidad.",
+    "sections": [
+      {
+        "title": "Entrada",
+        "body": "Entras con correo o con Google, a través de Clerk. De Google recibimos tu correo, tu nombre y el identificador de cuenta con el que te reconocemos. No pedimos Gmail, Drive, Calendar, contactos ni ningún otro dato de Google. Sirve solo para abrir tu casa, reconocer una invitación y enviar el correo de la casa."
+      },
+      {
+        "title": "Datos de la casa",
+        "body": "Guardamos las reglas que escribes, las peticiones, las objeciones y los veredictos. Un correo o un chat de Telegram, si lo añades, es para el sí o no. Los créditos, los códigos y los registros de pago quedan en el plan. Las claves de agente se quedan en tu asistente; nosotros guardamos un hash. En las escrituras públicas guardamos un hash de la IP para el límite, sin el cuerpo. El correo de la lista se guarda si lo dejas."
+      },
+      {
+        "title": "Tribunal",
+        "body": "Un caso enviado a GenLayer es una transacción pública de testnet: la copia de las reglas, las objeciones y la respuesta sí, no o persona. La cartera de plataforma paga la comisión."
+      },
+      {
+        "title": "Quién más lo ve",
+        "body": "Clerk hace el acceso. GenLayer hace el tribunal. Telegram recibe un aviso solo si lo enlazas. No pasamos tus datos a anunciantes."
+      },
+      {
+        "title": "Plazo",
+        "body": "Lo guardamos mientras exista la casa. Escribe desde el correo de la cuenta por la portada y borramos los datos de la casa que guardamos nosotros. Una transacción que ya está en GenLayer no se puede borrar."
+      }
+    ],
+    "contact": "Preguntas o borrado: deja el correo de la cuenta en la portada.",
     "open": "Privacidad"
   }
 }

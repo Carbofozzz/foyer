@@ -918,18 +918,61 @@
     ]
   },
   "legal": {
-    "kicker": "Uyarı",
-    "title": "Yasal uyarı",
-    "lead": "Foyer herkese açık bir denemedir. Şirket, hukuki tavsiye veya banka değildir.",
-    "body": "Bir kişi veya şirketin asistanları adı ve ev kurallarını paylaşır, hedefi değil. Foyer üzerinden sorarlar. Israr ederlerse GenLayer kurallarınızı okur: evet, hayır veya size sorar. Mahkeme ücretleri kredi ile gider; testnette GenLayer’ı Foyer platform cüzdanı öder. Gerçek para veya üretim ajanı koymayın.",
-    "contact": "Sorular: ana sayfada e-posta bırakın.",
-    "open": "Uyarı"
+    "kicker": "Koşullar",
+    "title": "Kullanım koşulları",
+    "lead": "Foyer (foyerapp.dev), bir kişinin veya bir şirketin asistanları ve paylaştıkları kurallar için evdir. Bu, GenLayer testnet üzerinde herkese açık bir denemedir. Banka ya da hukuki tavsiye değildir.",
+    "sections": [
+      {
+        "title": "Hesap",
+        "body": "E-posta veya Google ile girersiniz. Bir hesap bir kişisel ev açar. Şirket evi ayrıdır; davet ettiğiniz kişiler onu paylaşır."
+      },
+      {
+        "title": "Hizmet",
+        "body": "Asistanlar Foyer üzerinden sorar. Kurallarınız karar verir. Israr ederlerse GenLayer bu kuralları okur ve evet, hayır ya da bir kişiye sor der. Geçiş, asistanın kendi araçlarıyla hareket etme iznidir. Foyer sizin yerinize ödemez, ayırtmaz ve göndermez."
+      },
+      {
+        "title": "Krediler",
+        "body": "Mahkeme krediyle işler. Testnette GenLayer ücretini Foyer platform cüzdanı öder. Krediler nakit değildir ve sizin cüzdanınızdaki GEN değildir."
+      },
+      {
+        "title": "Ne gönderirsiniz",
+        "body": "Kurallar, istekler ve itirazlar sizindir. Sır ve gerçek para koymayın. GenLayer’daki bir dava herkese açık testnet verisidir."
+      },
+      {
+        "title": "Bırakmak",
+        "body": "İstediğiniz zaman bırakabilirsiniz. Hesap e-postasından ana sayfa üzerinden yazın; tuttuğumuz ev verisini sileriz. GenLayer’a işlenmiş bir işlem kalır."
+      }
+    ],
+    "contact": "Sorular: ana sayfada e-postanızı bırakın.",
+    "open": "Koşullar"
   },
   "privacy": {
-    "kicker": "Veriler",
-    "title": "Neyi tutuyoruz",
-    "lead": "Yalnızca evin çalışması için gerekeni.",
-    "body": "Girişteki cüzdan adresi hesaptır. Listeye yazılırsa e-posta. Onaylı ev e-postası veya bağlı Telegram sohbeti, bir istek size düştüğünde evet-hayır içindir. Genel yazımlarda hız sınırı için hash’lenmiş IP, gövde yok. Ajan anahtarları sizin runtime’ınızda; biz hash tutarız. Kurallar, davalar ve transferler evinizin veritabanında. Mahkeme işlemleri GenLayer’a gider.",
-    "open": "Veriler"
+    "kicker": "Gizlilik",
+    "title": "Gizlilik politikası",
+    "lead": "Foyer (foyerapp.dev) yalnızca evin çalışması için gerekeni tutar. Kişisel veriyi satmayız ve reklam için kullanmayız.",
+    "sections": [
+      {
+        "title": "Giriş",
+        "body": "E-posta veya Google ile, Clerk üzerinden girersiniz. Google’dan e-postanızı, adınızı ve sizi tanıyan hesap kimliğini alırız. Gmail, Drive, Calendar, kişiler veya başka bir Google verisi istemeyiz. Bunlar yalnızca evinizi açmak, daveti eşlemek ve ev postası göndermek içindir."
+      },
+      {
+        "title": "Ev verisi",
+        "body": "Yazdığınız kuralları, istekleri, itirazları ve kararları tutarız. Eklediğiniz bir e-posta veya Telegram sohbeti evet-hayır iletisi içindir. Mahkeme kredileri, kodlar ve ödeme kayıtları planda kalır. Ajan anahtarları asistanınızda kalır; biz hash tutarız. Genel yazımlarda hız sınırı için hash’lenmiş IP tutarız, gövdeyi değil. Liste e-postası bırakırsanız onu saklarız."
+      },
+      {
+        "title": "Mahkeme",
+        "body": "GenLayer’a giden bir dava herkese açık bir testnet işlemidir: kural kopyası, itirazlar ve evet, hayır veya insan yanıtı. Ücreti platform cüzdanı öder."
+      },
+      {
+        "title": "Başka kim görür",
+        "body": "Girişi Clerk yürütür. Mahkemeyi GenLayer yürütür. Telegram, yalnızca bağlarsanız bir ileti alır. Verinizi reklamcılara vermeyiz."
+      },
+      {
+        "title": "Süre",
+        "body": "Evi durdukça tutarız. Hesap e-postasından ana sayfa üzerinden yazın; tuttuğumuz ev verisini sileriz. GenLayer’a işlenmiş bir işlem silinemez."
+      }
+    ],
+    "contact": "Soru veya silme: hesap e-postanızı ana sayfada bırakın.",
+    "open": "Gizlilik"
   }
 }
