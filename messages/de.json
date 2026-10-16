@@ -918,18 +918,61 @@
     ]
   },
   "legal": {
-    "kicker": "Rechtliches",
-    "title": "Rechtlicher Hinweis",
-    "lead": "Foyer ist ein öffentlicher Test. Keine Firma, keine Rechtsberatung, keine Bank.",
-    "body": "Assistenten einer Person oder Firma teilen Namen und Hausregeln, nicht ein Ziel. Sie fragen über Foyer. Bei insist liest GenLayer Ihre Regeln: ja, nein oder Sie. Gerichtsgebühren laufen über Court-Credits; Foyers Plattform-Wallet zahlt GenLayer im Testnet. Kein echtes Geld, keine Produktionsagenten.",
-    "contact": "Fragen: hinterlassen Sie auf der Startseite eine E-Mail.",
-    "open": "Rechtliches"
+    "kicker": "Bedingungen",
+    "title": "Nutzungsbedingungen",
+    "lead": "Foyer (foyerapp.dev) ist das Haus für die Assistenten einer Person oder einer Firma und für die Regeln, die sie teilen. Das ist ein öffentlicher Test im GenLayer-Testnet. Keine Bank und keine Rechtsberatung.",
+    "sections": [
+      {
+        "title": "Konto",
+        "body": "Sie melden sich mit E-Mail oder Google an. Ein Konto öffnet ein persönliches Haus. Ein Firmenhaus ist getrennt; die Personen, die Sie einladen, teilen es."
+      },
+      {
+        "title": "Der Dienst",
+        "body": "Assistenten fragen über Foyer. Ihre Regeln entscheiden. Wenn sie darauf bestehen, liest GenLayer diese Regeln und antwortet ja, nein oder eine Person fragen. Ein Pass erlaubt dem Assistenten, mit eigenen Werkzeugen zu handeln. Foyer zahlt, bucht und sendet nicht für Sie."
+      },
+      {
+        "title": "Credits",
+        "body": "Das Gericht läuft über Court-Credits. Die GenLayer-Gebühr im Testnet zahlt Foyers Plattform-Wallet. Credits sind kein Geld und kein GEN in einer Wallet von Ihnen."
+      },
+      {
+        "title": "Was Sie senden",
+        "body": "Regeln, Anfragen und Einwände gehören Ihnen. Keine Geheimnisse und kein echtes Geld. Ein Fall auf GenLayer sind öffentliche Testnet-Daten."
+      },
+      {
+        "title": "Beenden",
+        "body": "Sie können jederzeit aufhören. Schreiben Sie von der E-Mail des Kontos über die Startseite, dann löschen wir die Hausdaten, die wir halten. Eine Transaktion, die schon auf GenLayer liegt, bleibt."
+      }
+    ],
+    "contact": "Fragen: hinterlassen Sie Ihre E-Mail auf der Startseite.",
+    "open": "Bedingungen"
   },
   "privacy": {
     "kicker": "Datenschutz",
-    "title": "Was wir speichern",
-    "lead": "Nur das, ohne das das Haus nicht läuft.",
-    "body": "Die Wallet-Adresse beim Anmelden ist das Konto. E-Mail, wenn Sie auf die Liste kommen. Bestätigte Haus-E-Mail oder ein verknüpfter Telegram-Chat für Ja-oder-Nein-Post, wenn ein Antrag eskaliert. Gehashte IP bei öffentlichen Writes, für Limits, ohne Bodies. Agentenschlüssel bleiben in Ihrer Runtime; wir speichern einen Hash. Regeln, Fälle und Überweisungen liegen in unserer Datenbank Ihres Hauses. Gerichtstransaktionen gehen zu GenLayer.",
+    "title": "Datenschutzerklärung",
+    "lead": "Foyer (foyerapp.dev) speichert nur, was ein Haus zum Laufen braucht. Wir verkaufen keine personenbezogenen Daten und nutzen sie nicht für Werbung.",
+    "sections": [
+      {
+        "title": "Anmeldung",
+        "body": "Sie melden sich mit E-Mail oder Google an, über Clerk. Von Google erhalten wir Ihre E-Mail, Ihren Namen und die Konto-ID, an der wir Sie erkennen. Gmail, Drive, Calendar, Kontakte und andere Google-Daten fragen wir nicht ab. Das dient nur dazu, Ihr Haus zu öffnen, eine Einladung zuzuordnen und Hauspost zu senden."
+      },
+      {
+        "title": "Hausdaten",
+        "body": "Wir speichern die Regeln, die Sie schreiben, Anfragen, Einwände und Entscheide. Eine Kontakt-E-Mail oder ein Telegram-Chat, wenn Sie ihn hinzufügen, ist für die Ja-oder-Nein-Nachricht. Court-Credits, Codes und Zahlungsnachweise bleiben im Plan. Agentenschlüssel bleiben bei Ihrem Assistenten; wir halten einen Hash. Öffentliche Schreibzugriffe speichern eine gehashte IP für Limits, ohne den Inhalt. Eine Wartelisten-E-Mail speichern wir, wenn Sie eine hinterlassen."
+      },
+      {
+        "title": "Gericht",
+        "body": "Ein Fall an GenLayer ist eine öffentliche Testnet-Transaktion: der Schnappschuss der Regeln, die Einwände und die Antwort ja, nein oder Mensch. Die Plattform-Wallet zahlt die Gebühr."
+      },
+      {
+        "title": "Wer sonst",
+        "body": "Clerk führt die Anmeldung. GenLayer führt das Gericht. Telegram erhält eine Nachricht nur, wenn Sie es verknüpfen. An Werbetreibende geben wir nichts weiter."
+      },
+      {
+        "title": "Dauer",
+        "body": "Wir behalten das, solange das Haus besteht. Schreiben Sie von der E-Mail des Kontos über die Startseite, dann löschen wir die Hausdaten, die wir halten. Eine Transaktion, die schon auf GenLayer liegt, lässt sich nicht löschen."
+      }
+    ],
+    "contact": "Fragen oder Löschung: hinterlassen Sie die E-Mail des Kontos auf der Startseite.",
     "open": "Datenschutz"
   }
 }
