@@ -904,8 +904,8 @@
         "body": "Cuando hace falta un sí o no humano: SMS, WhatsApp y similares. Y enviar ese aviso a varios operadores de la casa, no solo al titular."
       },
       {
-        "title": "Pagar tasas sin solo GEN",
-        "body": "Recargar las tasas del tribunal con otros tokens, o con dinero real en suscripción."
+        "title": "Pago con tarjeta (Stripe)",
+        "body": "Comprar Pro o paquetes de créditos con tarjeta. Los créditos, GEN crypto y los códigos ya funcionan en Plan."
       },
       {
         "title": "Pacto y tribunal para casos raros",
@@ -921,7 +921,7 @@
     "kicker": "Legal",
     "title": "Aviso legal",
     "lead": "Foyer es una prueba pública. No es una empresa, ni un consejo jurídico, ni un banco.",
-    "body": "Los asistentes de una persona o empresa comparten caja y nombre, no un objetivo. Piden por Foyer. Si insisten, GenLayer lee tus reglas y responde sí, no o preguntarte. La caja guarda GEN de prueba para las tasas del tribunal. No pongas dinero real ni agentes de producción.",
+    "body": "Los asistentes de una persona o empresa comparten nombre y reglas de la casa, no un objetivo. Piden por Foyer. Si insisten, GenLayer lee tus reglas y responde sí, no o preguntarte. Las tasas del tribunal usan créditos; la cartera de plataforma de Foyer paga GenLayer en testnet. No pongas dinero real ni agentes de producción.",
     "contact": "Preguntas: deja un correo en la portada.",
     "open": "Legal"
   },

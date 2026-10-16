@@ -4,7 +4,7 @@ Intra-principal court and gateway. Track: **Onchain Justice**.
 
 This file is the product as it exists: the idea, the running implementation, and a short backlog. Further protocol change is [ORCHESTRATE.md](ORCHESTRATE.md). If this file and the code disagree, follow the code, then update this file in the same change.
 
-Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md). Cabinet login: [AUTH.md](AUTH.md). Court credits / subscription / vouchers: [BILLING.md](BILLING.md) — B0–B3 shipped; next B4 crypto; Stripe is B5 (optional on GenLayer testnet).
+Connect paste: [CONNECT.md](CONNECT.md). Presenter walk: [DEMO.md](DEMO.md). Reaching the human on escalate: [NOTIFY.md](NOTIFY.md). Company house: [ORG.md](ORG.md). Cabinet login: [AUTH.md](AUTH.md). Court credits / subscription / vouchers: [BILLING.md](BILLING.md) — B0–B4 shipped; next B5 Stripe (optional on GenLayer testnet).
 
 ---
 
@@ -18,7 +18,7 @@ The root is an **agent protocol**, not a page.
 
 1. **Constitution** — the principal’s charter. Agents cite it. The court reads it.
 2. **Gateway** — the only exit an agent has to the world. Propose, object, silence, ack, report. No pass — the agent must not pay, book, or message.
-3. **Court** — when bargain fails, an Intelligent Contract answers the original proposal. The house wallet pays the fee. The principal may override an escalate.
+3. **Court** — when bargain fails, an Intelligent Contract answers the original proposal. The platform wallet pays the GenLayer fee (court credits in the Plan tab). The principal may override an escalate.
 
 Orchestration needs someone who can be **woken**. A chat in Cursor cannot. So Foyer is not only a door for agents you already run:
 
@@ -126,16 +126,17 @@ One IC per house. Admin is the house wallet. `judge` / `get_verdict` are `_only_
 
 ### Tick
 
-No daemons. `sweep(principal, now)` is idempotent. Vercel Cron is `GET /api/tick` every minute (`* * * * *`); POST still works. Lazy sweep on every protocol read closes windows but **does not** submit court.
+No daemons. `sweep(principal, now)` is idempotent. Vercel Cron is `GET /api/tick` once a day (`0 0 * * *`, Hobby); POST still works. Lazy sweep on every protocol read closes windows but **does not** submit court.
 
 Tick **does not start** court. `findHouseNeedingCourt` only picks a house that already has an inflight or bare case so one tick can poll/submit that tx. `insist` is what creates the case.
 
 ### Cabinet
 
-Product surface: `/:locale/cabinet`. Tabs: activity, treasury (wallet + history), rules, connect, test (owner — old harness, redesign later), people (org).
+Product surface: `/:locale/cabinet`. Tabs: activity, plan, rules, connect, contacts, test (owner), people / access (org).
 
-- Clerk login (email / Google). House treasury is a separate address, read-only in the cabinet until BILLING (Studio faucet below the floor still runs server-side for court fees).
-- Owner edits the charter. Operator can appeal / connect / deposit. Observer reads. Owner alone withdraws, invites, writes the charter.
+- Clerk login (email / Google). Court fees are paid by the **platform** GenLayer wallet ([BILLING.md](BILLING.md) B2). House treasury address remains read-only in the cabinet.
+- **Plan** tab: tariff, credit pools, redeem code, GEN checkout when priced, ledger; Stripe CTA is a stub until B5.
+- Owner edits the charter (insert default rules if empty). Operator can appeal / connect. Observer reads. Owner alone invites, writes the charter.
 - Company house is not a wizard choice. Org 1 shipped: extra principal via **Organization**, open with `?house=`; Settings on the org house can rename or delete it ([ORG.md](ORG.md)).
 - Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A checker needs a hook URL. No auto-mint Travel. Prompt is not court evidence.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
@@ -189,11 +190,11 @@ A case freezes the charter it was judged against. Editing the rules later does n
 
 ## Stack
 
-- Vercel (Hobby/Pro). Cron every minute. `CRON_SECRET` required. `CRON_INTERVAL_SEC` default 60.
+- Vercel Hobby. Cron once a day (`0 0 * * *`). `CRON_SECRET` required. `CRON_INTERVAL_SEC` default 86400.
 - Next.js App Router, Drizzle + Neon.
-- Python IC `contracts/court.py`, `genlayer-js` v2, house wallet pays fees.
+- Python IC `contracts/court.py`, `genlayer-js` v2, platform wallet pays fees (`GENLAYER_PLATFORM_KEY`).
 - Rate limits and hashed request logs on public writes.
-- `GET /api/health` — db + last tick (`stale` if the minute was missed).
+- `GET /api/health` — db + last tick (`stale` if the daily tick was missed).
 
 ---
 
@@ -214,7 +215,7 @@ Bonds, court duties, appeal fees, Foyer paying or booking, and a second login ar
 Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Product login rewrite is [AUTH.md](AUTH.md) (Clerk; do not fight that plan with new wallet-login features). Do not implement the items below in a way that fights either plan (no new auto-court, no judge-executed `allow_b` / `remedy`).
 
 - **Cabinet Auth** — [AUTH.md](AUTH.md). Clerk; A0–A3 largely shipped; prod cutover when ready.
-- **Billing** — [BILLING.md](BILLING.md). B0–B3 shipped. Next: B4 crypto, B5 Stripe last (optional on GenLayer testnet).
+- **Billing** — [BILLING.md](BILLING.md). B0–B4 shipped (credits, platform court wallet, org freeze/sweep, GEN crypto). Next: B5 Stripe last (optional on GenLayer testnet).
 - **Hosted full-time agents.** Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar. Own key — the gateway never objects. Schema `wake = hosted` is reserved; Connect does not mint it. Do not ship a constitution bot in the gateway to “fill” a chat-only house.
 - **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
 - **Signatures, versions, windows** — [SIGN.md](SIGN.md). S1–S4 shipped (windows, write hashes, signed writes, prompt pin).

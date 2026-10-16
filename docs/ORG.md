@@ -134,9 +134,9 @@ Charter may name agents (by id or stable label). `buildJudgeInput` sends `court_
 
 Done: IC can tell CEO desk from intern without a protocol fork.
 
-### Org 7 — Paid create
+### Org 7 — Paid create — shipped (via BILLING)
 
-Gate Org 1 behind billing (or an env allow-list until then). Personal stays free.
+`POST /api/orgs` requires personal `feature_org` (Pro voucher, crypto Pro, or ops grant). After grace the org freezes; renew unfreezes; six months frozen → cascade delete. Details: [BILLING.md](BILLING.md) B1/B3. Personal Free stays without org.
 
 ### Later (not this plan’s critical path)
 

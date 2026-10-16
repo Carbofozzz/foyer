@@ -10,7 +10,7 @@ A0 + A1 shipped (2026-10-11): Clerk login, `users` / `owner_user_id` / members b
 
 ## Why
 
-Hackathon login = address. Production needs a person account (email / Google) so org invites, billing, and notify attach to a user — not MetaMask. House court wallet (sealed key) stays infrastructure for GenLayer fees; it is **not** the login. Agent protocol (`agk_`) unchanged.
+Hackathon login = address. Production needs a person account (email / Google) so org invites, billing, and notify attach to a user — not MetaMask. GenLayer court fees are paid by the **platform** wallet ([BILLING.md](BILLING.md)); leftover house sealed keys are not the login. Agent protocol (`agk_`) unchanged.
 
 ---
 
@@ -20,7 +20,7 @@ Hackathon login = address. Production needs a person account (email / Google) so
 |---|---|
 | **Vendor** | **Clerk** — email + Google. Not Privy / Auth.js for Auth. |
 | **Wallet ↔ login** | Fully split. No SIWE, no RainbowKit on sign-in, no prove-wallet migration. |
-| **Wallet later** | BILLING / treasury only (top-up, crypto subscription). Not Auth. |
+| **Wallet later** | Optional crypto UI for GEN Plan checkout (B4); not Auth. |
 | **Wizard** | Turn **off** the hackathon modal. Product onboarding is a separate UX later. |
 | **Database** | New empty Neon DB = another `DATABASE_URL` for local/preview. Do not touch prod URL until cutover. No row migration. |
 | **Cutover** | Switch prod `DATABASE_URL` to the new DB (fresh). Old URL retired. |
@@ -250,13 +250,13 @@ House owner does not become platform admin. A platform admin may still own a per
 
 **Check:** delete house audits; non-admin 404; MCP smoke.
 
-Billing track: [BILLING.md](BILLING.md) (credits, Plan tab, vouchers/Stripe); `platform_role` already ready.
+Billing track: [BILLING.md](BILLING.md) — B0–B4 shipped; B5 Stripe optional. `platform_role` already ready.
 
 ---
 
 ## Out
 
-Hackathon row migration; wizard redesign (only off); impersonate; promote-from-UI; showing keys in admin; Lock / Hosted / Notify N3 / Org 7 paid / crypto deposit; protocol loop edits; SSO/SAML.
+Hackathon row migration; wizard redesign (only off); impersonate; promote-from-UI; showing keys in admin; Lock / Hosted / Notify N3; protocol loop edits; SSO/SAML. (Billing / Org paid create / GEN crypto → [BILLING.md](BILLING.md).)
 
 ---
 
@@ -268,7 +268,7 @@ Hackathon row migration; wizard redesign (only off); impersonate; promote-from-U
 | Cutover | Swap prod URL only; no user migration |
 | Admin = normal Clerk login | Env email bootstrap; 404 for others |
 | Mix house grants and platform | Separate fields; `requirePlatformAdmin` ≠ `accessFor` |
-| Court with no top-up UI | Ops/faucet until BILLING |
+| Court with no top-up UI | Platform wallet + credits (BILLING B0–B4); faucet tops platform on Studio |
 | ORG forbid-list | This file is the exception for login rewrite |
 
 ---

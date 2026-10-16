@@ -1,20 +1,36 @@
 # Billing — court credits, subscription, vouchers
 
-Agreed plan. Implement in slices B0–B5 below. Discussion notes (Russian) lived in `.local/BILLING.md`.
+Status: **B0–B4 shipped** (2026-10-12…14). Remaining: **B5 Stripe** (optional while GenLayer is testnet). Discussion notes (Russian) lived in `.local/BILLING.md`.
 
-This is **not** a protocol change. Agent loop stays [ORCHESTRATE.md](ORCHESTRATE.md). Auth customer identity is [AUTH.md](AUTH.md) (`user_id` / verified email). Org product stays [ORG.md](ORG.md); Org 7 (paid create) is gated here. Notify channel for billing mail follows [NOTIFY.md](NOTIFY.md) (verified owner email). Do not fork propose/object/bargain/insist/court outcomes.
+This is **not** a protocol change. Agent loop stays [ORCHESTRATE.md](ORCHESTRATE.md). Auth customer identity is [AUTH.md](AUTH.md) (`user_id` / verified email). Org product stays [ORG.md](ORG.md); Org 7 (paid create) is gated here via `feature_org`. Notify channel for billing mail follows [NOTIFY.md](NOTIFY.md) (verified owner email). Do not fork propose/object/bargain/insist/court outcomes.
 
 **Not the goal:** Foyer as the agent’s bank (Stripe adapters that pay or book for the agent). Only the right to use **court / org / quota**.
 
-**Testnet note:** While GenLayer is on testnet, **Stripe (B5) is optional** — vouchers + ops grant + GEN crypto carry the product. B2–B4 shipped; B5 fiat last.
+**Testnet:** vouchers + ops grant + GEN crypto carry the product. Fiat (B5) is last and optional.
+
+---
+
+## Shipped summary
+
+| Slice | What landed |
+|---|---|
+| **B0** | Ledger, vouchers, Plan redeem, `insist` credit gate, debit after `cases.tx` |
+| **B1** | Free / Pro / packs, Free anniversary, spend Free→sub→on-demand, `/pricing`, org needs `feature_org` |
+| **B2** | Platform GEN wallet pays deploy/judge; floor wait; admin low-GEN mail; `court_gas_stats` |
+| **B3** | Org freeze after grace; 6-month cascade; renew unfreezes; pre-expiry / pre-sweep mail |
+| **B4** | GEN checkout to platform (`billing_checkouts`, `price_wei`); Plan confirm by tx |
+
+**Cabinet Plan tab:** tariff / credit pools / top-up (GEN when priced, else Stripe stub) / redeem code / ledger history (OpenAPI `0.59.1`).
+
+**OpenAPI:** `0.55.0`…`0.59.1` across the slices.
 
 ---
 
 ## Why
 
-Today GenLayer fees come from the house sealed wallet (GEN / Studio faucet). After Auth the treasury tab is read-only; no GEN → offline escalate “could not pay the court”. Org create is still free until this plan.
+Before billing, GenLayer fees came from each house sealed wallet (GEN / Studio faucet). After Auth the treasury tab is read-only; an empty house wallet meant offline escalate “could not pay the court”. Org create was free.
 
-The human pays Foyer (subscription, packs, or voucher). Foyer sponsors the court. UI counts **court credits**, not wei GEN.
+Now the human pays Foyer (subscription, packs, voucher, or GEN). Foyer sponsors the court from one platform wallet. UI counts **court credits**, not wei GEN.
 
 ---
 
@@ -40,13 +56,13 @@ The human pays Foyer (subscription, packs, or voucher). Foyer sponsors the court
 | **On-demand** | Packs of credits; higher per-court price; **never expire**; no org. |
 | **Free tier** | Admin sets M free courts / month; **no rollover**; no org; period = anniversary from **first login**. |
 | **Prices / N / M** | Admin (plans table / ops desk). Not markdown as source of truth. |
-| **Cabinet tab** | **Plan** (credits, subscription status, buy / redeem code). |
+| **Cabinet tab** | **Plan** — tariff, credit pools, GEN top-up when priced, redeem code, ledger. |
 | **Pricing page** | Public `/:locale/pricing`: columns + checkmarks (Free / Pro / packs). Same plan data as admin. |
 | **Org after lapse** | After grace → **freeze** (no access, data kept). Renew before sweep → unfreeze same org. |
 | **Org sweep** | After **6 months** frozen → standard house **cascade delete** (same as admin desk). |
 | **Billing email** | Pre mail **3 days** before `period_end` and **3 days** before sweep. No required grace-day mail. |
-| **Providers** | Pluggable: `voucher` + `manual_admin` first; crypto (B4); **Stripe last (B5)**, optional on GenLayer testnet. Same grant path. |
-| **Vouchers** | From day one (testnet). Common or email-bound; max redemptions; activate window + duration after redeem. |
+| **Providers** | `voucher` + `manual_admin` + **crypto (B4)** shipped; **Stripe (B5)** last, optional on GenLayer testnet. Same grant path. |
+| **Vouchers** | Common or email-bound; max redemptions; activate window + duration after redeem. |
 
 ---
 
@@ -55,10 +71,10 @@ The human pays Foyer (subscription, packs, or voucher). Foyer sponsors the court
 | Concept | Meaning |
 |---|---|
 | **1 credit** | One case after successful judge submit (tx stored). |
-| **GEN wallet** | Foyer infrastructure. Hidden in v1 product UI. |
+| **GEN wallet** | Foyer infrastructure (platform key). Hidden in product UI except crypto payee when checkout is on. |
 | **Cabinet balance** | Available credits + subscription / Free status — not GEN. |
 
-Spend order (implementation detail): Free monthly quota → subscription pool → on-demand balance (or equivalent clear UI). Cross-cabinet transfer is out for v1.
+Spend order: Free monthly quota → subscription pool → on-demand balance. Cross-cabinet transfer is out for v1.
 
 ---
 
@@ -71,7 +87,7 @@ Spend order (implementation detail): Free monthly quota → subscription pool �
 | Org | No | No | Yes (`feature_org`) |
 | After lapse | Reset M next anniversary | Credits remain | Grace 5d → burn sub credits; org freeze |
 
-Numbers stay in admin, not in this file.
+Numbers stay in admin / `billing_plans`, not in this file.
 
 ---
 
@@ -79,15 +95,13 @@ Numbers stay in admin, not in this file.
 
 Separate **user money → Foyer** from **Foyer → GenLayer**.
 
-Today (until B2): each house has its own sealed wallet. It deploys the house IC, is that IC's `admin`, and pays every `judge`; on Studio chains `ensureCourtFunds` tops it up from the faucet. Off Studio there is no faucet, so every house wallet is empty and every court escalates.
+**Live (B2):** one **platform wallet** signs everything. Key in env (`GENLAYER_PLATFORM_KEY`), never in Postgres, never per house. It deploys each house IC (still one IC per house), is its `admin`, submits `judge`, reads `get_verdict`. Debit `court_credit` when `cases.tx` is written — credits are what the human pays for, GEN is Foyer's cost.
 
-After B2: one **platform wallet** signs everything. Key in env (`GENLAYER_PLATFORM_KEY`), never in Postgres, never per house. It deploys each house IC (still one IC per house), is its `admin`, submits `judge`, reads `get_verdict`. Debit `court_credit` when `cases.tx` is written — credits are what the human pays for, GEN is Foyer's cost.
+Leftover house sealed wallets no longer pay court fees. Faucet top-up targets the platform address on Studio chains; off Studio, ops funds by hand.
 
-**Alert vs floor:** `COURT_FLOOR_WEI` stops submit (case waits). A separate **alert threshold** (higher) triggers mail to `FOYER_ADMIN_EMAILS` so ops can top up before courts stall. Both values are configurable; floor stays a hard gate.
+**Alert vs floor:** `COURT_FLOOR_WEI` stops submit (case waits). A separate **alert threshold** triggers mail to `FOYER_ADMIN_EMAILS`. Both configurable; floor stays a hard gate.
 
-**Gas stats:** every platform-signed court write records fee data (estimate at submit; refine from balance or receipt when available). Aggregate on the ops desk to set pack / Pro prices against real GenLayer cost.
-
-Race on two insists: reserve/confirm or atomic debit with tx write — implementation detail.
+**Gas stats:** every platform-signed court write records fee data in `court_gas_stats`. Ops desk aggregates for pack / Pro pricing.
 
 ---
 
@@ -114,13 +128,11 @@ Redeem: signed-in user → owner cabinet (personal or org) → ledger + audit.
 
 Admin desk: create / revoke (`ends_at = now`) / list redemptions. `platform_role = owner` (ops later if scoped).
 
-Testnet: codes like “3 months Pro + 20 courts” are the main way to open org + court without Stripe.
+Testnet: codes like “3 months Pro + 20 courts” remain the main fiat-free path to open org + court; GEN crypto (B4) is the other.
 
 ---
 
 ## Payment module
-
-Billing is its own layer — not scattered through `insist` UI alone.
 
 ```
   Cabinet / API
@@ -130,23 +142,24 @@ Billing is its own layer — not scattered through `insist` UI alone.
     · balance / subscription state
     · grant credits / start plan
     · vouchers.redeem
+    · crypto checkout / confirm
     · ledger (append-only)
        │
        ▼
   Providers
-    · voucher        ← first
-    · manual_admin
-    · stripe         ← next
-    · crypto         ← later
+    · voucher        ← shipped
+    · manual_admin   ← shipped
+    · crypto         ← shipped (B4)
+    · stripe         ← B5 (optional)
 ```
 
-| Provider contract (draft) | |
+| Provider contract | |
 |---|---|
-| `createCheckout(user, house, offer)` | → URL / intent |
-| `handleWebhook(payload)` | → idempotent grant |
-| `id` | `voucher` \| `stripe` \| … |
+| `createCheckout(user, house, offer)` | → intent (GEN payee + amount, or Stripe URL later) |
+| `confirm` / webhook | → idempotent grant |
+| `id` | `voucher` \| `crypto` \| `manual_admin` \| `stripe` |
 
-Ledger rows carry `provider`, `external_id`, `idempotency_key`. Duplicate webhooks must not double-grant.
+Ledger rows carry `provider`, `external_id`, `idempotency_key`. Duplicate confirms / webhooks must not double-grant.
 
 ---
 
@@ -154,88 +167,68 @@ Ledger rows carry `provider`, `external_id`, `idempotency_key`. Duplicate webhoo
 
 | Rule | |
 |---|---|
-| Create / keep org | Active subscription (or voucher) with `feature_org` |
+| Create / keep org | Active subscription (or voucher / crypto Pro) with `feature_org` |
 | After grace | Org **frozen** — no cabinet/API work; row kept |
 | After 6 months frozen | Cascade delete (admin-style) |
 | Renew while frozen | Unfreeze the same org |
 | Personal Free | M courts / month; no org; packs or Pro on top |
 
-Same Clerk session; no second login for org.
+Same Clerk session; no second login for org. Gate is live (`assertFeatureOrg` on `POST /api/orgs`).
 
 ---
 
 ## Surfaces
 
-- **Cabinet tab Plan** — balance, plan status, GEN crypto checkout (when `price_wei` set), redeem code. Card top-up is B5.
-- **Public pricing** — `/:locale/pricing` (or replace landing stub): Free / Pro columns with checkmarks, pack SKUs, CTA. Copy and amounts from admin plans.
-- **Ops admin** — plans (M, N, prices), vouchers, manual grant.
+- **Cabinet tab Plan** — tariff + status, credit pools, GEN offers when `price_wei` set, redeem code, ledger. Card CTA is a stub until B5.
+- **Public pricing** — `/:locale/pricing` + `GET /api/pricing` from `billing_plans`.
+- **Ops admin** — vouchers, manual grant, platform wallet / gas stats / thresholds.
 
 ---
 
-## Slices (do not skip)
+## Slices
 
 ### B0 — Ledger + entitlements + vouchers — shipped (2026-10-12)
 
-- Tables: `billing_accounts`, `billing_ledger`, `vouchers`, `voucher_redemptions`, `billing_plans` (plans unused until B1).
+- Tables: `billing_accounts`, `billing_ledger`, `vouchers`, `voucher_redemptions`, `billing_plans`.
 - Admin: create/revoke voucher; manual grant credits.
-- Cabinet **Plan** tab: balance, redeem code (`GET`/`POST /api/cabinet/:token/plan`).
-- Gate `insist` when `FOYER_BILLING_GATE` is on (default); bare cases wait if balance hits zero before submit.
+- Cabinet **Plan**: `GET`/`POST /api/cabinet/:token/plan` (redeem).
+- Gate `insist` when `FOYER_BILLING_GATE` is on (else on in production, off locally).
 - Debit only when tx is stored; one credit per case.
-
-**Check:** voucher credits → N courts pass; N+1 insist rejected. Propose/object without credit still works.
 
 ### B1 — Subscription + Free + pricing page — shipped (2026-10-12)
 
-- Seeded plans: Free / Pro / packs (`ensureDefaultPlans`). Free anniversary from first login; spend Free → sub → on-demand.
-- Activate Pro via subscription voucher (Stripe only in B5). Pack vouchers stay on-demand.
-- Public `/:locale/pricing` + `GET /api/pricing` from `billing_plans`.
-- Grace 5d; burn **subscription** leftovers only; Free resets without accumulation.
+- Seeded Free / Pro / packs. Free anniversary from first login; spend Free → sub → on-demand.
+- Activate Pro via subscription voucher (or crypto / Stripe later). Packs stay on-demand.
+- Public `/:locale/pricing` + `GET /api/pricing`.
+- Grace 5d; burn **subscription** leftovers only.
 - `POST /api/orgs` requires personal `feature_org`.
-
-**Check:** Free M then block; Pro rollover on renew; grace burn does not leave fake on-demand residue.
 
 ### B2 — Platform court wallet — shipped (2026-10-13)
 
-Credits are only honest if Foyer can actually pay the court. Do this before any money flow beyond vouchers.
-
-- `GENLAYER_PLATFORM_KEY` (env, sealed with `FOYER_SEAL_SECRET` like the house keys today); one address for the whole deploy. Preview and production may hold different keys.
-- `ensureHouseCourt` deploys with the platform key; constructor `admin` = platform address. `judge` / `get_verdict` sign with the same key. Still one IC per house.
-- Bump `court_abi`: houses whose IC `admin` is a house wallet redeploy on the next court. Inflight cases keep `cases.contract` and finish with the house wallet that submitted them.
-- Faucet top-up (`ensureCourtFunds`) targets the platform address on Studio chains only. Off Studio, ops funds it by hand.
-- Below `COURT_FLOOR_WEI` on the platform wallet: no submit, the case **waits** (no debit, no offline escalate). Not the user's fault — no credit burn, case not ended.
-- **Low-balance mail (required):** when balance is under the alert threshold (`GENLAYER_PLATFORM_ALERT_WEI` or ops setting; must be at or above floor), email every `FOYER_ADMIN_EMAILS` address (same mail path as other platform mail). One send per low episode; clear the latch when balance recovers above the threshold. Tick / court path both may check; do not spam every minute.
-- **Court gas stats (required):** table e.g. `court_gas_stats` — `case_id` (nullable for bare deploy), `tx`, `kind` (`deploy` \| `judge` \| `resubmit`), `estimated_wei`, `actual_wei` (nullable until known), `balance_before_wei` / `balance_after_wei` optional, `created_at`. Write on every platform submit; never expose in the cabinet. Ops desk: sums, p50/p95 estimate, cost-per-credit vs pack/Pro prices. Optional `gen_cost_wei` on the billing ledger debit row for join convenience.
-- Ops desk: platform address, GEN balance, floor vs alert flags, last low-balance mail time, recent gas rows.
-- House sealed wallets stop paying. The key export row leaves the cabinet; leftover wallets stay in Postgres until a later cleanup.
-
-**Check:** empty house wallet still gets a verdict; below floor → wait, no debit; below alert → one admin mail, no second until recovery; gas row per judge submit; leftover IC redeploys once; cabinet shows no GEN address.
+- `GENLAYER_PLATFORM_KEY`; `court_abi` 9; platform is IC `admin`.
+- Below floor → case waits (no debit). Alert mail latch. `court_gas_stats` + ops panel.
+- OpenAPI `0.57.0`.
 
 ### B3 — Org freeze / sweep + billing mail — shipped (2026-10-14)
 
-Product lifecycle without fiat. Do this before payment providers.
+- After grace → `org_frozen_at` + 403 on org cabinet/API.
+- After **6 months** frozen → cascade delete.
+- Renew → unfreeze. Pre-expiry / pre-sweep mail (3 days, ledger idempotency).
+- OpenAPI `0.58.0`.
 
-- No `feature_org` after grace → org frozen (403 on org cabinet/API).
-- Keep data; after **6 months** frozen → cascade delete (same as admin desk).
-- Renew before sweep → unfreeze the same org.
-- Email: **3 days** before `period_end`; **3 days** before sweep (verified owner email / NOTIFY).
+### B4 — Crypto provider — shipped (2026-10-14)
 
-**Check:** lapse → freeze; renew → same org; 6 months → gone; mails fire once (idempotent).
-
-### B4 — Crypto provider — shipped
-
-- Same grant path as vouchers (`activateSubscription` / `grantCredits`, provider `crypto`).
-- `billing_checkouts` + `billing_plans.price_wei`; payee = platform wallet (`GENLAYER_PLATFORM_KEY`).
-- Plan tab: `crypto_checkout` → send GEN → `crypto_confirm` with tx hash; verify finalized transfer value/to.
-- Replay-safe: unique checkout `tx` + ledger `crypto:{checkoutId}`.
+- `billing_checkouts` + `billing_plans.price_wei`; payee = platform wallet.
+- Plan: `crypto_checkout` → send GEN → `crypto_confirm` (finalized transfer, value ≥ amount, to = payee).
+- Grant via `activateSubscription` / `grantCredits`, provider `crypto`; replay-safe (`tx` unique + `crypto:{checkoutId}`).
 - Env: `FOYER_*_PRICE_WEI`, optional `FOYER_CRYPTO`, `FOYER_PRO_DURATION_DAYS`.
+- OpenAPI `0.59.0` (+ Plan UX `0.59.1`).
 
-**Check:** crypto payment → same ledger grant; replay safe.
-
-### B5 — Stripe (fiat) — last; optional on GenLayer testnet
+### B5 — Stripe (fiat) — **next**; optional on GenLayer testnet
 
 - Checkout + webhook → same grant path (idempotent).
-- Not required to run the product on GenLayer testnet (vouchers + ops grant + B2–B4 suffice).
-- Ship when leaving “voucher-only” public test or when fiat is needed.
+- Not required to run the product on GenLayer testnet (vouchers + ops + B2–B4 suffice).
+- Ship when leaving “voucher/crypto-only” public test or when fiat is needed.
 
 **Check:** paid Pro → org create; webhook replay safe.
 
@@ -265,6 +258,7 @@ Product lifecycle without fiat. Do this before payment providers.
 | Platform wallet runs dry | Floor stops submit (case waits); alert threshold emails admins once per dip; ops desk shows balance |
 | Blind credit pricing | Court gas stats per tx; ops aggregates before changing pack/Pro prices |
 | One hot key for every house | Env only, sealed; rotate = new address + `court_abi` bump |
+| Double GEN grant | Unique checkout `tx` + ledger idempotency key |
 
 ---
 
@@ -275,7 +269,7 @@ Product lifecycle without fiat. Do this before payment providers.
 3. Email-bound voucher wrong email → fail.
 4. `max_redemptions=1` second redeem → dead.
 5. Past `ends_at` → cannot redeem; expired `duration` drops org entitlement → freeze path.
-6. GEN checkout: finalize transfer to platform → grant; same tx twice → no double grant. Stripe webhook (B5) idempotent when that slice ships.
+6. GEN checkout: finalize transfer to platform → grant; same tx twice → no double grant. Stripe webhook (B5) when that slice ships.
 7. Propose/object without credit still works; only paid court path is gated.
 8. Pre-expiry and pre-sweep mail at 3 days; no required grace-day mail.
 9. House with an empty own wallet still gets a verdict (platform wallet pays); platform below floor → case waits, no debit.

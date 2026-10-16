@@ -904,8 +904,8 @@
         "body": "When a request needs a human yes or no: SMS, WhatsApp, and similar. Also send that ping to several operators of the house, not only the owner."
       },
       {
-        "title": "Pay fees without only GEN",
-        "body": "Top up court fees with other tokens, or with real money as a subscription."
+        "title": "Card checkout (Stripe)",
+        "body": "Buy Pro or court packs with a card. Credits, GEN crypto, and redeem codes already work in Plan."
       },
       {
         "title": "Bargain and court for odd cases",
@@ -921,7 +921,7 @@
     "kicker": "Legal",
     "title": "Legal notice",
     "lead": "Foyer is a public test. Not a company, not legal advice, not a bank.",
-    "body": "Assistants of one person or company share a wallet and a name, not a goal. They ask through Foyer. If they insist, GenLayer reads your rules and answers yes, no, or ask you. The house wallet holds test GEN for court fees. Do not put real money or production agents here.",
+    "body": "Assistants of one person or company share a name and house rules, not a goal. They ask through Foyer. If they insist, GenLayer reads your rules and answers yes, no, or ask you. Court fees use court credits; Foyer’s platform wallet pays GenLayer on testnet. Do not put real money or production agents here.",
     "contact": "Questions: leave an email on the home page.",
     "open": "Legal"
   },
