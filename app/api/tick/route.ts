@@ -4,6 +4,8 @@ import { publicOrigin } from "@/lib/mcp/config";
 import { deployEnv } from "@/lib/ops/client";
 import { writeRequestLog } from "@/lib/ops/log";
 import { recordTick } from "@/lib/ops/tick";
+import { checkPlatformBalanceAlert } from "@/lib/judge/platform-alert";
+import { runBillingLifecycle } from "@/lib/billing/org-lifecycle";
 
 export const maxDuration = 120;
 
@@ -39,9 +41,23 @@ async function runTick(request: Request) {
       const result = await sweep(dueId, now, { courts: 1, origin: publicOrigin(request) });
       advanced += result.advanced;
     }
+    const platform = await checkPlatformBalanceAlert().catch(() => null);
+    const billing = await runBillingLifecycle(now).catch(() => ({
+      pre_expiry: 0,
+      pre_sweep: 0,
+      orgs_deleted: 0,
+    }));
     await recordTick({ startedAt, houses: houses.length, advanced, ok: true });
     await writeRequestLog(request, "tick", 200, Date.now() - startedAt.getTime()).catch(() => undefined);
-    return jsonOk({ houses: houses.length, advanced, court: dueId, at: now.toISOString() });
+    return jsonOk({
+      houses: houses.length,
+      advanced,
+      court: dueId,
+      at: now.toISOString(),
+      platform_balance_wei: platform?.balance_wei ?? null,
+      platform_below_alert: platform?.below_alert ?? null,
+      billing,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "tick failed";
     await recordTick({ startedAt, houses: 0, advanced: 0, ok: false, error: message }).catch(() => undefined);

@@ -23,6 +23,52 @@ export const DEMO_CASES: DemoCase[] = [
 const DEMO_ORIGIN = "https://foyerapp.dev";
 const DEMO_KEY = "agk_demo";
 
+export const DEMO_PLAN = {
+  credits: 12,
+  free_remaining: 2,
+  free_quota: 3,
+  free_used: 1,
+  free_period_end: "2026-11-01T00:00:00.000Z",
+  subscription_credits: 5,
+  on_demand: 5,
+  feature_org: false,
+  in_grace: false,
+  subscription_plan_id: null,
+  subscription_period_end: null,
+  subscription_grace_until: null,
+  org_frozen_at: null,
+  gate: true,
+  plan: {
+    code: "free",
+    label: "Free",
+    kind: "free",
+    status: "free" as const,
+    period_end: null,
+    grace_until: null,
+  },
+  ledger: [
+    {
+      id: "bld_demo1",
+      delta: -1,
+      reason: "debit_court",
+      provider: "foyer",
+      note: "Court fee",
+      case_id: "cas_demo_a",
+      created_at: "2026-09-06T12:10:00.000Z",
+    },
+    {
+      id: "bld_demo2",
+      delta: 5,
+      reason: "grant_voucher",
+      provider: "voucher",
+      note: "Redeem DEMO",
+      case_id: null,
+      created_at: "2026-09-05T09:00:00.000Z",
+    },
+  ],
+  crypto: { enabled: false, pay_to: null, offers: [] },
+};
+
 export const DEMO_TREASURY = {
   address: "0x1111111111111111111111111111111111111111",
   balance: "12.4000",

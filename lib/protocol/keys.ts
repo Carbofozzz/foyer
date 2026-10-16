@@ -27,7 +27,17 @@ export type TokenPrefix =
   | "tgl"
   | "hct"
   | "hpl"
-  | "sgn";
+  | "sgn"
+  | "usr"
+  | "inv"
+  | "aud"
+  | "bil"
+  | "bld"
+  | "vou"
+  | "vrdm"
+  | "bpl"
+  | "cgs"
+  | "bco";
 
 export function mintToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(18).toString("base64url")}`;

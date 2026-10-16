@@ -12,7 +12,7 @@ Intra-principal coordination, court, and gateway. Read `AGENTS.md` and `docs/INI
 - Court is GenLayer, one IC per house. No local verdict: if consensus does not land, `escalate`.
 - `objection_grounded` is a verdict flag. The house wallet pays GenLayer fees; the court IC does not hold or burn GEN.
 - No daemons: `sweep(principal, now)` runs on cron `GET`/`POST /tick` and on every read; keep it idempotent.
-- Agent key names the house; routes carry no principal id. Principal signs in with RainbowKit (SIWE); the shared demo is `/:locale/cabinet/demo`.
+- Agent key names the house; routes carry no principal id. Principal signs in with Clerk (email / Google, no wallet); the shared demo is `/:locale/cabinet/demo`.
 - The cabinet is the product surface now: house wallet, deposit/withdraw with the principal's own wallet, transfer history. Org members share that login; they do not invent a second money path.
 - Product guardian = another connected assistant that reads the constitution. Demo is one shared look-only house — do not mix.
 - Lock = tools/keys, not a system prompt.

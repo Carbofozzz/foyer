@@ -7,9 +7,7 @@ export type RateLimit = { max: number; windowSec: number };
 
 export const LIMITS = {
   waitlist: { max: 8, windowSec: 3600 },
-  spawn: { max: 4, windowSec: 3600 },
-  nonce: { max: 40, windowSec: 900 },
-  verify: { max: 20, windowSec: 900 },
+  admin: { max: 30, windowSec: 3600 },
   propose: { max: 40, windowSec: 3600 },
   proposeAgent: { max: 20, windowSec: 3600 },
   object: { max: 40, windowSec: 3600 },

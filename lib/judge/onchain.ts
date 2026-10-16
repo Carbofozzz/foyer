@@ -67,8 +67,15 @@ function clientFor(accountKey: `0x${string}`) {
   return createClient({ chain, account: createAccount(accountKey) });
 }
 
-/** Deploy a court Intelligent Contract signed by this house wallet. */
-export async function deployHouseCourt(accountKey: `0x${string}`): Promise<string | null> {
+export type CourtSubmitResult = {
+  hash: string;
+  estimatedWei: bigint;
+};
+
+/** Deploy a court Intelligent Contract signed by the given key (platform wallet). */
+export async function deployHouseCourt(
+  accountKey: `0x${string}`,
+): Promise<(CourtSubmitResult & { address: string }) | null> {
   try {
     return await withBudget(budgetMs(), () => submitDeploy(accountKey));
   } catch {
@@ -76,13 +83,13 @@ export async function deployHouseCourt(accountKey: `0x${string}`): Promise<strin
   }
 }
 
-/** Submit a judge write and return the hash. Do not wait for finalization. */
+/** Submit a judge write and return the hash + fee estimate. Do not wait for finalization. */
 export async function submitJudgeWrite(
   accountKey: `0x${string}`,
   contractAddress: string,
   caseId: string,
   input: JudgeInput,
-): Promise<string | null> {
+): Promise<CourtSubmitResult | null> {
   const address = asAddress(contractAddress);
   if (!address) return null;
   try {
@@ -105,6 +112,38 @@ export async function inspectJudgeTx(hash: string): Promise<CourtTxPhase> {
     return courtTxPhase(tx);
   } catch {
     return "pending";
+  }
+}
+
+export type NativeTransferView = {
+  phase: CourtTxPhase;
+  from: string | null;
+  to: string | null;
+  valueWei: bigint;
+};
+
+/** Read a native GEN transfer for crypto checkout verification. */
+export async function readNativeTransfer(hash: string): Promise<NativeTransferView | null> {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) return null;
+  const chain = resolveChain();
+  if (!chain) return null;
+  try {
+    const client = createClient({ chain });
+    const tx = await client.getTransaction({ hash: hash as TransactionHash });
+    const from = String(tx.from_address ?? tx.sender ?? "");
+    const to = String(tx.to_address ?? tx.recipient ?? "");
+    let valueWei = BigInt(0);
+    if (typeof tx.value === "bigint") valueWei = tx.value;
+    else if (typeof tx.value === "number" && Number.isFinite(tx.value)) valueWei = BigInt(Math.trunc(tx.value));
+    else if (typeof tx.value === "string" && /^\d+$/.test(tx.value)) valueWei = BigInt(tx.value);
+    return {
+      phase: courtTxPhase(tx),
+      from: asAddress(from) ?? null,
+      to: asAddress(to) ?? null,
+      valueWei,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -205,7 +244,7 @@ export async function transferFromHouse(
   }
 }
 
-async function submitDeploy(accountKey: `0x${string}`): Promise<string | null> {
+async function submitDeploy(accountKey: `0x${string}`): Promise<(CourtSubmitResult & { address: string }) | null> {
   const client = clientFor(accountKey);
   if (!client) return null;
   let code: Uint8Array;
@@ -216,6 +255,7 @@ async function submitDeploy(accountKey: `0x${string}`): Promise<string | null> {
   }
   const account = createAccount(accountKey);
   const estimate = await client.estimateTransactionFees();
+  const estimatedWei = BigInt(estimate.feeValue ?? 0);
   const hash = (await client.deployContract({
     code,
     args: [account.address],
@@ -224,7 +264,9 @@ async function submitDeploy(accountKey: `0x${string}`): Promise<string | null> {
   if (typeof hash !== "string" || !hash.startsWith("0x")) return null;
   const receipt = await client.waitForFinalization({ hash, ...waitOpts() });
   if (!isSuccessful(receipt)) return null;
-  return contractAddressFromReceipt(receipt);
+  const address = contractAddressFromReceipt(receipt);
+  if (!address) return null;
+  return { hash, estimatedWei, address };
 }
 
 async function writeJudge(
@@ -232,7 +274,7 @@ async function writeJudge(
   address: Address,
   caseId: string,
   input: JudgeInput,
-): Promise<string | null> {
+): Promise<CourtSubmitResult | null> {
   const client = clientFor(accountKey);
   if (!client) return null;
   const write = {
@@ -247,12 +289,13 @@ async function writeJudge(
     ] as CalldataEncodable[],
   };
   const estimate = await client.estimateTransactionFeesForWrite(write);
+  const estimatedWei = BigInt(estimate.feeValue ?? 0);
   const txHash = (await client.writeContract({
     ...write,
     fees: { distribution: estimate.distribution, feeValue: estimate.feeValue },
   })) as TransactionHash;
   if (typeof txHash !== "string" || !txHash.startsWith("0x")) return null;
-  return txHash;
+  return { hash: txHash, estimatedWei };
 }
 
 function contractAddressFromReceipt(receipt: { txDataDecoded?: unknown; data?: unknown }): string | null {

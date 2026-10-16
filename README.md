@@ -27,6 +27,7 @@ Local: `npm run demo` (defaults to `http://127.0.0.1:3001`). Presenter walkthrou
 - [Development plan](docs/ORCHESTRATE.md) — wake, bargain, court on insist
 - [Demo script](docs/DEMO.md) — eight-minute walk + checklist
 - [Connect your runtime](docs/CONNECT.md) — MCP paste for Cursor / Claude / ChatGPT / OpenClaw; HTTP for a custom client
+- [Billing](docs/BILLING.md) — court credits, Free/Pro, vouchers; Stripe is last slice (optional on testnet)
 - [Agent instructions](AGENTS.md) — invariants and layout for coding agents
 
 Pitch copy, discussion notes, and other working files live in [`.local/`](.local/) (gitignored).

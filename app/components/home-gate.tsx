@@ -1,28 +1,35 @@
-"use client";
-
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
-import { WalletButton } from "@/app/components/wallet-button";
+import { AccountBar } from "@/app/components/account-bar";
 
 export function HomeGate({
   locale,
   t,
-  initialAddress,
+  enabled,
+  email,
+  admin,
 }: {
   locale: Locale;
   t: Messages["home"];
-  initialAddress: string | null;
+  enabled: boolean;
+  email: string | null;
+  admin: boolean;
 }) {
   return (
     <div className="home-gate">
-      <WalletButton
+      <AccountBar
         locale={locale}
-        signOutLabel={t.signOut}
-        connectLabel={t.signIn}
-        signingInLabel={t.signingIn}
-        cabinetLabel={t.openCabinet}
-        adminLabel={t.openAdmin}
-        initialAddress={initialAddress}
+        enabled={enabled}
+        email={email}
+        admin={admin}
+        t={{
+          signIn: t.signIn,
+          signUp: t.signUp,
+          signOut: t.signOut,
+          cabinet: t.openCabinet,
+          admin: t.openAdmin,
+          authOff: t.authOff,
+        }}
       />
     </div>
   );

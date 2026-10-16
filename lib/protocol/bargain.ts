@@ -3,6 +3,7 @@ import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { REASON_BARGAIN_TIMEOUT } from "@/lib/notify/reasons";
 import { enqueueWakes, escalateOffline } from "@/lib/notify/wake";
+import { assertCourtCredit } from "@/lib/billing/account";
 import { scheduleOpenCourt } from "./court";
 import { ProtocolError } from "./errors";
 import { MAX_REVISION } from "./types";
@@ -128,6 +129,7 @@ export async function insistAction(auth: HouseAuth, actionId: string, now: Date,
   if (bundle.objections.length === 0) {
     throw new ProtocolError("conflict", "Insist needs at least one objection", 409);
   }
+  await assertCourtCredit(auth.principal.id);
   const proof = await verifyWriteSign(
     auth,
     { op: "insist", action_id: actionId },

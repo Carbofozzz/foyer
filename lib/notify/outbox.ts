@@ -34,7 +34,7 @@ function preferredChannel(principal: typeof principals.$inferSelect): Exclude<No
 export async function syncEscalateNotify(principalId: string, origin?: string): Promise<number> {
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
-  if (!principal || principal.isSpawn) return 0;
+  if (!principal) return 0;
 
   const stale = await db
     .select({ id: notifications.id, actionStatus: actions.status, noteStatus: notifications.status })

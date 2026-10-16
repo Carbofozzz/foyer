@@ -1,7 +1,9 @@
+import { publicOrigin } from "@/lib/mcp/config";
 import { cabinetFromToken } from "@/lib/protocol/auth";
 import { jsonError, jsonOk, protocolFail } from "@/lib/protocol/http";
 import { canManage, inviteMember, listMembers, parseGrants, removeMember, saveMemberGrants } from "@/lib/protocol/members";
 import { isRecord } from "@/lib/protocol/parse";
+import { isLocale } from "@/lib/i18n/config";
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
@@ -25,12 +27,23 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   } catch {
     return jsonError("bad_request", "JSON body required", 400);
   }
-  if (!isRecord(body) || typeof body.address !== "string") {
-    return jsonError("bad_request", "address is required", 400);
+  if (!isRecord(body) || typeof body.email !== "string") {
+    return jsonError("bad_request", "email is required", 400);
   }
   const grants = parseGrants(body.grants);
+  const localeHeader = request.headers.get("x-foyer-locale") ?? undefined;
+  const locale = isLocale(localeHeader) ? localeHeader : auth.principal.contactLocale || "en";
   try {
-    return jsonOk({ role: auth.role, items: await inviteMember(auth.principal, body.address, grants) }, 201);
+    return jsonOk(
+      {
+        role: auth.role,
+        items: await inviteMember(auth.principal, body.email, grants, {
+          origin: publicOrigin(request),
+          locale,
+        }),
+      },
+      201,
+    );
   } catch (error) {
     return protocolFail(error);
   }
@@ -47,11 +60,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ token
   } catch {
     return jsonError("bad_request", "JSON body required", 400);
   }
-  if (!isRecord(body) || typeof body.address !== "string") {
-    return jsonError("bad_request", "address is required", 400);
+  if (!isRecord(body) || typeof body.email !== "string") {
+    return jsonError("bad_request", "email is required", 400);
   }
   try {
-    return jsonOk({ role: auth.role, items: await saveMemberGrants(auth.principal, body.address, parseGrants(body.grants)) });
+    return jsonOk({ role: auth.role, items: await saveMemberGrants(auth.principal, body.email, parseGrants(body.grants)) });
   } catch (error) {
     return protocolFail(error);
   }
@@ -62,10 +75,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ toke
   const auth = await cabinetFromToken(token, request);
   if ("error" in auth) return auth.error;
   if (!canManage(auth.role)) return jsonError("forbidden", "Only the owner can remove a member", 403);
-  const address = new URL(request.url).searchParams.get("address");
-  if (!address) return jsonError("bad_request", "address is required", 400);
+  const email = new URL(request.url).searchParams.get("email");
+  if (!email) return jsonError("bad_request", "email is required", 400);
   try {
-    return jsonOk({ role: auth.role, items: await removeMember(auth.principal, address) });
+    return jsonOk({ role: auth.role, items: await removeMember(auth.principal, email) });
   } catch (error) {
     return protocolFail(error);
   }

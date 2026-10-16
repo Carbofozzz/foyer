@@ -9,11 +9,14 @@ export function AddOrgForm({
   locale,
   currentId,
   houses,
+  orgUnlocked = false,
   t,
 }: {
   locale: string;
   currentId: string;
   houses: HouseListing[];
+  /** Active Pro / voucher feature_org on the personal house. */
+  orgUnlocked?: boolean;
   t: Messages["cabinet"];
 }) {
   const router = useRouter();
@@ -24,7 +27,7 @@ export function AddOrgForm({
   const personal = houses.find((house) => house.own && house.type !== "org");
   const orgs = houses.filter((house) => house.type === "org");
   const ownsOrg = orgs.some((house) => house.own);
-  const canCreate = Boolean(personal) && !ownsOrg;
+  const canCreate = Boolean(personal) && !ownsOrg && orgUnlocked;
   const onPersonal = personal?.id === currentId;
 
   async function onSubmit(event: React.FormEvent) {
@@ -53,14 +56,23 @@ export function AddOrgForm({
           {t.kicker}
         </a>
       ) : null}
-      {orgs.map((org) =>
-        org.id === currentId ? null : (
+      {orgs.map((org) => {
+        if (org.id === currentId) return null;
+        const label = `${org.name.trim() || t.houseOrg}${org.own ? "" : ` · ${t.accessLimitedShort}`}`;
+        // Owned org stays reachable only while Pro/org feature is live (freeze without sub).
+        if (org.own && !orgUnlocked) {
+          return (
+            <span key={org.id} className="ghost is-disabled" title={t.planOrgOff}>
+              {label}
+            </span>
+          );
+        }
+        return (
           <a key={org.id} className="ghost" href={`/${locale}/cabinet?house=${org.id}`}>
-            {org.name.trim() || t.houseOrg}
-            {org.own ? "" : ` · ${t.accessLimitedShort}`}
+            {label}
           </a>
-        ),
-      )}
+        );
+      })}
     </>
   );
 
@@ -101,6 +113,10 @@ export function AddOrgForm({
         <button type="button" className="ghost" onClick={() => setComposing(true)}>
           {t.addOrg}
         </button>
+      ) : personal && !ownsOrg && !orgUnlocked ? (
+        <span className="ghost is-disabled" title={t.planOrgOff}>
+          {t.addOrg}
+        </span>
       ) : null}
     </>
   );

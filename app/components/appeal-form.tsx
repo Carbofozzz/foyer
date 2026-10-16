@@ -30,10 +30,13 @@ export function AppealForm({
     setError(false);
     const response = await fetch(`/api/cases/${caseId}/appeal`, {
       method: "POST",
-      headers: cabinetHeaders(houseId, {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-      }),
+      // The signed-in cabinet rides the Clerk cookie; a bearer header would shadow it.
+      headers: cabinetHeaders(
+        houseId,
+        token === "me"
+          ? { "content-type": "application/json" }
+          : { "content-type": "application/json", authorization: `Bearer ${token}` },
+      ),
       body: JSON.stringify({ outcome }),
     });
     if (!response.ok) {

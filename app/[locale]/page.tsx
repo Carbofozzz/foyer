@@ -1,27 +1,33 @@
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { HomeGate } from "@/app/components/home-gate";
-import { SpawnButton } from "@/app/components/spawn-button";
 import { ProductOutline } from "@/app/components/product-outline";
 import { WaitlistForm } from "@/app/components/waitlist-form";
 import { isLocale } from "@/lib/i18n/config";
 import { loadMessages } from "@/lib/i18n/load";
-import { parseSession } from "@/lib/protocol/session";
+import { clerkConfigured, sessionUser } from "@/lib/protocol/session";
+import { isPlatformAdmin } from "@/lib/protocol/users";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const t = loadMessages(locale);
-  const session = parseSession((await cookies()).get("foyer_session")?.value);
+  const user = await sessionUser();
 
   return (
     <main className="home">
       <p className="kicker">{t.home.kicker}</p>
       <h1>{t.home.title}</h1>
       <p className="lead">{t.home.lead}</p>
-      <HomeGate locale={locale} t={t.home} initialAddress={session?.address ?? null} />
+      <HomeGate
+        locale={locale}
+        t={t.home}
+        enabled={clerkConfigured()}
+        email={user?.email ?? null}
+        admin={isPlatformAdmin(user)}
+      />
       <ProductOutline outline={t.outline} />
-      <SpawnButton locale={locale} t={t.spawn} />
       <WaitlistForm locale={locale} t={t.waitlist} />
     </main>
   );

@@ -1,6 +1,19 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+/** Person account. Login is Clerk; this row is our identity. */
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  authSubject: text("auth_subject").notNull().unique(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  name: text("name"),
+  /** none | ops | owner. Platform desk only; not a house grant. */
+  platformRole: text("platform_role").notNull().default("none"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+});
+
 export const principals = pgTable("principals", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -23,13 +36,15 @@ export const principals = pgTable("principals", {
   wizardConnectDone: boolean("wizard_connect_done").notNull().default(false),
   wizardHarnessDone: boolean("wizard_harness_done").notNull().default(false),
   testClients: boolean("test_clients").notNull().default(false),
-  isSpawn: boolean("is_spawn").notNull().default(false),
   courtContract: text("court_contract"),
   /** 0 = four-outcome IC. 2 = allow/deny/escalate. 3 = no appeal args. 4 = fetch cited links. 5+ = desk fields in the packet. */
   courtAbi: integer("court_abi").notNull().default(0),
   walletAddress: text("wallet_address"),
   sealedWalletKey: text("sealed_wallet_key"),
-  ownerAddress: text("owner_address").unique(),
+  /** Personal house owner. Null on an org: ownership lives on house_members. */
+  ownerUserId: text("owner_user_id")
+    .unique()
+    .references(() => users.id),
   contactEmail: text("contact_email"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   contactLocale: text("contact_locale").notNull().default("en"),
@@ -278,20 +293,58 @@ export const walletTransfers = pgTable(
   (table) => [uniqueIndex("wallet_transfers_tx").on(table.tx)],
 );
 
-/** Wallet that can open this house. Same SIWE login — no second password. */
+/** User who can open this house. Same Clerk login — no second account. */
 export const houseMembers = pgTable(
   "house_members",
   {
     principalId: text("principal_id")
       .notNull()
       .references(() => principals.id),
-    address: text("address").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     role: text("role").notNull(),
     /** Org helpers: agents | treasury | rules. Empty = activity feed only. Owner ignores this. */
     grants: jsonb("grants").$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.principalId, table.address] })],
+  (table) => [primaryKey({ columns: [table.principalId, table.userId] }), index("house_members_user").on(table.userId)],
+);
+
+/** Org seat waiting for a person who has not signed in yet. Claimed by verified email on login. */
+export const houseInvites = pgTable(
+  "house_invites",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    email: text("email").notNull(),
+    grants: jsonb("grants").$type<string[]>().notNull().default([]),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedUserId: text("accepted_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("house_invites_email").on(table.email), index("house_invites_principal").on(table.principalId)],
+);
+
+/** Platform desk mutations. Never stores keys or request bodies. */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    op: text("op").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("admin_audit_log_created").on(table.createdAt)],
 );
 
 export const waitlist = pgTable("waitlist", {
@@ -423,5 +476,179 @@ export const notifications = pgTable(
   (table) => [
     uniqueIndex("notifications_action_channel").on(table.actionId, table.channel),
     index("notifications_status").on(table.status),
+  ],
+);
+
+/** Admin-editable product plans (Free / Pro / packs). Prices in minor units. */
+export const billingPlans = pgTable("billing_plans", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  /** free | subscription | pack */
+  kind: text("kind").notNull(),
+  label: text("label").notNull(),
+  /** Credits granted per period (sub/free) or per purchase (pack). */
+  credits: integer("credits").notNull().default(0),
+  priceCents: integer("price_cents").notNull().default(0),
+  currency: text("currency").notNull().default("usd"),
+  /** Native GEN price for crypto checkout (wei as decimal string). 0 = not sold for GEN. */
+  priceWei: text("price_wei").notNull().default("0"),
+  featureOrg: boolean("feature_org").notNull().default(false),
+  /** Subscription leftovers roll; Free never does. */
+  rollover: boolean("rollover").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Crypto (GEN) checkout intent — grant after a verified transfer to the platform wallet. */
+export const billingCheckouts = pgTable(
+  "billing_checkouts",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => billingPlans.id),
+    userId: text("user_id").references(() => users.id),
+    amountWei: text("amount_wei").notNull(),
+    payTo: text("pay_to").notNull(),
+    /** pending | paid | expired | canceled */
+    status: text("status").notNull().default("pending"),
+    tx: text("tx"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("billing_checkouts_tx").on(table.tx),
+    index("billing_checkouts_principal").on(table.principalId),
+    index("billing_checkouts_status").on(table.status),
+  ],
+);
+
+/** One billing wallet per house (personal or org). */
+export const billingAccounts = pgTable("billing_accounts", {
+  principalId: text("principal_id")
+    .primaryKey()
+    .references(() => principals.id),
+  /** On-demand / pack credits — never expire. */
+  creditBalance: integer("credit_balance").notNull().default(0),
+  /** Subscription pool — rolls on renew, burns after grace. */
+  subscriptionCredits: integer("subscription_credits").notNull().default(0),
+  /** Anniversary start for Free tier (first login). Null until first Free use / ensure. */
+  freeAnchorAt: timestamp("free_anchor_at", { withTimezone: true }),
+  freeUsedInPeriod: integer("free_used_in_period").notNull().default(0),
+  freePeriodEnd: timestamp("free_period_end", { withTimezone: true }),
+  /** Active subscription plan id, if any. */
+  subscriptionPlanId: text("subscription_plan_id").references(() => billingPlans.id),
+  subscriptionPeriodEnd: timestamp("subscription_period_end", { withTimezone: true }),
+  subscriptionGraceUntil: timestamp("subscription_grace_until", { withTimezone: true }),
+  featureOrg: boolean("feature_org").notNull().default(false),
+  orgFrozenAt: timestamp("org_frozen_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const billingLedger = pgTable(
+  "billing_ledger",
+  {
+    id: text("id").primaryKey(),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    /** Signed delta: +grant / −debit / −burn. */
+    delta: integer("delta").notNull(),
+    /** grant_voucher | grant_admin | debit_court | burn_sub | adjust */
+    reason: text("reason").notNull(),
+    provider: text("provider").notNull().default("manual_admin"),
+    externalId: text("external_id"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    caseId: text("case_id"),
+    voucherId: text("voucher_id"),
+    /** Platform GEN estimate for this court debit (ops only). */
+    genCostWei: text("gen_cost_wei"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("billing_ledger_idempotency").on(table.idempotencyKey),
+    uniqueIndex("billing_ledger_case_debit").on(table.caseId),
+    index("billing_ledger_principal").on(table.principalId),
+  ],
+);
+
+/** Per platform court write — deploy / judge / resubmit. Ops cost analysis only. */
+export const courtGasStats = pgTable(
+  "court_gas_stats",
+  {
+    id: text("id").primaryKey(),
+    caseId: text("case_id"),
+    tx: text("tx"),
+    /** deploy | judge | resubmit */
+    kind: text("kind").notNull(),
+    estimatedWei: text("estimated_wei").notNull().default("0"),
+    actualWei: text("actual_wei"),
+    balanceBeforeWei: text("balance_before_wei"),
+    balanceAfterWei: text("balance_after_wei"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("court_gas_stats_case").on(table.caseId),
+    index("court_gas_stats_created").on(table.createdAt),
+  ],
+);
+
+/** Latch for low-GEN admin mail + ops threshold overrides (one row). */
+export const platformWalletState = pgTable("platform_wallet_state", {
+  id: text("id").primaryKey(),
+  lowAlertLatched: boolean("low_alert_latched").notNull().default(false),
+  lowAlertAt: timestamp("low_alert_at", { withTimezone: true }),
+  /** Submit floor override (wei). Null → env / default 0.3 GEN. */
+  floorWei: text("floor_wei"),
+  /** Alert threshold override (wei). Null → env / default 1 GEN. */
+  alertWei: text("alert_wei"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vouchers = pgTable(
+  "vouchers",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull().unique(),
+    /** credits | subscription | feature_org | bundle */
+    kind: text("kind").notNull(),
+    credits: integer("credits").notNull().default(0),
+    planId: text("plan_id").references(() => billingPlans.id),
+    durationSec: integer("duration_sec"),
+    maxRedemptions: integer("max_redemptions").notNull().default(1),
+    redeemedCount: integer("redeemed_count").notNull().default(0),
+    boundEmail: text("bound_email"),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    createdBy: text("created_by").references(() => users.id),
+    meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("vouchers_code").on(table.code)],
+);
+
+export const voucherRedemptions = pgTable(
+  "voucher_redemptions",
+  {
+    id: text("id").primaryKey(),
+    voucherId: text("voucher_id")
+      .notNull()
+      .references(() => vouchers.id),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    userId: text("user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("voucher_redemptions_voucher").on(table.voucherId),
+    index("voucher_redemptions_principal").on(table.principalId),
   ],
 );

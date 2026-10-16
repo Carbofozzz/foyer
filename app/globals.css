@@ -171,6 +171,319 @@ a {
   margin-top: 0.4rem;
 }
 
+.pricing {
+  display: grid;
+  gap: 2.4rem;
+  padding-bottom: 3.5rem;
+}
+
+.pricing-head .lead {
+  max-width: 44rem;
+}
+
+.pricing-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .pricing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Flex, not grid: a stretched card must not hand its spare height to the button row. */
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem;
+}
+
+.pricing-card.is-featured {
+  box-shadow: var(--shadow-raised);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.pricing-card > .primary {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.pricing-name {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.pricing-price {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.pricing-unit {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.pricing-blurb {
+  margin: 0;
+  color: var(--muted);
+}
+
+.pricing-checks,
+.pricing-notes,
+.pricing-packs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pricing-checks {
+  display: grid;
+  gap: 0.55rem;
+  padding-bottom: 0.4rem;
+}
+
+.pricing-checks li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.pricing-yes {
+  color: var(--ok);
+  font-weight: 600;
+  flex: none;
+  width: 1rem;
+}
+
+.pricing-no {
+  color: var(--muted);
+  flex: none;
+  width: 1rem;
+}
+
+.pricing-section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.pricing-section .section-title {
+  margin: 0;
+}
+
+.pricing-table-wrap {
+  overflow-x: auto;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-table th,
+.pricing-table td {
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  font-weight: 400;
+}
+
+.pricing-table thead th {
+  font-weight: 600;
+  width: 9rem;
+}
+
+.pricing-table tbody th {
+  text-align: left;
+}
+
+.pricing-packs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pricing-packs li {
+  display: flex;
+  gap: 1.2rem;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 13rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.pricing-packs span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-notes {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 48rem;
+}
+
+.pricing-notes li {
+  padding-left: 1rem;
+  border-left: 2px solid var(--line);
+}
+
+/* Cabinet Plan tab — same card language as /pricing. */
+.plan-desk {
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.plan-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .plan-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.plan-block {
+  min-width: 0;
+}
+
+.plan-block .feed-label {
+  margin: 0;
+}
+
+.plan-status {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-balance-lines li {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.plan-balance-key {
+  color: var(--muted);
+}
+
+.plan-balance-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.plan-history {
+  grid-column: 1 / -1;
+}
+
+.plan-ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.plan-ledger > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-ledger > li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.plan-ledger-main {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.plan-ledger-delta {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 2.5rem;
+  flex: none;
+}
+
+.plan-ledger-delta.is-in {
+  color: var(--ok);
+}
+
+.plan-ledger-delta.is-out {
+  color: var(--danger);
+}
+
+.plan-ledger-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.plan-ledger-copy strong {
+  font-weight: 600;
+}
+
+.plan-block .pricing-packs {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.plan-block .pricing-packs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.plan-block .pricing-packs li > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.plan-block .pricing-packs span {
+  display: block;
+}
+
+.plan-block .error {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
 /* The sign-in button stands on the page — a card around one button read as a stray box. */
 .home-gate {
   display: inline-flex;
@@ -839,6 +1152,12 @@ button.ghost-danger {
 }
 
 button[type="submit"]:disabled,
+span.ghost.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 button.ghost:disabled,
 button:disabled {
   opacity: 0.5;
@@ -1371,7 +1690,7 @@ button.wallet-balance:disabled {
 }
 
 .cabinet-panel:has(#cabinet-tab-inbox:checked) [data-cabinet-pane="inbox"],
-.cabinet-panel:has(#cabinet-tab-treasury:checked) [data-cabinet-pane="treasury"],
+.cabinet-panel:has(#cabinet-tab-plan:checked) [data-cabinet-pane="plan"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) [data-cabinet-pane="rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) [data-cabinet-pane="connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) [data-cabinet-pane="test"],
@@ -1382,12 +1701,13 @@ button.wallet-balance:disabled {
 }
 
 .cabinet-panel:has(#cabinet-tab-inbox:checked) label[for="cabinet-tab-inbox"],
-.cabinet-panel:has(#cabinet-tab-treasury:checked) label[for="cabinet-tab-treasury"],
+.cabinet-panel:has(#cabinet-tab-plan:checked) label[for="cabinet-tab-plan"],
 .cabinet-panel:has(#cabinet-tab-rules:checked) label[for="cabinet-tab-rules"],
 .cabinet-panel:has(#cabinet-tab-connect:checked) label[for="cabinet-tab-connect"],
 .cabinet-panel:has(#cabinet-tab-test:checked) label[for="cabinet-tab-test"],
 .cabinet-panel:has(#cabinet-tab-contacts:checked) label[for="cabinet-tab-contacts"],
-.cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"] {
+.cabinet-panel:has(#cabinet-tab-people:checked) label[for="cabinet-tab-people"],
+.cabinet-panel:has(#cabinet-tab-settings:checked) label[for="cabinet-tab-settings"] {
   background: var(--card);
   color: var(--ink);
   font-weight: 500;
@@ -1986,8 +2306,35 @@ label.segment {
   }
 }
 
+.admin-desk {
+  display: grid;
+  gap: 1rem;
+}
+
 .admin-desk .section-title {
-  margin-top: 1.4rem;
+  margin: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tabs .segment {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.admin-pane {
+  min-width: 0;
 }
 
 .admin-totals {
