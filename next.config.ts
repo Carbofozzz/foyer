@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["genlayer-js"],
   outputFileTracingIncludes: {
     "/*": ["./contracts/court.py"],
+    "/api/lock-broker": [
+      "./scripts/foyer-lock.bundle.mjs",
+      "./scripts/lock-broker.mjs",
+      "./scripts/lock-x402.mjs",
+      "./scripts/lock-secret.mjs",
+    ],
   },
 };
 

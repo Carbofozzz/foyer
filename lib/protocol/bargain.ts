@@ -64,7 +64,7 @@ export async function withdrawAction(auth: HouseAuth, actionId: string, options?
     .where(eq(actions.id, actionId));
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(next);
+  return serializeAction(next, auth.agent.id);
 }
 
 export async function reviseAction(
@@ -120,7 +120,7 @@ export async function reviseAction(
   });
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(next);
+  return serializeAction(next, auth.agent.id);
 }
 
 export async function insistAction(auth: HouseAuth, actionId: string, now: Date, options?: { sign?: WriteSignOffer }) {
@@ -147,7 +147,7 @@ export async function insistAction(auth: HouseAuth, actionId: string, now: Date,
   scheduleOpenCourt(fresh, auth.principal, now);
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(next);
+  return serializeAction(next, auth.agent.id);
 }
 
 async function requireProposer(auth: HouseAuth, actionId: string) {

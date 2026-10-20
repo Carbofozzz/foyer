@@ -862,6 +862,20 @@ textarea:focus-visible {
   border-radius: var(--radius-sm);
 }
 
+/* Text-field padding must not stretch a checkbox into a full-width control. */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--ink);
+  justify-self: start;
+  box-shadow: none;
+  border-radius: 0.2rem;
+}
+
 ::placeholder {
   color: #a49b8c;
 }
@@ -871,10 +885,40 @@ textarea {
   resize: vertical;
 }
 
-.check-row {
+.check-row,
+label.check-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  gap: 0.45rem;
+  width: auto;
+}
+
+.lock-hands {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.15rem;
+}
+
+.lock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+details.lock-fold {
+  display: grid;
   gap: 0.55rem;
+}
+
+.prompt-edit {
+  min-height: 7rem;
+  max-height: 11rem;
+  width: 100%;
+  overflow: auto;
 }
 
 .feed {
@@ -1634,6 +1678,11 @@ button.wallet-balance:disabled {
   margin-top: 0.45rem;
 }
 
+.snippet.prompt-edit {
+  max-height: 11rem;
+  overflow: auto;
+}
+
 .snippet {
   margin: 0 0 0.45rem;
   white-space: pre-wrap;
@@ -1999,6 +2048,158 @@ label.segment {
   border-top: 1px solid var(--hairline);
   display: grid;
   gap: 0.7rem;
+}
+
+.connect-step {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.guide-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.store-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+button.store-card {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.store-card.is-active {
+  border-color: var(--ink);
+}
+
+.store-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.store-ready {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ok);
+}
+
+.store-soon {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-head .feed-label {
+  margin: 0;
+}
+
+.ask {
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  flex: none;
+}
+
+.ask.is-open,
+.ask:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.ask-note {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.ask-note p {
+  margin: 0;
+}
+
+.paste-box {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem 0.8rem 0.65rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper) 45%, var(--card));
+}
+
+.paste-box .snippet {
+  margin: 0;
+}
+
+.paste-bar-end {
+  justify-content: flex-end;
+}
+
+.paste-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.connect-step a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.connect-step details,
+details.lock-fold {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+.connect-step details > button,
+.connect-step details .ghost,
+details.lock-fold > button,
+details.lock-fold .ghost,
+.connect-step .lock-actions {
+  justify-self: start;
+  width: auto;
+}
+
+.connect-step > .hint,
+.connect-step > .feed-label {
+  margin: 0;
 }
 
 .connect-desk {

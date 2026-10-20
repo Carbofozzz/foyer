@@ -1,5 +1,7 @@
 import { inArray } from "drizzle-orm";
-import { acks, actionReports, actions, agents, cases, executions, objections, verdicts } from "@/lib/db/schema";
+import { acks, actionReports, actions, agents, cases, executions, grants, objections, verdicts } from "@/lib/db/schema";
+import { tokenForGrant } from "@/lib/lock/token";
+import { ensureGrantTables } from "@/lib/lock/store";
 import { getDb } from "@/lib/db";
 import { MAX_REVISION, type KnownActionKind, type ActionPayload, type EvidenceItem, type StoredOutcome } from "./types";
 import { asEvidence, asPayload } from "./parse";
@@ -23,6 +25,7 @@ export type ActionBundle = {
   acks: (typeof acks.$inferSelect)[];
   executions: (typeof executions.$inferSelect)[];
   report: typeof actionReports.$inferSelect | null;
+  grant: typeof grants.$inferSelect | null;
 };
 
 export async function loadActionBundle(actionId: string): Promise<ActionBundle | null> {
@@ -34,16 +37,18 @@ export async function loadActionBundle(actionId: string): Promise<ActionBundle |
 export async function loadActionBundles(actionIds: string[]): Promise<ActionBundle[]> {
   const ids = [...new Set(actionIds.filter(Boolean))];
   if (ids.length === 0) return [];
+  await ensureGrantTables();
   const db = getDb();
   const actionRows = await db.select().from(actions).where(inArray(actions.id, ids));
   if (actionRows.length === 0) return [];
   const found = actionRows.map((row) => row.id);
-  const [filed, caseRows, ackRows, execRows, reportRows] = await Promise.all([
+  const [filed, caseRows, ackRows, execRows, reportRows, grantRows] = await Promise.all([
     db.select().from(objections).where(inArray(objections.actionId, found)),
     db.select().from(cases).where(inArray(cases.actionId, found)),
     db.select().from(acks).where(inArray(acks.actionId, found)),
     db.select().from(executions).where(inArray(executions.actionId, found)),
     db.select().from(actionReports).where(inArray(actionReports.actionId, found)),
+    db.select().from(grants).where(inArray(grants.actionId, found)),
   ]);
   const caseByAction = new Map<string, typeof cases.$inferSelect>();
   for (const row of caseRows) {
@@ -75,6 +80,7 @@ export async function loadActionBundles(actionIds: string[]): Promise<ActionBund
   const acksByAction = groupBy(ackRows, (row) => row.actionId);
   const execsByAction = groupBy(execRows, (row) => row.actionId);
   const reportByAction = new Map(reportRows.map((row) => [row.actionId, row]));
+  const grantByAction = new Map(grantRows.map((row) => [row.actionId, row]));
   const byId = new Map(actionRows.map((row) => [row.id, row]));
   const out: ActionBundle[] = [];
   for (const id of ids) {
@@ -89,6 +95,7 @@ export async function loadActionBundles(actionIds: string[]): Promise<ActionBund
         acksByAction.get(id) ?? [],
         execsByAction.get(id) ?? [],
         reportByAction.get(id) ?? null,
+        grantByAction.get(id) ?? null,
       ),
     );
   }
@@ -114,6 +121,7 @@ function assembleBundle(
   ackRows: (typeof acks.$inferSelect)[],
   execRows: (typeof executions.$inferSelect)[],
   report: typeof actionReports.$inferSelect | null,
+  grant: typeof grants.$inferSelect | null,
 ): ActionBundle {
   const currentObjections = filed
     .filter((row) => row.revision === action.revision)
@@ -128,6 +136,7 @@ function assembleBundle(
     acks: ackRows,
     executions: execRows,
     report,
+    grant,
   };
 }
 
@@ -154,7 +163,10 @@ export function engagedIds(proposerId: string, objectorIds: string[]): string[] 
   return [...new Set([proposerId, ...objectorIds])];
 }
 
-export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
+export function serializeAction(
+  bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>,
+  viewerAgentId?: string,
+) {
   const verdict = bundle.verdict;
   const permitted = permittedPayloadOf(bundle);
   const mayAct = bundle.action.status === "permitted" && permitted !== null;
@@ -182,6 +194,19 @@ export function serializeAction(bundle: NonNullable<Awaited<ReturnType<typeof lo
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
     may_act: mayAct,
     permitted_payload: permitted,
+    grant: bundle.grant
+      ? {
+          grant_id: bundle.grant.id,
+          hand: bundle.grant.hand,
+          status: bundle.grant.status,
+          expires_at: bundle.grant.expiresAt.toISOString(),
+          constraints: bundle.grant.constraints,
+          token:
+            viewerAgentId && viewerAgentId === bundle.action.proposerId
+              ? tokenForGrant(bundle.grant)
+              : null,
+        }
+      : null,
     report: bundle.report
       ? {
           at: bundle.report.createdAt.toISOString(),

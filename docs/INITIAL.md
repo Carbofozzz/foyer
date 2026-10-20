@@ -140,7 +140,6 @@ Product surface: `/:locale/cabinet`. Tabs: activity, plan, rules, connect, conta
 - Company house is not a wizard choice. Org 1 shipped: extra principal via **Organization**, open with `?house=`; Settings on the org house can rename or delete it ([ORG.md](ORG.md)).
 - Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A checker needs a hook URL. No auto-mint Travel. Prompt is not court evidence.
 - Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
-- Demo: static `/:locale/cabinet/demo` — six archive cases (bargain then yes/no/human), buttons do nothing. Not a house.
 - Ops: `/:locale/cabinet/admin` for `platform_role` `ops` / `owner` (bootstrap: `FOYER_ADMIN_EMAILS`). Waitlist, people, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house (audited). No keys, no charter. Everyone else → 404.
 
 Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution text the principal typed is not auto-translated.
@@ -162,11 +161,8 @@ The hackathon wizard modal is off. Rules, Connect, and Contacts tabs cover the s
 |---|---|
 | Your agent | Main path |
 | Cabinet test tab | Walk the live loop as house agents |
-| Demo / Replay | Static archive; `/replay` redirects to demo |
 
-Copy: the test tab uses the house keys; it is not the product.
-
-Reference conflicts A–F on the demo feed: several objections then court **deny**; revise without court; a pure block; insist then **allow**; silence **allow**; contradictory charter **escalate**. Court never executes a `counter_action`.
+Copy: the test tab uses the house keys; it is not the product. Court never executes a `counter_action`.
 
 ---
 
@@ -218,7 +214,7 @@ Active development of the loop is [ORCHESTRATE.md](ORCHESTRATE.md). Product logi
 - **Cabinet Auth** — [AUTH.md](AUTH.md). Clerk; A0–A3 largely shipped; prod cutover when ready.
 - **Billing** — [BILLING.md](BILLING.md). B0–B4 shipped (credits, platform court wallet, org freeze/sweep, GEN crypto). Next: B5 Stripe last (optional on GenLayer testnet).
 - **Hosted full-time agents.** Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar. Own key — the gateway never objects. Schema `wake = hosted` is reserved; Connect does not mint it. Do not ship a constitution bot in the gateway to “fill” a chat-only house.
-- **Door hole:** stats only see what went through Foyer or was reported. Closing it is a one-shot capability after `may_act` (tools off until then).
+- **Lock** — [LOCK.md](LOCK.md) (what ships and what does not), [LOCK-USE.md](LOCK-USE.md) (paste). After a pass, mint a one-shot grant. `foyer-lock` on the customer computer: `git.push` and `pay.x402`. Pay order: probe HTTP 402 → match grant → consume → read OS keychain → EIP-3009 settle. Pay key is never in MCP paste. Cursor’s terminal stays a second door for git. Not built: hosted PEP, IDE extension, mail/CRM hands, closing that terminal.
 - **Signatures, versions, windows** — [SIGN.md](SIGN.md). S1–S4 shipped (windows, write hashes, signed writes, prompt pin).
 - **Scale:** many houses with in-flight txs — one poll job per house, not N courts inside one tick.
 - Org: Org 6 shipped (desk label/cap on Connect go to the court packet; the IC applies a proposer's cap). Further slices in [ORG.md](ORG.md).
