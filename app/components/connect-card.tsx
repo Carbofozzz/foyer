@@ -575,12 +575,10 @@ export function ConnectCard({
                   </div>
                 </>
               )}
-              {current.wake === "hosted" ? null : (
-                <details>
-                  <summary>{t.advanced}</summary>
-                  <TechCard token={token} houseId={houseId} t={tech} errorLabel={errorLabel} preview={current} />
-                </details>
-              )}
+              <details>
+                <summary>{t.advanced}</summary>
+                <TechCard token={token} houseId={houseId} t={tech} errorLabel={errorLabel} preview={current} />
+              </details>
               </section>
             </>
           )}

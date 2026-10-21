@@ -95,7 +95,7 @@ export function pickAccept(
     } catch {
       continue;
     }
-    if (charge < 0n || charge > asked) continue;
+    if (charge < BigInt(0) || charge > asked) continue;
     return { ...row, resourceUrl, decimals };
   }
   return null;
