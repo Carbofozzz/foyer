@@ -1,5 +1,6 @@
-import { constraintMismatch, enabledLockHands, handFromPayload, settleRefusal } from "../lib/lock/hands.ts";
-import { signGrantJwt, verifyGrantJwt } from "../lib/lock/jwt.ts";
+import { constraintMismatch, enabledLockHands, handFromPayload, sessionOverCap, sessionSpent, settleRefusal } from "../lib/lock/hands.ts";
+import { grantJwks, signGrantJwt, verifyGrantJwt } from "../lib/lock/jwt.ts";
+import { verifyGrantToken } from "../scripts/lock-jwt.mjs";
 import { brokerMcpConfig } from "../lib/lock/snippet.ts";
 import { challengeRefusal, parsePaymentRequired, toAtomic } from "../lib/lock/x402.ts";
 
@@ -131,5 +132,28 @@ const paste = brokerMcpConfig("{}", {
 if (paste.includes("FOYER_X402_PRIVATE_KEY") || paste.includes("FOYER_AP2_SIGNING_KEY") || paste.includes("YOUR_KEY")) {
   throw new Error("payer keys must not appear in the MCP paste");
 }
+if (sessionOverCap(4, 2, 5)) {
+  /* 4 + 2 > 5 */
+} else throw new Error("session sum over cap should fail");
+if (sessionOverCap(3, 2, 5)) throw new Error("session sum inside cap should pass");
+const spent = sessionSpent(
+  [
+    { asset: "USDC", amount: 2, invocationId: "a" },
+    { asset: "USDC", amount: 1, invocationId: "again" },
+    { asset: "ETH", amount: 9, invocationId: "b" },
+  ],
+  "USDC",
+  "again",
+);
+if (spent !== 2) throw new Error("session spent skips replay and other assets");
+const local = verifyGrantToken(token, grantJwks().keys);
+if (local.grant_id !== "grn_test") throw new Error("jwks verify");
+let localBad = false;
+try {
+  verifyGrantToken(`${token}x`, grantJwks().keys);
+} catch {
+  localBad = true;
+}
+if (!localBad) throw new Error("jwks verify should reject a bad signature");
 
 console.log("lock smoke ok");

@@ -1,6 +1,6 @@
 # Lock — grants on hands
 
-Status: **pilot hands shipped** (2026-10-20). Foyer mints the grant and does not perform the hand. The customer downloads `foyer-lock.mjs`. Git uses the OS git login. Pay: the wallet key is in the OS keychain (`foyer.lock` / `pay.x402`), never in MCP paste; after a yes the program probes HTTP 402, consumes the grant, signs EIP-3009, and settles. Cursor’s terminal is still a second door for git. How to paste: [LOCK-USE.md](LOCK-USE.md). Working notes: `.local/LOCK.md`.
+Status: **pilot hands shipped**. Foyer mints the grant and does not perform the hand. The customer downloads `foyer-lock.mjs`. Before consume the program checks the JWT against `GET /api/grants/jwks`. Git uses the OS git login. Pay: the wallet key is in the OS keychain (`foyer.lock` / `pay.x402`), never in MCP paste. After a yes the program probes HTTP 402, matches the grant, consumes, signs EIP-3009, and pays that host. `max_session` is the sum of that agent’s payments in the grant TTL window. Cursor’s terminal is still a second door for git. How to paste: [LOCK-USE.md](LOCK-USE.md). Working notes: `.local/LOCK.md`.
 
 This is **not** a protocol change. The house loop stays [ORCHESTRATE.md](ORCHESTRATE.md): propose → bargain → court or human → `may_act` → `report`. Signatures of Foyer writes stay [SIGN.md](SIGN.md). Court credits stay [BILLING.md](BILLING.md). Hosted agents stay [INITIAL.md](INITIAL.md) backlog. Notify on escalate stays [NOTIFY.md](NOTIFY.md).
 
@@ -79,10 +79,13 @@ One frame. Pay has an extra probe before consume so a bad 402 does not burn the 
 2. House loop: collect / object / bargain / insist / court / human.
 3. Pass → Foyer mints a grant JWT (no secret inside).
 4. Agent calls foyer-lock with that token and the call args.
-5. Git: optional HEAD vs commit_sha. Pay: GET the URL, expect HTTP 402,
-   match host / amount / asset to the grant. Mismatch → stop, no consume.
-6. POST /api/grants/consume. Foyer matches args ⊆ constraints and
-   flips active → consumed in one transaction.
+5. Git: optional HEAD vs commit_sha. Pay: if the keychain has no payer key, stop.
+   Otherwise GET the URL, expect HTTP 402, match host / amount / asset.
+   Mismatch → stop, no consume.
+6. The broker verifies the JWT on `GET /api/grants/jwks` (signature, expiry, hand, args).
+   Then POST /api/grants/consume. Foyer checks again. For pay.x402, amounts already
+   consumed by this agent for that asset inside the grant TTL count toward max_session.
+   Over the sum → 409, row stays active. A pass flips active → consumed in one update.
 7. Only then the PEP loads the secret and runs the hand:
    git → OS git login + git push.
    pay.x402 → read keychain foyer.lock / pay.x402, sign EIP-3009,
@@ -103,7 +106,7 @@ A failed check at 5 or 6 means the hand did not move. Protocol MCP still only ta
 | PEP | **MCP broker plus the same calls over HTTP.** Not a Cursor-only extension. |
 | Catalog | Document and show every surface (MCP, HTTP, IDE extension, runtime plugin, Hosted, CI gate, facilitator). Shipped code is MCP + HTTP. Other rows are slots marked soon or harder-on-this-runtime. |
 | Runtimes | Same set as Connect: Cursor, Claude Desktop, ChatGPT, OpenClaw, custom HTTP. A new MCP client is a paste line, not a new grant protocol. |
-| Token | **JWT + mandatory consume.** Asymmetric signature (EdDSA or ES256). Private key only on Foyer. JWKS is published; the broker does **not** verify locally yet — consume is the check. |
+| Token | **JWT + mandatory consume.** Asymmetric signature (EdDSA). Private key only on Foyer. The broker verifies the JWT against `GET /api/grants/jwks` before consume. Consume still checks one-shot and revoke. |
 | JWT claims | `grant_id`, `action_id`, `agent_id`, `hand`, `constraints`, `exp`, `payload_hash`. No secret. |
 | Consume | `POST /api/grants/consume`, idempotent on `grant_id` + `invocation_id`. Args must fit constraints. `uses_remaining` usually 1. |
 | Revoke | Status `revoked` in Postgres. The next consume fails even if the JWT is unexpired. |
@@ -139,7 +142,7 @@ Mint when the action becomes permitted (`may_act`). Do not mint on `deny` or whi
 | Hand | Constraints | Secret lives | PEP | Hole to name |
 |---|---|---|---|---|
 | `git.push` | `repo`, `ref`, optional `commit_sha` | OS git login (ssh / helper / keychain) | MCP + HTTP broker | shell `git push` |
-| `pay.x402` | host allowlist, `max_per_req`, `max_session`, `asset` | OS keychain `foyer.lock` / `pay.x402`. Never MCP paste, never Foyer, never the model | MCP + HTTP broker | a raw x402 client if the agent can dump the keychain |
+| `pay.x402` | host allowlist, `max_per_req`, `max_session` (sum of this agent’s payments in the grant TTL window, same asset) | OS keychain `foyer.lock` / `pay.x402`. Never MCP paste, never Foyer, never the model | MCP + HTTP broker | a raw x402 client if the agent can dump the keychain |
 
 Later hands use the same columns: `mail.send`, `slack.post`, `crm.write`, `pay.transfer`, `pay.ap2`, `git.merge_main`, `files.read_exfil`. External mandates (AP2, wallet caps, Agent Pay, an x402 facilitator that requires a Foyer `grant_id`) run **after** this grant. They do not replace the house decision.
 
@@ -201,7 +204,7 @@ Agent routes stay key-named (no principal id in the path). Cabinet routes stay s
 | `POST /api/cabinet/:token/grants/revoke` | owner | One grant, or all live grants for the house or one agent. |
 | `GET /api/cabinet/:token/grants/export` | owner (org: a grants/audit section when that grant exists; until then the owner) | Journal download. |
 
-OpenAPI is `0.68.0` while these routes stay as shipped.
+OpenAPI is `0.69.0` while these routes stay as shipped.
 
 Env when the signer lands: `FOYER_GRANT_SIGNING_KEY` (private; comment in `.env.example`). Never the court platform key.
 
@@ -213,12 +216,12 @@ Env when the signer lands: `FOYER_GRANT_SIGNING_KEY` (private; comment in `.env.
 |---|---|---|
 | **L1** | `grants` + audit, mint on pass, JWKS, consume, expire in `sweep` | **done** |
 | **L2-git** | MCP + HTTP `git.push` | **done** (Cursor terminal still pushes) |
-| **L2-pay** | MCP + HTTP `pay.x402`: 402 probe, consume, keychain, EIP-3009 settle | **done** |
+| **L2-pay** | MCP + HTTP `pay.x402`: 402 probe, JWKS, consume, session sum, keychain, EIP-3009 | **done** |
 | **L2-ux** | Cabinet hands + ready broker paste + group store | **done** (ready/soon on groups; named `surface` / `host-hard` badges not on each runtime) |
 | **L6** | revoke-all, export, owner notify | **done** |
 | **L0** | Connect / Lock / guide copy | **done** for shipped surfaces |
 | **L3** | Second door | **pay: done** (keychain, not MCP). **git: named hole** (Cursor terminal). Host process has no shell. |
-| **L4** | External settle after grant | **done** for x402 exact/EIP-3009 and a local AP2-shaped mandate. Optional grant-gated facilitator. Not a merchant AP2 processor. |
+| **L4** | External settle after grant | **done** for x402 exact/EIP-3009 paid to that host, and a local AP2-shaped mandate. Not a merchant AP2 processor. |
 
 Both pilot hands stay on the same Grant API. Gaps live in [Not done](#not-done), not in the slice cells.
 
@@ -227,11 +230,6 @@ Both pilot hands stay on the same Grant API. Gaps live in [Not done](#not-done),
 ## Not done
 
 Same Lock plan. **None of this is in the running product.**
-
-### Grant and broker
-
-- Broker verifying the JWT locally via JWKS **before** `POST /grants/consume`. Today consume on Foyer is the check.
-- `max_session` as a running sum across grants. Today each grant is one-shot; both caps apply to that one call.
 
 ### Pay rails
 

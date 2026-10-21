@@ -45,7 +45,7 @@ Presenter checklist: [Demo script](docs/DEMO.md).
 | Guide | Read it when |
 |---|---|
 | [Connect your runtime](docs/CONNECT.md) | You paste MCP into Cursor, Claude, ChatGPT, OpenClaw, or call HTTP yourself |
-| [How Lock runs](docs/LOCK-USE.md) | Paste the broker, put the pay key in the OS keychain, then a yes can push or settle HTTP 402 |
+| [How Lock runs](docs/LOCK-USE.md) | Paste the broker, put the pay key in the OS keychain, then a yes can push or pay an HTTP 402 |
 | [Demo script](docs/DEMO.md) | You walk someone through the cabinet |
 
 ## Build notes

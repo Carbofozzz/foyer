@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.68.0",
+      version: "0.69.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -802,7 +802,7 @@ export function openApiSpec(origin: string) {
       "/api/grants/consume": {
         post: operation({
           id: "consumeGrant",
-          summary: "Consume a one-shot grant before a hand runs. Mismatched args fail and do not consume.",
+          summary: "Consume a one-shot grant before a hand runs. The broker verifies JWKS first. Mismatched args, or a pay.x402 amount over the session sum, fail and do not consume.",
           auth: "agent",
         }),
       },

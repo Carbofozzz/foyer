@@ -10,6 +10,7 @@ import { createServer } from "node:http";
 import { createInterface } from "node:readline";
 import { challengeRefusal, hasPayerKey, payX402, probe402 } from "./lock-x402.mjs";
 import { ap2Key } from "./lock-secret.mjs";
+import { assertGrantLocal } from "./lock-jwt.mjs";
 
 const origin = (process.env.FOYER_URL || "https://foyerapp.dev").replace(/\/$/, "");
 const agentKey = process.env.FOYER_AGENT_KEY || "";
@@ -78,8 +79,9 @@ const tools = [
   },
 ];
 
-async function consume(grant, args, invocationId, model, provider) {
+async function consume(grant, args, invocationId, model, provider, hand) {
   if (!agentKey) throw new Error("FOYER_AGENT_KEY is not set");
+  await assertGrantLocal({ origin, token: grant, hand, args });
   const response = await fetch(`${origin}/api/grants/consume`, {
     method: "POST",
     headers: {
@@ -146,7 +148,7 @@ async function callTool(name, args) {
       if (head !== args.commit_sha) throw new Error("HEAD does not match commit_sha");
       call.commit_sha = args.commit_sha;
     }
-    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider);
+    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider, "git.push");
     if (process.env.FOYER_LOCK_DRY === "1") return { ok: true, dry: true, would: "git.push", invocation_id: invocationId };
     await runGit(String(args.repo), String(args.ref));
     return { ok: true, ran: "git.push", invocation_id: invocationId };
@@ -161,7 +163,7 @@ async function callTool(name, args) {
       if (why) throw new Error(`Payment does not match the grant: ${why}`);
       required = probe.required;
     }
-    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider);
+    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider, "pay.x402");
     if (process.env.FOYER_LOCK_DRY === "1") return { ok: true, dry: true, would: "pay.x402", invocation_id: invocationId };
     const result = await runX402(String(args.grant || ""), invocationId, call, required);
     return { ok: true, ...result, invocation_id: invocationId };
@@ -169,7 +171,7 @@ async function callTool(name, args) {
   if (name === "sign_ap2") {
     ap2Key();
     const call = { checkout_hash: args.checkout_hash, amount: args.amount, asset: args.asset };
-    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider);
+    await consume(String(args.grant || ""), call, invocationId, args.model, args.provider, "pay.ap2");
     if (process.env.FOYER_LOCK_DRY === "1") return { ok: true, dry: true, would: "pay.ap2", invocation_id: invocationId };
     return { ok: true, ran: "pay.ap2", invocation_id: invocationId, mandate: signMandate(call) };
   }

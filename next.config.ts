@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       "./scripts/lock-broker.mjs",
       "./scripts/lock-x402.mjs",
       "./scripts/lock-secret.mjs",
+      "./scripts/lock-jwt.mjs",
     ],
   },
 };

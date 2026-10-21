@@ -12,7 +12,7 @@ Foyer is an **intra-principal** coordination layer, court, and gateway: agents o
 
 Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence). Coordination happens before court.
 
-The lock is **tools and keys**, not a prompt. After a pass Foyer mints a one-shot grant. The local broker (`foyer-lock`) runs `git.push` or `pay.x402` only after consume. The pay key lives in the OS keychain, not in MCP paste. Cursor’s terminal can still `git push`.
+The lock is **tools and keys**, not a prompt. After a pass Foyer mints a one-shot grant. The local broker (`foyer-lock`) checks the JWT against JWKS, then consumes, then runs `git.push` or `pay.x402`. Pay: HTTP 402, then keychain, then EIP-3009 to that host. `max_session` sums that agent’s payments inside the grant TTL. The pay key is not in MCP paste. Cursor’s terminal can still `git push`.
 
 ## Invariants
 
@@ -210,3 +210,4 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-20: Pay key leaves MCP paste. The broker reads `foyer.lock` / `pay.x402` from the OS keychain. Git terminal in Cursor stays a hole. OpenAPI `0.68.0`.
 - 2026-10-20: Lock docs (public and `.local/`) match the shipped pay order: 402 probe → consume → keychain → EIP-3009. Slice table lists what is done and what is not.
 - 2026-10-20: Agents tab matches that order: 402 then consume then keychain; git is HEAD then consume then push; MCP JSON hidden until opened; house hand ticks stay visible on every broker type.
+- 2026-10-21: Lock broker verifies the grant JWT against JWKS before consume. `pay.x402` `max_session` is the sum of that agent’s payments in the grant TTL window. OpenAPI `0.69.0`.

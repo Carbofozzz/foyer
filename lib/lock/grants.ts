@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import { grantAudit, grants, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { actionPayload, type ActionRow } from "@/lib/protocol/bundle";
@@ -6,7 +6,7 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { mintToken } from "@/lib/protocol/keys";
 import { notifyCopy, sendMail } from "@/lib/notify/mail";
 import { sendTelegram } from "@/lib/notify/telegram";
-import { constraintMismatch, handFromPayload } from "./hands";
+import { constraintMismatch, handFromPayload, sessionOverCap, sessionSpent } from "./hands";
 import { lockHandsFor } from "./house-hands";
 import { grantSigningKeyConfigured, verifyGrantJwt, type GrantClaims } from "./jwt";
 import { tokenForGrant } from "./token";
@@ -108,6 +108,14 @@ export async function consumeGrant(input: {
   if (row.status === "consumed") throw new ProtocolError("conflict", "Grant already used", 409);
   if (row.status !== "active" || row.expiresAt.getTime() <= Date.now()) {
     throw new ProtocolError("conflict", "Grant expired", 409);
+  }
+  if (row.hand === "pay.x402") {
+    const asset = String(row.constraints.asset ?? "");
+    const spent = sessionSpent(await recentPayAmounts(row.agentId, asset), asset, input.invocationId);
+    const amount = typeof input.args.amount === "number" ? input.args.amount : Number(input.args.amount);
+    if (sessionOverCap(spent, amount, Number(row.constraints.max_session))) {
+      throw new ProtocolError("conflict", "Grant does not allow this session", 409);
+    }
   }
 
   const updated = await db
@@ -284,6 +292,29 @@ function grantTtlSec(): number {
   const raw = Number(process.env.FOYER_GRANT_TTL_SEC ?? DEFAULT_TTL_SEC);
   if (!Number.isFinite(raw) || raw < 30) return DEFAULT_TTL_SEC;
   return Math.floor(raw);
+}
+
+/** Consumed pay.x402 amounts for this agent and asset inside the grant TTL window. */
+async function recentPayAmounts(agentId: string, asset: string) {
+  const since = new Date(Date.now() - grantTtlSec() * 1000);
+  const rows = await getDb()
+    .select({ detail: grantAudit.detail, invocationId: grantAudit.invocationId })
+    .from(grantAudit)
+    .where(
+      and(
+        eq(grantAudit.agentId, agentId),
+        eq(grantAudit.hand, "pay.x402"),
+        eq(grantAudit.kind, "invocation"),
+        gte(grantAudit.createdAt, since),
+      ),
+    );
+  return rows.map((row) => {
+    const args =
+      row.detail && typeof row.detail === "object" && "args" in row.detail
+        ? (row.detail.args as Record<string, unknown>)
+        : {};
+    return { asset: args.asset, amount: args.amount, invocationId: row.invocationId };
+  }).filter((row) => row.asset === asset);
 }
 
 async function findInvocation(grantId: string, invocationId: string) {

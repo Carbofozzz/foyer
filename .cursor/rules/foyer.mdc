@@ -15,7 +15,7 @@ Intra-principal coordination, court, and gateway. Read `AGENTS.md` and `docs/INI
 - Agent key names the house; routes carry no principal id. Principal signs in with Clerk (email / Google, no wallet).
 - The cabinet is the product surface now: Plan (court credits), rules, connect, contacts. Org members share Clerk login; they do not invent a second money path. Platform wallet pays GenLayer.
 - Product guardian = another connected assistant that reads the constitution.
-- Lock = tools/keys, not a system prompt. After a pass Foyer mints a grant; `foyer-lock` on the customer computer runs the hand only after consume. Pay key is OS keychain (`foyer.lock` / `pay.x402`), not MCP paste. Cursor’s terminal can still `git push`.
+- Lock = tools/keys, not a system prompt. After a pass Foyer mints a grant; `foyer-lock` checks the JWT against JWKS, consumes, then runs the hand. Pay: 402, then OS keychain (`foyer.lock` / `pay.x402`), then EIP-3009. Cursor’s terminal can still `git push`.
 - Tracked docs in English. Pitch and private notes stay in `.local/`.
 - User-facing chat: Russian, short. Source comments: English. UI copy: i18n catalogs `en` / `es` / `de` / `tr` / `ru`.
 - Host: Vercel (Next.js App Router). Public URL https://foyerapp.dev. No in-memory store as source of truth.

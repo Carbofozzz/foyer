@@ -16,7 +16,7 @@ The person logs into git on that computer the usual way, **before** the bot ever
 
 The person puts a funded USDC wallet key in the **OS keychain**, not in the MCP block. Service `foyer.lock`, account `pay.x402`. On a Mac, in their own Terminal (not the bot’s): `security add-generic-password -U -s foyer.lock -a pay.x402 -w '0x…'`. On Linux: `secret-tool store --label 'Foyer pay.x402' service foyer.lock account pay.x402`. Foyer never stores it. The program reads it from the keychain only.
 
-Order after a yes: probe the URL (expect HTTP 402) → match host / amount / asset to the grant → consume → sign EIP-3009 from the keychain → retry with the payment header. That is the payment. A site that does not answer 402 is not paid. A mismatch does not consume. Without the keychain entry the tool refuses before consume. The bot does not see the key in chat or in MCP paste.
+Order after a yes: if the keychain entry is missing, stop. Otherwise probe the URL (expect HTTP 402) → match host / amount / asset to the grant → verify the JWT against `GET /api/grants/jwks` → consume → sign EIP-3009 from the keychain → retry with the payment header. That is the payment. The program pays that host. A site that does not answer 402 is not paid. A mismatch does not consume. `max_session` sums this agent’s payments for that asset inside the grant TTL. The bot does not see the key in chat or in MCP paste.
 
 ### Checkout signature (`pay.ap2`)
 
@@ -76,15 +76,13 @@ The ticks in the cabinet rewrite `FOYER_LOCK_HANDS`. Without a consumed grant th
 
 `FOYER_LOCK_DRY=1` consumes the grant and does not run `git` or pay.
 
-The payer wallet is **not** an env var in the paste. Store it in the OS keychain (`foyer.lock` / `pay.x402`). Fund it with USDC on the network the 402 names (usually Base or Base Sepolia).
+The payer wallet is **not** an env var in the paste. Store it in the OS keychain (`foyer.lock` / `pay.x402`). Fund it with USDC on the network the 402 names (usually Base or Base Sepolia). Do not run a facilitator. The program pays the host that returned 402.
 
-Optional `FOYER_X402_FACILITATOR` is a grant-gated settle service on that machine (`http://127.0.0.1:8787`). When set, the broker still probes 402 and signs locally, then POSTs the signed payment there. Start it with `node scripts/lock-facilitator.mjs`. It calls `POST /api/grants/introspect`, refuses unless the grant is already consumed for that url / amount / asset, then `POST {FOYER_X402_SETTLE_URL}/settle` (default `https://x402.org/facilitator`) and fetches the paid resource. The model does not see the payer key.
-
-The cabinet badge **broker button only** means the lock is on these tools. Cursor’s built-in terminal can still `git push` with the same key. That door is not closed.
+Cursor’s built-in terminal can still `git push` with the same git login. The cabinet says so. That door is not closed.
 
 Check the hands the house may grant: `git push`, x402, and an AP2 checkout mandate. `pay.ap2` starts off. A pass for a hand that is off mints no token, so the broker has nothing to consume.
 
-Under the broker block, **Host process** is `scripts/lock-host.mjs`. Paste that into a runtime that owns the tool list (OpenClaw). That process exposes only the lock tools and refuses `shell` / `bash`. It does not close Cursor’s terminal.
+`scripts/lock-host.mjs` is the same tools with no shell, for a host that owns the tool list. The cabinet does not paste it. It does not close Cursor’s terminal.
 
 ---
 
@@ -166,7 +164,7 @@ The broker sends:
 }
 ```
 
-Foyer checks the signature, that the token belongs to this agent, that it has not expired, and that `args` fit the constraints. A different `ref`, host, asset, or an amount over `max_per_req` / `max_session` is 409. The row stays `active`. The broker does not run `git` or pay.
+The broker checks the JWT against `GET /api/grants/jwks` before it calls consume. A bad signature, the wrong hand, or an expired token never reaches consume. Foyer then checks the signature again, that the token belongs to this agent, and that `args` fit the constraints. A different `ref`, host, or asset is 409. `max_per_req` caps this call. `max_session` is the sum of this agent’s `pay.x402` amounts in the grant TTL window (default 15 minutes) for that asset; over the sum is 409 and the row stays `active`. The broker does not run `git` or pay.
 
 A match flips the row to `consumed` in one update. A second call with another `invocation_id` is 409. The same `invocation_id` returns the same success and does not push again.
 
@@ -175,10 +173,8 @@ A match flips the row to `consumed` in one update. A second call with another `i
 After a successful consume the broker runs:
 
 - `git_push` → `git push <repo> <ref>`. If `commit_sha` is set, the broker compares it to `git rev-parse HEAD` before consume. A mismatch does not consume and does not push.
-- `pay_x402` → probe HTTP 402, match the challenge to the grant, consume, read the payer key from the OS keychain, sign EIP-3009, retry with `X-PAYMENT` / `PAYMENT-SIGNATURE`. With `FOYER_X402_FACILITATOR`, the signed payload is settled there after introspect.
+- `pay_x402` → probe HTTP 402, match the challenge to the grant, verify the JWT, consume, read the payer key from the OS keychain, sign EIP-3009, retry with `X-PAYMENT` / `PAYMENT-SIGNATURE` on that host.
 - `sign_ap2` → after consume, signs an AP2 Payment Mandate `{ checkout_hash, amount, asset, issued_at, exp }` with the keychain item `foyer.lock` / `pay.ap2`. Missing keychain entry fails before consume. Foyer does not store it. Constraints are `checkout_hash`, `max`, and `asset`. The call’s amount must be within `max`.
-
-The facilitator calls `POST /api/grants/introspect` with the JWT. No agent key. The route does not consume and does not pay. Settle proceeds only when the hand is `pay.x402`, the row is `consumed`, the invocation args are this url, amount, and asset, and a signed payment payload is present. Otherwise 409 and no settle.
 
 Then the agent calls `report` on the protocol MCP. The journal records that the proposer acked the outcome.
 

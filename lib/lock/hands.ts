@@ -66,7 +66,8 @@ export function constraintMismatch(hand: string, constraints: Record<string, unk
     if (!host || !hosts.includes(host)) return "host";
     const amount = typeof args.amount === "number" ? args.amount : Number(args.amount);
     if (!Number.isFinite(amount) || amount < 0) return "amount";
-    if (amount > Number(constraints.max_per_req) || amount > Number(constraints.max_session)) return "amount";
+    if (amount > Number(constraints.max_per_req)) return "amount";
+    if (sessionOverCap(0, amount, Number(constraints.max_session))) return "amount";
     if (args.asset !== constraints.asset) return "asset";
     return null;
   }
@@ -106,6 +107,28 @@ export function settleRefusal(input: {
     amount: asked.amount,
     asset: asked.asset,
   });
+}
+
+/** True when prior consumed amounts plus this call exceed the session cap. */
+export function sessionOverCap(spent: number, amount: number, maxSession: number): boolean {
+  if (!Number.isFinite(spent) || !Number.isFinite(amount) || !Number.isFinite(maxSession)) return true;
+  return spent + amount > maxSession;
+}
+
+/** Sum of prior pay.x402 invocations for one asset. Skips a replay of the same invocation. */
+export function sessionSpent(
+  events: { asset?: unknown; amount?: unknown; invocationId?: string }[],
+  asset: string,
+  skipInvocationId: string,
+): number {
+  let sum = 0;
+  for (const event of events) {
+    if (event.invocationId && event.invocationId === skipInvocationId) continue;
+    if (event.asset !== asset) continue;
+    const amount = typeof event.amount === "number" ? event.amount : Number(event.amount);
+    if (Number.isFinite(amount) && amount > 0) sum += amount;
+  }
+  return sum;
 }
 
 export function hostOf(args: Record<string, unknown>): string | null {
