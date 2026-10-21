@@ -10,6 +10,7 @@ import type { Messages } from "@/lib/i18n/load";
 import { AGENT_PROMPT_MAX, defaultAgentPrompt } from "@/lib/mcp/config";
 import type { WakeKind } from "@/lib/protocol/types";
 import { HOUSE_EVENT } from "@/lib/wallet/events";
+import { LockCard, WhyButton } from "@/app/components/lock-card";
 
 type IssuedAgent = {
   id: string;
@@ -49,12 +50,10 @@ export function ConnectIssueFields({
   wake,
   callbackUrl,
   callbackSecret,
-  prompt,
   onName,
   onWake,
   onCallbackUrl,
   onCallbackSecret,
-  onPrompt,
   courtLabel,
   courtCap,
   onCourtLabel,
@@ -69,12 +68,10 @@ export function ConnectIssueFields({
   wake: WakeKind;
   callbackUrl: string;
   callbackSecret: string;
-  prompt: string;
   onName: (value: string) => void;
   onWake: (value: WakeKind) => void;
   onCallbackUrl: (value: string) => void;
   onCallbackSecret: (value: string) => void;
-  onPrompt: (value: string) => void;
   courtLabel?: string;
   courtCap?: string;
   onCourtLabel?: (value: string) => void;
@@ -161,16 +158,6 @@ export function ConnectIssueFields({
           </label>
         </>
       ) : null}
-      <label className="connect-field connect-field-wide">
-        <span>{t.promptLabel}</span>
-        <textarea
-          value={prompt}
-          rows={8}
-          maxLength={AGENT_PROMPT_MAX}
-          onChange={(event) => onPrompt(event.target.value)}
-        />
-      </label>
-      <p className="hint">{t.promptHint}</p>
       {showIssue ? (
         <div className="connect-field connect-field-action">
           <span aria-hidden="true">&nbsp;</span>
@@ -201,7 +188,9 @@ function agentFromPreview(preview: ConnectPayload): IssuedAgent {
 export function ConnectCard({
   token,
   houseId,
+  locale,
   t,
+  lock,
   tech,
   errorLabel,
   compact,
@@ -210,7 +199,9 @@ export function ConnectCard({
 }: {
   token: string;
   houseId?: string;
+  locale: string;
   t: Messages["connect"];
+  lock?: Messages["lock"];
   tech: Messages["tech"];
   errorLabel: string;
   compact?: boolean;
@@ -226,6 +217,8 @@ export function ConnectCard({
   const [callbackUrl, setCallbackUrl] = useState("");
   const [callbackSecret, setCallbackSecret] = useState("");
   const [deskPrompt, setDeskPrompt] = useState(defaultAgentPrompt);
+  const [promptWhy, setPromptWhy] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState(false);
   const [issueLabel, setIssueLabel] = useState("");
   const [issueCap, setIssueCap] = useState("");
   const [selectedDesk, setSelectedDesk] = useState("");
@@ -293,6 +286,7 @@ export function ConnectCard({
     setSelectedDesk(current ? current.prompt || defaultAgentPrompt() : defaultAgentPrompt());
     setSelectedLabel(current?.court_label ?? "");
     setSelectedCap(current?.court_cap ?? "");
+    setEditingPrompt(false);
   }, [current?.id, current?.prompt, current?.court_label, current?.court_cap]);
 
   async function saveDesk() {
@@ -326,6 +320,7 @@ export function ConnectCard({
           : row,
       ),
     );
+    setEditingPrompt(false);
   }
 
   async function issue() {
@@ -408,8 +403,6 @@ export function ConnectCard({
             onWake={setWake}
             onCallbackUrl={setCallbackUrl}
             onCallbackSecret={setCallbackSecret}
-            prompt={deskPrompt}
-            onPrompt={setDeskPrompt}
             courtLabel={houseType === "org" ? issueLabel : undefined}
             courtCap={houseType === "org" ? issueCap : undefined}
             onCourtLabel={houseType === "org" ? setIssueLabel : undefined}
@@ -453,11 +446,11 @@ export function ConnectCard({
               · {wakeLabel(current.wake, t)}
             </span>
           </p>
+          <p className="hint">{t.schemeLead}</p>
           {current.wake === "hosted" ? (
             <p className="hint">{t.hostedNote}</p>
           ) : (
             <>
-              <p className="hint">{current.wake === "callback" ? t.offToolsHook : t.offTools}</p>
               {current.wake === "callback" && current.callback_url ? (
                 <div className="connect-field">
                   <span>{t.callbackUrlLabel}</span>
@@ -471,43 +464,37 @@ export function ConnectCard({
                   <CopyButton text={current.callback_secret} copyLabel={t.copy} copiedLabel={t.copied} />
                 </div>
               ) : null}
-              <div>
-                <p className="feed-label">{t.configLabel}</p>
-                <pre className="mono snippet">{current.mcp_config}</pre>
-                <CopyButton text={current.mcp_config} copyLabel={t.copy} copiedLabel={t.copied} />
-                {preview ? null : (
-                  <>
-                    <p className="hint">{t.rotateHint}</p>
-                    <button
-                      type="button"
-                      className="ghost"
-                      disabled={rotating}
-                      aria-busy={rotating}
-                      onClick={() => void rotate()}
-                    >
-                      {rotating ? t.rotating : t.rotate}
-                    </button>
-                  </>
-                )}
-              </div>
-              <div>
-                <p className="feed-label">{t.promptLabel}</p>
-                {preview ? (
-                  <pre className="mono snippet">{pasteText}</pre>
-                ) : (
-                  <textarea
-                    className="charter-edit"
-                    value={selectedDesk}
-                    rows={8}
-                    maxLength={AGENT_PROMPT_MAX}
-                    onChange={(event) => setSelectedDesk(event.target.value)}
-                  />
-                )}
-                <p className="hint">{t.promptHint}</p>
-                {preview ? null : <p className="hint">{t.promptPinHint}</p>}
-                {preview ? null : (
-                  <>
-                    {houseType === "org" ? (
+              <section className="connect-step">
+                <div className="step-head">
+                  <p className="feed-label">{t.stepPrompt}</p>
+                  <WhyButton open={promptWhy} label={t.ask} onClick={() => setPromptWhy((value) => !value)} />
+                </div>
+                <p className="hint">{t.stepPromptLead}</p>
+                {promptWhy ? (
+                  <div className="ask-note">
+                    <p>{t.whyPrompt}</p>
+                    <p>
+                      <a href={`/${locale}/guide#agent`}>{t.guideLink}</a>
+                    </p>
+                  </div>
+                ) : null}
+                <div className="paste-box">
+                  {editingPrompt && !preview ? (
+                    <textarea
+                      className="prompt-edit"
+                      value={selectedDesk}
+                      rows={5}
+                      maxLength={AGENT_PROMPT_MAX}
+                      onChange={(event) => setSelectedDesk(event.target.value)}
+                    />
+                  ) : (
+                    <details>
+                      <summary>{t.showBlock}</summary>
+                      <pre className="mono snippet prompt-edit">{pasteText}</pre>
+                    </details>
+                  )}
+                  {editingPrompt && !preview ? <p className="hint">{t.promptPinHint}</p> : null}
+                  {editingPrompt && !preview && houseType === "org" ? (
                     <div className="connect-desk">
                       <label className="connect-field">
                         <span>{t.courtLabel}</span>
@@ -531,27 +518,71 @@ export function ConnectCard({
                       </label>
                       <p className="hint">{t.courtHint}</p>
                     </div>
-                    ) : null}
+                  ) : null}
+                  <div className="paste-bar paste-bar-end">
+                    {preview ? null : editingPrompt ? (
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={savingPrompt}
+                        aria-busy={savingPrompt}
+                        onClick={() => {
+                          if (!deskDirty) {
+                            setEditingPrompt(false);
+                            return;
+                          }
+                          void saveDesk();
+                        }}
+                      >
+                        {savingPrompt ? t.promptSaving : t.promptSave}
+                      </button>
+                    ) : (
+                      <button type="button" className="ghost" onClick={() => setEditingPrompt(true)}>
+                        {t.editPrompt}
+                      </button>
+                    )}
+                    <CopyButton text={pasteText} copyLabel={t.copyPrompt} copiedLabel={t.copied} />
+                  </div>
+                </div>
+              </section>
+              {lock && current.agent_key ? (
+                <LockCard
+                  token={token}
+                  houseId={houseId}
+                  origin={current.mcp_url.replace(/\/api\/mcp$/, "")}
+                  agentKey={current.agent_key}
+                  agentId={current.id}
+                  locale={locale}
+                  protocol={current.mcp_config}
+                  t={lock}
+                  preview={Boolean(preview)}
+                />
+              ) : null}
+              <section className="connect-step">
+              {preview ? null : (
+                <>
+                  <p className="hint">{t.leaked}</p>
+                  <div className="lock-actions">
                     <button
                       type="button"
                       className="ghost"
-                      disabled={savingPrompt || !deskDirty}
-                      aria-busy={savingPrompt}
-                      onClick={() => void saveDesk()}
+                      disabled={rotating}
+                      aria-busy={rotating}
+                      onClick={() => void rotate()}
                     >
-                      {savingPrompt ? t.promptSaving : t.promptSave}
+                      {rotating ? t.rotating : t.rotate}
                     </button>
-                  </>
-                )}
-                <CopyButton text={pasteText} copyLabel={t.copy} copiedLabel={t.copied} />
-              </div>
+                  </div>
+                </>
+              )}
+              {current.wake === "hosted" ? null : (
+                <details>
+                  <summary>{t.advanced}</summary>
+                  <TechCard token={token} houseId={houseId} t={tech} errorLabel={errorLabel} preview={current} />
+                </details>
+              )}
+              </section>
             </>
-          )}
-          {current.wake === "hosted" ? null : (
-            <details>
-              <summary>{t.advanced}</summary>
-              <TechCard token={token} houseId={houseId} t={tech} errorLabel={errorLabel} preview={current} />
-            </details>
           )}
         </div>
       ) : null}

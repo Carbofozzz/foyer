@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "node scripts/build-lock.mjs && next build",
+    "lock:build": "node scripts/build-lock.mjs",
+    "lock:smoke": "node --experimental-strip-types scripts/lock-smoke.ts",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
@@ -28,6 +30,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "drizzle-kit": "^0.31.4",
+    "esbuild": "^0.28.2",
     "eslint": "^9.30.0",
     "eslint-config-next": "^16.0.0",
     "typescript": "^5.8.0"

@@ -10,6 +10,7 @@ __pycache__/
 .venv/
 dist/
 .cache/
+scripts/foyer-lock.bundle.mjs
 
 # Local agent overrides (not shared)
 AGENTS.override.md

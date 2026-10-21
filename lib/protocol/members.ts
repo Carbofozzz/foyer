@@ -92,6 +92,8 @@ function parseEmail(raw: string): string {
 
 export async function accessFor(userId: string, houseId: string): Promise<HouseAccess | null> {
   if (!userId) return null;
+  const { ensureLockHandsColumn } = await import("@/lib/lock/house-hands");
+  await ensureLockHandsColumn();
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, houseId)).limit(1);
   if (!principal) return null;
@@ -109,6 +111,8 @@ export async function accessFor(userId: string, houseId: string): Promise<HouseA
 
 export async function listHousesFor(userId: string): Promise<HouseListing[]> {
   if (!userId) return [];
+  const { ensureLockHandsColumn } = await import("@/lib/lock/house-hands");
+  await ensureLockHandsColumn();
   const db = getDb();
   const [own] = await db.select().from(principals).where(eq(principals.ownerUserId, userId)).limit(1);
   const rows = await db

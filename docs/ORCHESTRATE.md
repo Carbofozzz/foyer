@@ -28,7 +28,6 @@ Court is a paid stand-in for the principal’s attention (~$1 / case), not a dai
 - Gateway client is always an agent. The UI does not open a case around the API. The gateway never writes an objection in its own name.
 - One house, agent key names the house, principal wallet login, cabinet, permit-then-act, `report`, irreversible kinds wait the appeal window.
 - No daemons. Time still advances in `sweep(principal, now)` on cron and on protocol reads.
-- Demo stays `/:locale/cabinet/demo`.
 - Chat runtimes (Cursor, Claude, ChatGPT, OpenClaw-as-MCP-client) cannot be woken. They propose and must poll inbox at least every 30 s until the action is decided. They are not guardians of the window.
 
 ---
@@ -242,7 +241,7 @@ Each step is a card in a growing history. After propose: a **Foyer sent a notice
 
 ## Out of scope here
 
-Telegram-as-bot and email-on-escalate are [NOTIFY.md](NOTIFY.md), not this loop. Signatures / pin version / split windows are [SIGN.md](SIGN.md). Other INITIAL backlog (including hosted agents), bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
+Telegram-as-bot and email-on-escalate are [NOTIFY.md](NOTIFY.md), not this loop. Signatures / pin version / split windows are [SIGN.md](SIGN.md). Hand grants after a pass are [LOCK.md](LOCK.md), not a new court outcome. Other INITIAL backlog (including hosted agents), bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
 
 ---
 

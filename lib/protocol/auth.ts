@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { agents, principals } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { DEMO_TOKEN } from "@/lib/demo/preview";
 import { assertOrgNotFrozen, isOrgPrincipal } from "@/lib/billing/org-lifecycle";
 import { ProtocolError } from "./errors";
 import { bearerToken, jsonError, protocolFail } from "./http";
@@ -9,6 +8,7 @@ import { findHouseByOwner } from "./houses";
 import { hashSecret } from "./keys";
 import { accessFor, canManage, hasGrant, type HouseAccess } from "./members";
 import { ensureAgentPromptColumn } from "./house-clients";
+import { ensureLockHandsColumn } from "@/lib/lock/house-hands";
 import { ensureHouseWindowsColumn } from "./house-windows";
 import { ensureWriteHashColumns } from "./write-hash";
 import { ensureWriteSignColumns } from "./write-sign";
@@ -25,6 +25,7 @@ export async function requireAgent(request: Request) {
   await ensureHouseWindowsColumn();
   await ensureWriteHashColumns();
   await ensureWriteSignColumns();
+  await ensureLockHandsColumn();
   const db = getDb();
   const [agent] = await db.select().from(agents).where(eq(agents.keyHash, hashSecret(token))).limit(1);
   if (!agent) {
@@ -99,6 +100,7 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
   await ensureHouseWindowsColumn();
   await ensureWriteHashColumns();
   await ensureWriteSignColumns();
+  await ensureLockHandsColumn();
   if (token === "me") {
     if (!request) return null;
     const user = await sessionUser();
@@ -116,7 +118,6 @@ export async function openCabinet(token: string, request?: Request, houseId?: st
     if (!principal) return null;
     return asCabinet(principal, "owner", "me", ["agents", "treasury", "rules"]);
   }
-  if (token === DEMO_TOKEN) return null;
   if (!token.startsWith("cab_")) return null;
   const db = getDb();
   const [principal] = await db
@@ -144,11 +145,6 @@ export async function requireCabinetRequest(request: Request) {
       throw error;
     }
     if (!opened) return { error: jsonError("unauthorized", "Sign in required", 401) };
-    return opened;
-  }
-  if (token === DEMO_TOKEN) {
-    const opened = await openCabinet(DEMO_TOKEN, request);
-    if (!opened) return { error: jsonError("not_found", "Unknown house", 404) };
     return opened;
   }
   if (!token.startsWith("cab_")) {

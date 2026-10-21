@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.59.1",
+      version: "0.69.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -782,6 +782,52 @@ export function openApiSpec(origin: string) {
           body: "WaitlistRequest",
           ok: "WaitlistOk",
           created: true,
+        }),
+      },
+      "/api/lock-broker": {
+        get: operation({
+          id: "downloadLockBroker",
+          summary: "Download foyer-lock.mjs. The customer runs it on their computer. Foyer does not.",
+        }),
+      },
+      "/api/grants/jwks": {
+        get: operation({ id: "grantJwks", summary: "Public keys that verify grant JWTs" }),
+      },
+      "/api/grants/introspect": {
+        post: operation({
+          id: "introspectGrant",
+          summary: "Read grant status for a facilitator. JWT is the credential. Does not consume or settle.",
+        }),
+      },
+      "/api/grants/consume": {
+        post: operation({
+          id: "consumeGrant",
+          summary: "Consume a one-shot grant before a hand runs. The broker verifies JWKS first. Mismatched args, or a pay.x402 amount over the session sum, fail and do not consume.",
+          auth: "agent",
+        }),
+      },
+      "/api/cabinet/{token}/lock": {
+        get: operation({
+          id: "getLockHands",
+          summary: "Hands this house may mint grants for (owner session)",
+          auth: "session",
+        }),
+        post: operation({
+          id: "setLockHands",
+          summary: "Enable or disable git.push, pay.x402, and pay.ap2 (owner session)",
+          auth: "session",
+        }),
+      },
+      "/api/cabinet/{token}/grants": {
+        get: operation({
+          id: "exportGrants",
+          summary: "Export the grant journal for this house (owner session)",
+          auth: "session",
+        }),
+        post: operation({
+          id: "revokeGrants",
+          summary: "Revoke live grants for the house, one agent, or one grant (owner session)",
+          auth: "session",
         }),
       },
       "/api/pricing": {

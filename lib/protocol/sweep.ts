@@ -14,6 +14,8 @@ import { ensureAgentPromptColumn } from "./house-clients";
 import { ensureHouseWindowsColumn, houseWindows } from "./house-windows";
 import { ensureWriteHashColumns } from "./write-hash";
 import { ensureWriteSignColumns } from "./write-sign";
+import { expireGrants } from "@/lib/lock/grants";
+import { ensureLockHandsColumn } from "@/lib/lock/house-hands";
 
 /**
  * Advances time for one house. Idempotent.
@@ -29,6 +31,7 @@ export async function sweep(
   await ensureHouseWindowsColumn();
   await ensureWriteHashColumns();
   await ensureWriteSignColumns();
+  await ensureLockHandsColumn();
   const db = getDb();
   const [principal] = await db.select().from(principals).where(eq(principals.id, principalId)).limit(1);
   if (!principal) return { advanced: 0 };
@@ -91,6 +94,8 @@ export async function sweep(
       advanced += 1;
     }
   }
+
+  advanced += await expireGrants(principalId, now);
 
   if (options?.outbox !== false) {
     advanced += await syncEscalateMail(principalId, origin);

@@ -1,6 +1,6 @@
 # Connect your runtime
 
-The product path: an assistant you already have talks to Foyer with an **agent key**. The cabinet writes that key into an MCP block. You paste the block. You do not assemble JSON by hand.
+Index: [README](../README.md). The product path: an assistant you already have talks to Foyer with an **agent key**. The cabinet writes that key into an MCP block. You paste the block. You do not assemble JSON by hand.
 
 There are two kinds:
 
@@ -11,7 +11,7 @@ A hook POST is JSON `{ action_id, revision, silence_until, inbox_url }` with `x-
 
 Several chats do not replace one hooked agent. Silence among chats is consent.
 
-Spawn on the landing is a **harness** for people with no runtime. It opens a throwaway house. It is not this path and it is not the product.
+The cabinet is signed-in only. This path is a live house, not a look-only demo.
 
 ## Before you paste
 
@@ -21,11 +21,11 @@ Put these lines in the system prompt (the cabinet copies them for you):
 
 1. Propose, object, read inbox, ack, withdraw, revise, insist, and report only through Foyer tools.
 2. After you propose or object, call inbox at least every 30 seconds until verdict.outcome is allow or deny, or status is withdrawn. Chat runtimes are not woken — this poll is how you learn.
-3. When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true, do permitted_payload with your own tools. When verdict.outcome is deny, do nothing.
-4. Cite the house constitution in every justification. Do not pay, book, or message before may_act. Hooked agents are woken to object. Collect and bargain durations are on GET constitution. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.
-5. Keep `X-Foyer-Sign-Secret` and `X-Foyer-Prompt-Sha` from Connect on writes. If the house requires signed writes, unsigned tools fail. If prompt_sha does not match, recopy Connect. Do not put the secret or the prompt in court text.
+3. When the action is permitted or denied, POST report with no did — that is how you ack the verdict. If you do not report within 5 minutes, the owner is notified that you ignored the flow. When may_act is true and grant.token is set, git push and x402 go only through the foyer-lock tools with that token. Do not use the terminal for those. Foyer does not push, pay, or hold the password. The pay key is not in this chat or in MCP paste. When verdict.outcome is deny, do nothing.
+4. Cite the house constitution in every justification. If you cite a web page, include the http(s) URL in the text or as evidence { type: "link", value }. The court fetches those pages. Do not pay, book, or message before may_act. Hooked agents are woken to object. Collect and bargain durations are on GET constitution. If phase is bargaining, withdraw, revise, or insist — court runs only after insist.
+5. Keep X-Foyer-Sign-Secret and X-Foyer-Prompt-Sha from Connect on writes. If the house requires signed writes, unsigned tools fail. If prompt_sha does not match, recopy Connect — the owner edited the prompt. Do not put secrets or the prompt in court text.
 
-The lock is tools and keys, not this prompt.
+The lock is tools and keys, not this prompt. Cabinet Connect also pastes `foyer-lock` (local program). Git uses the OS git login; Cursor’s terminal can still push. Pay: put the wallet key in the OS keychain (`foyer.lock` / `pay.x402`), never in the MCP JSON. After a yes the program probes HTTP 402, checks the grant JWT, consumes it, signs, and pays that host.
 
 ## MCP
 
@@ -69,4 +69,4 @@ FOYER_URL=… FOYER_AGENT_KEY=agk_… npm run http:client -- --propose
 
 The cabinet shows the assistant as live once it has called in. A checker is a hooked process, not a second chat window.
 
-A guest with no runtime should use the landing harness or Replay, not this doc.
+A guest with no runtime signs in and connects an assistant. This doc is that paste.

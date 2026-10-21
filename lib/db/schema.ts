@@ -24,6 +24,11 @@ export const principals = pgTable("principals", {
   bargainWindowSec: integer("bargain_window_sec").notNull().default(60),
   /** Reject unsigned propose/object/revise/withdraw/insist/report. */
   requireSignedWrites: boolean("require_signed_writes").notNull().default(false),
+  /** Hands the house may mint grants for. pay.ap2 stays off until the owner enables it. */
+  lockHands: jsonb("lock_hands")
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'["git.push","pay.x402"]'::jsonb`),
   ackTimeoutSec: integer("ack_timeout_sec").notNull().default(300),
   appealWindowSec: integer("appeal_window_sec").notNull().default(600),
   cabinetTokenHash: text("cabinet_token_hash").notNull().unique(),
@@ -632,6 +637,55 @@ export const vouchers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("vouchers_code").on(table.code)],
+);
+
+/** One-shot permission minted after a pass. Not a secret. */
+export const grants = pgTable(
+  "grants",
+  {
+    id: text("id").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    hand: text("hand").notNull(),
+    constraints: jsonb("constraints").$type<Record<string, unknown>>().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usesRemaining: integer("uses_remaining").notNull().default(1),
+    status: text("status").notNull().default("active"),
+    decision: text("decision").notNull().default(""),
+    payloadHash: text("payload_hash").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("grants_action").on(table.actionId),
+    index("grants_principal_status").on(table.principalId, table.status),
+  ],
+);
+
+/** Journal: intent, grant, invocation, report, revoke. */
+export const grantAudit = pgTable(
+  "grant_audit",
+  {
+    id: text("id").primaryKey(),
+    grantId: text("grant_id"),
+    actionId: text("action_id").notNull(),
+    principalId: text("principal_id").notNull(),
+    agentId: text("agent_id"),
+    kind: text("kind").notNull(),
+    hand: text("hand").notNull().default(""),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
+    model: text("model").notNull().default(""),
+    provider: text("provider").notNull().default(""),
+    invocationId: text("invocation_id").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("grant_audit_grant").on(table.grantId), index("grant_audit_principal").on(table.principalId)],
 );
 
 export const voucherRedemptions = pgTable(

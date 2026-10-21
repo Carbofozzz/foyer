@@ -12,7 +12,7 @@ Foyer is an **intra-principal** coordination layer, court, and gateway: agents o
 
 Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence). Coordination happens before court.
 
-The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / `calendar` tools. After a pass the gateway **permits**; the agent acts and reports.
+The lock is **tools and keys**, not a prompt. After a pass Foyer mints a one-shot grant. The local broker (`foyer-lock`) checks the JWT against JWKS, then consumes, then runs `git.push` or `pay.x402`. Pay: HTTP 402, then keychain, then EIP-3009 to that host. `max_session` sums that agent’s payments inside the grant TTL. The pay key is not in MCP paste. Cursor’s terminal can still `git push`.
 
 ## Invariants
 
@@ -23,7 +23,7 @@ The lock is **tools and keys**, not a prompt. An agent has no direct `stripe` / 
 - Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- A **product guardian** is another connected assistant that reads the constitution in its own model. **Demo** is one shared look-only house at `/:locale/cabinet/demo`. Do not mix the two.
+- A **product guardian** is another connected assistant that reads the constitution in its own model. There is no shared look-only cabinet.
 - Propose has no `kind`. Adapter stubs still exist for old spend/book/message/cancel rows; the live loop is permit-then-act.
 - Public product at **https://foyerapp.dev**. Next protocol change is [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md), not a new entity beside the gateway.
 
@@ -192,3 +192,22 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-14: Docs — [BILLING.md](docs/BILLING.md) / INITIAL / ORG / AUTH mark B0–B4 shipped; next slice B5 Stripe (optional on GenLayer testnet).
 - 2026-10-16: Hobby cron — `vercel.json` is `0 0 * * *` (once a day). `CRON_INTERVAL_SEC` default is 86400 so health does not mark that tick stale. Reads still close windows and poll an inflight court hash; a new court submit still waits for tick.
 - 2026-10-16: Terms and privacy match live login. Account is email or Google via Clerk; Google data is email, name, and account id only. Wallet address is not the account. Pages: `/:locale/legal`, `/:locale/privacy`.
+- 2026-10-16: Audit pass recorded in [docs/AUDIT.md](docs/AUDIT.md). One external control tree for a personal or company case (link and API). Roles, outcome, constitution snapshot, write hashes, court tx. Case text stays in the house. Not built.
+- 2026-10-19: Lock plan in [`docs/LOCK.md`](docs/LOCK.md). After a pass, a hand is dead until a one-shot grant (JWT + consume). Brokers: `git.push` and `pay.x402` over MCP and HTTP, plus revoke-all and audit export. Cursor shell stays a second door for git. Not a protocol change. Not built.
+- 2026-10-19: Lock L1–L2 and L6 — `grants` / `grant_audit` minted on permit when the payload names `git.push` or `pay.x402`; Ed25519 JWT (`FOYER_GRANT_SIGNING_KEY`); `POST /api/grants/consume` checks constraints before the hand runs; local PEP `scripts/lock-broker.mjs`; cabinet Lock block, revoke, journal export. OpenAPI `0.60.0`. Cursor terminal is still a second door.
+- 2026-10-19: Operator guide [`docs/LOCK-USE.md`](docs/LOCK-USE.md) — two pastes (protocol MCP and local broker), propose payload, consume call, revoke and journal.
+- 2026-10-19: [`README.md`](README.md) is the index: what Foyer is, install, use, then links to Connect, Lock use, and the demo script.
+- 2026-10-19: Lock L4 — `POST /api/grants/introspect` and `scripts/lock-facilitator.mjs`. Settle only when a `pay.x402` grant is already consumed for that url, amount, and asset. Broker uses `FOYER_X402_FACILITATOR`. `git_push` checks `commit_sha` against HEAD before consume. OpenAPI `0.61.0`. AP2 and closing the Cursor terminal are still open.
+- 2026-10-19: Lock remainder — house `lock_hands` toggles (`git.push`, `pay.x402`, `pay.ap2` off until enabled); `sign_ap2` signs a checkout mandate on the machine only after consume (`FOYER_AP2_SIGNING_KEY`); `scripts/lock-host.mjs` is the no-shell tool list. Cursor’s terminal stays a second door. OpenAPI `0.62.0`.
+- 2026-10-19: Removed the look-only cabinet at `/:locale/cabinet/demo`. The cabinet is signed-in only. `npm run demo` no longer fetches that page.
+- 2026-10-19: Agents tab hides paste until it is opened. Lock hands are written into the broker snippet as `FOYER_LOCK_HANDS`, and the broker lists only those tools. Plain steps live at `/:locale/guide`.
+- 2026-10-19: Agents paste is one `mcpServers` block (`foyer` plus `foyer-lock`). Ticks and Copy sit on that field. A missing `foyer-lock` leaves the terminal able to push.
+- 2026-10-20: `GET /api/lock-broker` serves `scripts/lock-broker.mjs`. The cabinet tells the customer to save it in the open project at that path. OpenAPI `0.63.0`.
+- 2026-10-20: Lock paste is `foyer-lock` at `/api/lock/mcp` (HTTP twin `POST /api/lock/call`). Same bearer as the chat. No local file. Hands still gate the tool list. OpenAPI `0.64.0`.
+- 2026-10-20: Those lock routes are removed. Foyer mints and consumes a grant only. It does not push, pay, or hold a password. OpenAPI `0.65.0`.
+- 2026-10-20: Cabinet paste starts `foyer-lock.mjs` on the customer computer (`GET /api/lock-broker`). Ticks set `FOYER_LOCK_HANDS`. `--http` is the same program for a non-MCP client. Foyer does not run the hand. OpenAPI `0.66.0`.
+- 2026-10-20: Lock pay is a real x402 settle. After consume the broker probes HTTP 402, matches host/amount/asset, signs EIP-3009 on the machine, and retries with the payment header. A GET is not a payment. The grant-gated facilitator forwards that payload to `FOYER_X402_SETTLE_URL` (default x402.org). `sign_ap2` writes an AP2 Payment Mandate. OpenAPI `0.67.0`.
+- 2026-10-20: Pay key leaves MCP paste. The broker reads `foyer.lock` / `pay.x402` from the OS keychain. Git terminal in Cursor stays a hole. OpenAPI `0.68.0`.
+- 2026-10-20: Lock docs (public and `.local/`) match the shipped pay order: 402 probe → consume → keychain → EIP-3009. Slice table lists what is done and what is not.
+- 2026-10-20: Agents tab matches that order: 402 then consume then keychain; git is HEAD then consume then push; MCP JSON hidden until opened; house hand ticks stay visible on every broker type.
+- 2026-10-21: Lock broker verifies the grant JWT against JWKS before consume. `pay.x402` `max_session` is the sum of that agent’s payments in the grant TTL window. OpenAPI `0.69.0`.

@@ -40,7 +40,7 @@ export async function reportAction(
   if (existing) {
     const next = await loadActionBundle(actionId);
     if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
-    return serializeAction(next);
+    return serializeAction(next, auth.agent.id);
   }
   const proof = await verifyWriteSign(
     auth,
@@ -57,9 +57,11 @@ export async function reportAction(
     })
     .onConflictDoNothing();
   await stampActionWrite(actionId, "report", writeHash({ op: "report", action_id: actionId }), writeSignStamp(proof));
+  const { recordGrantReport } = await import("@/lib/lock/grants");
+  await recordGrantReport(actionId, auth.agent.id);
   const done = await loadActionBundle(actionId);
   if (!done) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(done);
+  return serializeAction(done, auth.agent.id);
 }
 
 export async function doorStatsFor(principalId: string): Promise<DoorStats[]> {

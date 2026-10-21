@@ -2,7 +2,7 @@ import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isLocale, negotiateLocale } from "@/lib/i18n/config";
 
-/** Personal cabinet needs a session. `/cabinet/demo`, `/cabinet/admin`, and `cab_` links decide for themselves. */
+/** Personal cabinet needs a session. `/cabinet/admin` and `cab_` links decide for themselves. */
 const CABINET_HOME = /^\/[a-z]{2}\/cabinet\/?$/;
 
 function routeLocale(request: NextRequest) {

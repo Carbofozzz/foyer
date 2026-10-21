@@ -60,7 +60,7 @@ export async function proposeAction(
   }
   const bundle = await loadActionBundle(id);
   if (!bundle) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(bundle);
+  return serializeAction(bundle, auth.agent.id);
 }
 
 export async function fileObjection(
@@ -108,7 +108,7 @@ export async function fileObjection(
   await stampActionWrite(actionId, "object", hash, writeSignStamp(proof));
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(next);
+  return serializeAction(next, auth.agent.id);
 }
 
 export async function ackAction(auth: HouseAuth, actionId: string) {
@@ -127,7 +127,7 @@ export async function ackAction(auth: HouseAuth, actionId: string) {
     throw new ProtocolError("forbidden", "This agent is not engaged", 403);
   }
   if (bundle.acks.some((row) => row.agentId === auth.agent.id)) {
-    return serializeAction(bundle);
+    return serializeAction(bundle, auth.agent.id);
   }
   const db = getDb();
   await db.insert(acks).values({
@@ -142,7 +142,7 @@ export async function ackAction(auth: HouseAuth, actionId: string) {
   }
   const done = await loadActionBundle(actionId);
   if (!done) throw new ProtocolError("internal", "Failed to load action", 500);
-  return serializeAction(done);
+  return serializeAction(done, auth.agent.id);
 }
 
 export async function getAction(auth: HouseAuth, actionId: string) {
@@ -150,14 +150,14 @@ export async function getAction(auth: HouseAuth, actionId: string) {
   if (!bundle || bundle.action.principalId !== auth.principal.id) {
     throw new ProtocolError("not_found", "Unknown house", 404);
   }
-  return serializeAction(bundle);
+  return serializeAction(bundle, auth.agent.id);
 }
 
 export async function inboxFor(auth: HouseAuth) {
-  return inboxForPrincipal(auth.principal.id);
+  return inboxForPrincipal(auth.principal.id, auth.agent.id);
 }
 
-export async function inboxForPrincipal(principalId: string) {
+export async function inboxForPrincipal(principalId: string, viewerAgentId?: string) {
   const db = getDb();
   const live = [...LIVE_ACTION_STATUSES];
   const [liveRows, recent] = await Promise.all([
@@ -190,7 +190,7 @@ export async function inboxForPrincipal(principalId: string) {
     if (!bundle) continue;
     items.push({
       type: "action" as const,
-      ...serializeAction(bundle),
+      ...serializeAction(bundle, viewerAgentId),
     });
   }
   return { items };

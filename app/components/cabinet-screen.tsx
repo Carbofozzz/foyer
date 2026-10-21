@@ -288,7 +288,9 @@ export async function CabinetScreen({
                 <ConnectCard
                   token={token}
                   houseId={houseId}
+                  locale={locale}
                   t={t.connect}
+                  lock={t.lock}
                   tech={t.tech}
                   errorLabel={t.cabinet.error}
                   compact

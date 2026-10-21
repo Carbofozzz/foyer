@@ -21,20 +21,9 @@ try {
 }
 if (body.ok !== true) throw new Error(`/api/health not ok: ${health.text.slice(0, 200)}`);
 
-const pages = ["/en", "/en/cabinet/demo", "/en/legal", "/en/privacy", "/api/openapi"];
+const pages = ["/en", "/en/legal", "/en/privacy", "/api/openapi"];
 for (const path of pages) {
   const page = await get(path);
-  if (path === "/en/cabinet/demo") {
-    for (const label of ["Activity", "Treasury", "Rules", "Then a transaction.", "The request is refused."]) {
-      if (!page.text.includes(label)) throw new Error(`/en/cabinet/demo missing ${label}`);
-    }
-    if (page.text.includes("A middle option") || page.text.includes("Objection taken")) {
-      throw new Error("/en/cabinet/demo still shows old four-outcome copy");
-    }
-    if (page.text.includes("Carried out")) {
-      throw new Error("/en/cabinet/demo still says Foyer carried it out");
-    }
-  }
   if (path === "/api/openapi") {
     const spec = JSON.parse(page.text);
     if (spec.info?.title !== "Foyer") throw new Error("OpenAPI is not this Foyer");

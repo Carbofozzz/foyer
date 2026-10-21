@@ -27,7 +27,7 @@ Hackathon login = address. Production needs a person account (email / Google) so
 | **Platform admin** | Designed in Auth. Roles: `none` \| `ops` \| `owner` (not a boolean). Separate from house grants. |
 | **Admin bootstrap** | `FOYER_ADMIN_EMAILS` → all listed emails get `platform_role = owner`. Role `ops` exists in schema; no ops email list yet. |
 | **Treasury after Auth** | **Read-only** tab (house address / balance). No deposit, withdraw, connect wallet, faucet in product UI. Simplified working treasury before an intermediate prod milestone — not Auth. |
-| **Spawn** | **Remove** (`POST /api/spawn` + landing harness). Demo look-only stays. |
+| **Spawn** | **Remove** (`POST /api/spawn` + landing harness). Look-only `/cabinet/demo` is removed too. |
 | **Impersonate** | **Not needed.** Do not design it. |
 
 ---
