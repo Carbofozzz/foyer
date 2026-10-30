@@ -40,14 +40,12 @@ export function RulesCard({
 }) {
   const router = useRouter();
   const [text, setText] = useState(constitution);
-  const [collect, setCollect] = useState(String(collectWindowSec));
   const [bargain, setBargain] = useState(String(bargainWindowSec));
   const [requireSigned, setRequireSigned] = useState(requireSignedWrites);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const dirty =
     text.trim() !== constitution.trim() ||
-    collect !== String(collectWindowSec) ||
     bargain !== String(bargainWindowSec) ||
     requireSigned !== requireSignedWrites;
   const empty = !text.trim();
@@ -55,10 +53,9 @@ export function RulesCard({
 
   useEffect(() => {
     setText(constitution);
-    setCollect(String(collectWindowSec));
     setBargain(String(bargainWindowSec));
     setRequireSigned(requireSignedWrites);
-  }, [constitution, collectWindowSec, bargainWindowSec, requireSignedWrites]);
+  }, [constitution, bargainWindowSec, requireSignedWrites]);
 
   function insertDefault() {
     if (locked || !starter) return;
@@ -74,7 +71,6 @@ export function RulesCard({
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({
         constitution: text,
-        collect_window_sec: Number(collect),
         bargain_window_sec: Number(bargain),
         require_signed_writes: requireSigned,
       }),
@@ -110,18 +106,6 @@ export function RulesCard({
             </button>
           ) : null}
           <div className="connect-desk">
-            <label className="connect-field">
-              <span>{t.windowCollect}</span>
-              <input
-                type="number"
-                min={10}
-                max={86400}
-                value={collect}
-                disabled={locked}
-                onChange={(event) => setCollect(event.target.value)}
-              />
-              <span className="hint">{t.windowCollectHint}</span>
-            </label>
             <label className="connect-field">
               <span>{t.windowBargain}</span>
               <input
@@ -166,8 +150,7 @@ export function RulesCard({
             <p className="muted">{t.rulesEmptyRead}</p>
           )}
           <p className="hint">
-            {t.windowCollect}: {collectWindowSec}
-            {t.windowSec} · {t.windowBargain}: {bargainWindowSec}
+            {t.windowBargain}: {bargainWindowSec}
             {t.windowSec}
             {requireSignedWrites ? ` · ${t.requireSigned}` : ""}
           </p>

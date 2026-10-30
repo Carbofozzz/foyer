@@ -2,7 +2,8 @@ import { and, eq, lte } from "drizzle-orm";
 import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { REASON_BARGAIN_TIMEOUT } from "@/lib/notify/reasons";
-import { enqueueWakes, escalateOffline } from "@/lib/notify/wake";
+import { escalateOffline } from "@/lib/notify/wake";
+import { enqueueGuardianReview, scheduleGuardian } from "@/lib/guardian/review";
 import { assertCourtCredit } from "@/lib/billing/account";
 import { scheduleOpenCourt } from "./court";
 import { ProtocolError } from "./errors";
@@ -111,13 +112,10 @@ export async function reviseAction(
       silenceUntil: new Date(now.getTime() + auth.principal.silenceWindowSec * 1000),
     })
     .where(eq(actions.id, actionId));
-  await enqueueWakes({
-    actionId,
-    principalId: auth.principal.id,
-    proposerId: auth.agent.id,
-    revision,
-    origin: options?.origin,
-  });
+  if (!bundle.action.testPass) {
+    await enqueueGuardianReview(actionId, revision);
+    scheduleGuardian(auth.principal.id);
+  }
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next, auth.agent.id);

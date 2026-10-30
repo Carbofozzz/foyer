@@ -35,6 +35,7 @@ export async function enqueueWakes(input: {
     (row) =>
       row.id !== input.proposerId &&
       !row.isGuardian &&
+      !row.watcher &&
       isBidirectionalWake(row.wake),
   );
   for (const agent of targets) {

@@ -1,4 +1,5 @@
 import { desc, eq, inArray } from "drizzle-orm";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 import {
   acks,
   actionReports,
@@ -95,6 +96,7 @@ export type AdminOverview = {
   houses: AdminHouseRow[];
   vouchers: AdminVoucherRow[];
   platform: PlatformCourtView;
+  guardian_model: string;
   totals: {
     waitlist: number;
     contacts: number;
@@ -117,6 +119,7 @@ function iso(value: Date | null | undefined): string | null {
 }
 
 export async function loadAdminOverview(): Promise<AdminOverview> {
+  await ensureGuardianSchema();
   const db = getDb();
   const [waitlistRows, houseRows, agentRows, actionRows, memberRows, userRows] = await Promise.all([
     db.select().from(waitlist).orderBy(desc(waitlist.createdAt)),
@@ -141,6 +144,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
         principalId: agents.principalId,
         wake: agents.wake,
         isGuardian: agents.isGuardian,
+        watcher: agents.watcher,
       })
       .from(agents),
     db
@@ -161,7 +165,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
 
   const agentByHouse = new Map<string, { agents: number; hooks: number }>();
   for (const row of agentRows) {
-    if (row.isGuardian) continue;
+    if (row.isGuardian || row.watcher) continue;
     const current = agentByHouse.get(row.principalId) ?? { agents: 0, hooks: 0 };
     current.agents += 1;
     if (row.wake === "callback") current.hooks += 1;
@@ -245,7 +249,11 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
   }));
 
   await ensureBillingSchema();
-  const [voucherRows, platform] = await Promise.all([listVouchers(40), loadPlatformCourtView()]);
+  const [voucherRows, platform, guardianModel] = await Promise.all([
+    listVouchers(40),
+    loadPlatformCourtView(),
+    import("@/lib/guardian/model").then((mod) => mod.resolveGuardianModel()),
+  ]);
 
   return {
     waitlist: waitlistRows.map((row) => ({
@@ -258,6 +266,7 @@ export async function loadAdminOverview(): Promise<AdminOverview> {
     houses,
     vouchers: voucherRows.map(serializeVoucher),
     platform,
+    guardian_model: guardianModel,
     totals: {
       waitlist: waitlistRows.length,
       contacts: contacts.length,
@@ -283,7 +292,13 @@ export async function adminCreateVoucher(
   },
 ) {
   const kindRaw = input.kind ?? "credits";
-  if (kindRaw !== "credits" && kindRaw !== "subscription" && kindRaw !== "feature_org" && kindRaw !== "bundle") {
+  if (
+    kindRaw !== "credits" &&
+    kindRaw !== "subscription" &&
+    kindRaw !== "feature_org" &&
+    kindRaw !== "bundle" &&
+    kindRaw !== "guardian"
+  ) {
     throw new ProtocolError("bad_request", "kind is invalid", 400);
   }
   return createVoucher({

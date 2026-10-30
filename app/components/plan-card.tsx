@@ -47,6 +47,12 @@ type PlanView = {
   free_period_end: string | null;
   subscription_credits: number;
   on_demand: number;
+  guardian_remaining?: number;
+  guardian_free_remaining?: number;
+  guardian_free_quota?: number;
+  guardian_paid_quota?: number;
+  guardian_sub?: number;
+  guardian_pack?: number;
   feature_org: boolean;
   in_grace: boolean;
   subscription_plan_id: string | null;
@@ -82,6 +88,12 @@ function reasonLabel(reason: string, t: Messages["cabinet"]): string {
       return t.planReasonCrypto;
     case "debit_court":
       return t.planReasonCourt;
+    case "debit_guardian":
+      return t.planReasonGuardian;
+    case "grant_guardian_sub":
+      return t.planReasonGuardianSub;
+    case "grant_guardian_pack":
+      return t.planReasonGuardianPack;
     case "burn_sub":
       return t.planReasonBurn;
     case "adjust":
@@ -177,7 +189,7 @@ export function PlanCard({
         body: JSON.stringify({ op: "redeem", code }),
       });
       const payload = (await response.json().catch(() => null)) as
-        | { data?: PlanView & { redeemed?: { credits_granted: number } }; error?: { message?: string } }
+        | { data?: PlanView & { redeemed?: { credits_granted: number; kind?: string } }; error?: { message?: string } }
         | null;
       if (!response.ok || !payload?.data) {
         setCodeError(payload?.error?.message ?? errorLabel);
@@ -186,7 +198,8 @@ export function PlanCard({
       setData(payload.data);
       setCode("");
       const granted = payload.data.redeemed?.credits_granted ?? 0;
-      setFlash(t.planRedeemed.replace("{n}", String(granted)));
+      const line = payload.data.redeemed?.kind === "guardian" ? t.planRedeemedGuardian : t.planRedeemed;
+      setFlash(line.replace("{n}", String(granted)));
     } catch {
       setCodeError(errorLabel);
     } finally {
@@ -308,6 +321,17 @@ export function PlanCard({
               </span>
               {data.feature_org ? t.planOrgOn : t.planOrgOff}
             </li>
+            <li>
+              <span className="pricing-yes" aria-hidden="true">
+                ✓
+              </span>
+              {(plan.status === "active" || plan.status === "grace"
+                ? t.planGuardianPaid
+                : t.planGuardianFreeLine
+              )
+                .replace("{free}", String(data.guardian_free_quota ?? 10))
+                .replace("{paid}", String(data.guardian_paid_quota ?? 100))}
+            </li>
             {!data.gate ? (
               <li>
                 <span className="pricing-no" aria-hidden="true">
@@ -349,6 +373,30 @@ export function PlanCard({
           {data.free_period_end ? (
             <p className="muted">{t.planFreeResets.replace("{when}", formatWhen(data.free_period_end, locale))}</p>
           ) : null}
+        </section>
+
+        <section className="card pricing-card plan-block">
+          <p className="feed-label">{t.planGuardian}</p>
+          <h2 className="pricing-name">{data.guardian_remaining ?? 0}</h2>
+          <p className="pricing-blurb">{t.planGuardianLead}</p>
+          <ul className="pricing-checks plan-balance-lines">
+            <li>
+              <span className="plan-balance-key">{t.planGuardianFree}</span>
+              <span className="plan-balance-val">
+                {data.guardian_free_remaining ?? 0}
+                <span className="muted"> / {data.guardian_free_quota ?? 10}</span>
+              </span>
+            </li>
+            <li>
+              <span className="plan-balance-key">{t.planGuardianSub}</span>
+              <span className="plan-balance-val">{data.guardian_sub ?? 0}</span>
+            </li>
+            <li>
+              <span className="plan-balance-key">{t.planGuardianPack}</span>
+              <span className="plan-balance-val">{data.guardian_pack ?? 0}</span>
+            </li>
+          </ul>
+          <p className="hint">{t.planGuardianOwn}</p>
         </section>
 
         <section className="card pricing-card plan-block">

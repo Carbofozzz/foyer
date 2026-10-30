@@ -27,7 +27,7 @@ export function AdminDesk({
   const [error, setError] = useState<string | null>(null);
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherCredits, setVoucherCredits] = useState("5");
-  const [voucherKind, setVoucherKind] = useState<"credits" | "subscription">("credits");
+  const [voucherKind, setVoucherKind] = useState<"credits" | "subscription" | "guardian">("credits");
   const [voucherAudience, setVoucherAudience] = useState<"open" | "bound">("open");
   const [voucherEmail, setVoucherEmail] = useState("");
   const [voucherMax, setVoucherMax] = useState("1");
@@ -36,12 +36,16 @@ export function AdminDesk({
   const [grantCredits, setGrantCredits] = useState("5");
   const [floorGen, setFloorGen] = useState(initial.platform?.floor_gen ?? "0.3");
   const [alertGen, setAlertGen] = useState(initial.platform?.alert_gen ?? "1");
+  const [guardianModel, setGuardianModel] = useState(initial.guardian_model);
+  const [grantReactions, setGrantReactions] = useState("10");
 
-  function setVoucherKindAndFields(next: "credits" | "subscription") {
+  function setVoucherKindAndFields(next: "credits" | "subscription" | "guardian") {
     setVoucherKind(next);
     if (next === "credits") {
       setVoucherCredits("5");
       setVoucherDays("30");
+    } else if (next === "guardian") {
+      setVoucherCredits("10");
     } else {
       setVoucherCredits("0");
       setVoucherDays("30");
@@ -203,6 +207,21 @@ export function AdminDesk({
                 )}
               </form>
 
+              <form
+                className="stack"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void post({ op: "guardian_model", model: guardianModel }, "guardian_model");
+                }}
+              >
+                <p className="feed-label">{a.guardianModelTitle}</p>
+                <p className="hint">{a.guardianModelLead}</p>
+                <input value={guardianModel} onChange={(e) => setGuardianModel(e.target.value)} required />
+                <button type="submit" className="primary" disabled={pending !== null} aria-busy={pending === "guardian_model"}>
+                  {a.guardianModelSave}
+                </button>
+              </form>
+
               {(() => {
                 const p = overview.platform;
                 return (
@@ -300,25 +319,38 @@ export function AdminDesk({
               <span className="feed-label">{a.voucherKind}</span>
               <select
                 value={voucherKind}
-                onChange={(e) =>
-                  setVoucherKindAndFields(e.target.value === "subscription" ? "subscription" : "credits")
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setVoucherKindAndFields(
+                    value === "subscription" ? "subscription" : value === "guardian" ? "guardian" : "credits",
+                  );
+                }}
               >
                 <option value="credits">{a.voucherKindCredits}</option>
+                <option value="guardian">{a.voucherKindGuardian}</option>
                 <option value="subscription">{a.voucherKindSub}</option>
               </select>
             </label>
-            <p className="hint">{voucherKind === "credits" ? a.voucherKindCreditsHint : a.voucherKindSubHint}</p>
+            <p className="hint">
+              {voucherKind === "credits"
+                ? a.voucherKindCreditsHint
+                : voucherKind === "guardian"
+                  ? a.voucherKindGuardianHint
+                  : a.voucherKindSubHint}
+            </p>
             <label className="stack">
               <span className="feed-label">{a.voucherCode}</span>
               <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value)} required />
             </label>
-            {voucherKind === "credits" ? (
+            {voucherKind === "credits" || voucherKind === "guardian" ? (
               <label className="stack">
-                <span className="feed-label">{a.voucherCreditsPack}</span>
+                <span className="feed-label">
+                  {voucherKind === "guardian" ? a.voucherGuardianPack : a.voucherCreditsPack}
+                </span>
                 <input
                   type="number"
-                  min={1}
+                  min={voucherKind === "guardian" ? 10 : 1}
+                  step={voucherKind === "guardian" ? 10 : 1}
                   value={voucherCredits}
                   onChange={(e) => setVoucherCredits(e.target.value)}
                   required
@@ -411,6 +443,31 @@ export function AdminDesk({
             </label>
             <button type="submit" className="ghost" disabled={pending !== null} aria-busy={pending === "grant_credits"}>
               {a.grantCreditsBtn}
+            </button>
+          </form>
+          <form
+            className="stack"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void post(
+                { op: "grant_guardian", house_id: grantHouse, reactions: Number(grantReactions) },
+                "grant_guardian",
+              );
+            }}
+          >
+            <label className="stack">
+              <span className="feed-label">{a.grantGuardian}</span>
+              <input
+                type="number"
+                min={10}
+                step={10}
+                value={grantReactions}
+                onChange={(e) => setGrantReactions(e.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="ghost" disabled={pending !== null} aria-busy={pending === "grant_guardian"}>
+              {a.grantGuardian}
             </button>
           </form>
           {overview.vouchers.length === 0 ? (

@@ -92,7 +92,7 @@ Report and appeal stay their own constants. Do not fold them into collect/bargai
 
 ### S1 — Split windows — shipped
 
-`principals.bargain_window_sec` (backfill = old silence). Collect stays `silence_window_sec`. `enterBargain` uses the bargain clock. Revise opens a new collect window. Rules tab: two durations (owner). `GET /api/constitution` and MCP `get_constitution` return both. Timeout still escalate, never auto-court. OpenAPI `0.49.0`.
+`principals.bargain_window_sec` (backfill = old silence). Collect stays `silence_window_sec`. `enterBargain` uses the bargain clock. Revise opens a new guardian review, not a collect window. The rules tab edits the bargain duration only. A live action is not permitted when `silence_until` passes. `GET /api/constitution` and MCP `get_constitution` still return both numbers. Timeout still escalate, never auto-court. OpenAPI `0.49.0`.
 
 ### S2 — Hash on every write — shipped
 

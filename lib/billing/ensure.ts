@@ -111,6 +111,9 @@ export async function ensureBillingSchema(): Promise<void> {
       await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS billing_checkouts_tx ON billing_checkouts (tx)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS billing_checkouts_principal ON billing_checkouts (principal_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS billing_checkouts_status ON billing_checkouts (status)`);
+      await db.execute(sql`ALTER TABLE billing_accounts ADD COLUMN IF NOT EXISTS guardian_free_used integer NOT NULL DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE billing_accounts ADD COLUMN IF NOT EXISTS guardian_sub_credits integer NOT NULL DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE billing_accounts ADD COLUMN IF NOT EXISTS guardian_balance integer NOT NULL DEFAULT 0`);
     })().catch((error) => {
       ready = null;
       throw error;

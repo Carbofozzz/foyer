@@ -2,7 +2,7 @@
 
 Status: **B0–B4 shipped** (2026-10-12…14). Remaining: **B5 Stripe** (optional while GenLayer is testnet). Discussion notes (Russian) lived in `.local/BILLING.md`.
 
-This is **not** a protocol change. Agent loop stays [ORCHESTRATE.md](ORCHESTRATE.md). Auth customer identity is [AUTH.md](AUTH.md) (`user_id` / verified email). Org product stays [ORG.md](ORG.md); Org 7 (paid create) is gated here via `feature_org`. Notify channel for billing mail follows [NOTIFY.md](NOTIFY.md) (verified owner email). Do not fork propose/object/bargain/insist/court outcomes.
+This is **not** a protocol change. The review loop in the code is [HOSTED.md](HOSTED.md) H1–H5. Guardian reactions are a separate meter from this court ledger (free 10/month, paid plan 100). Auth customer identity is [AUTH.md](AUTH.md) (`user_id` / verified email). Org product stays [ORG.md](ORG.md); Org 7 (paid create) is gated here via `feature_org`. Notify channel for billing mail follows [NOTIFY.md](NOTIFY.md) (verified owner email). Do not fork propose/bargain/insist/court outcomes.
 
 **Not the goal:** Foyer as the agent’s bank (Stripe adapters that pay or book for the agent). Only the right to use **court / org / quota**.
 
@@ -190,7 +190,7 @@ Same Clerk session; no second login for org. Gate is live (`assertFeatureOrg` on
 ### B0 — Ledger + entitlements + vouchers — shipped (2026-10-12)
 
 - Tables: `billing_accounts`, `billing_ledger`, `vouchers`, `voucher_redemptions`, `billing_plans`.
-- Admin: create/revoke voucher; manual grant credits.
+- Admin: create/revoke voucher; manual grant credits. A voucher kind `guardian` grants guardian reactions in steps of 10 (not court credits).
 - Cabinet **Plan**: `GET`/`POST /api/cabinet/:token/plan` (redeem).
 - Gate `insist` when `FOYER_BILLING_GATE` is on (else on in production, off locally).
 - Debit only when tx is stored; one credit per case.

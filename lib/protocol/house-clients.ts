@@ -10,6 +10,7 @@ import { sealKey, unsealKey } from "./seal";
 import type { WakeKind } from "./types";
 import { WAKE_KINDS } from "./types";
 import { ensureWriteSignColumns, mintSignSecret, sealSignSecret } from "./write-sign";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 
 let promptColumnReady = false;
 
@@ -30,6 +31,7 @@ export async function ensureAgentPromptColumn() {
 }
 
 export async function listConnectAgents(principalId: string) {
+  await ensureGuardianSchema();
   await ensureAgentPromptColumn();
   await ensureWriteSignColumns();
   const db = getDb();
@@ -37,7 +39,12 @@ export async function listConnectAgents(principalId: string) {
     .select()
     .from(agents)
     .where(
-      and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), isNotNull(agents.sealedKey)),
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.isGuardian, false),
+        eq(agents.watcher, false),
+        isNotNull(agents.sealedKey),
+      ),
     );
   for (const row of rows) {
     if (!row.sealedSignSecret) await fillSignSecret(row.id);
@@ -49,7 +56,12 @@ export async function listConnectAgents(principalId: string) {
     .select()
     .from(agents)
     .where(
-      and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), isNotNull(agents.sealedKey)),
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.isGuardian, false),
+        eq(agents.watcher, false),
+        isNotNull(agents.sealedKey),
+      ),
     );
   return fresh.map((row) => connectAgentView(row));
 }
@@ -277,6 +289,7 @@ async function findRealAgentByName(principalId: string, name: string) {
         eq(agents.principalId, principalId),
         eq(agents.name, name),
         eq(agents.isGuardian, false),
+        eq(agents.watcher, false),
         isNotNull(agents.sealedKey),
       ),
     )
@@ -295,6 +308,7 @@ async function findRealAgentById(principalId: string, agentId: string) {
         eq(agents.id, agentId),
         eq(agents.principalId, principalId),
         eq(agents.isGuardian, false),
+        eq(agents.watcher, false),
         isNotNull(agents.sealedKey),
       ),
     )

@@ -48,24 +48,9 @@ const TOOLS = [
     },
   },
   {
-    name: "object",
-    description: "Object to an open action while the collection window is open. Optional counter_action.",
-    inputSchema: {
-      type: "object",
-      required: ["action_id", "justification"],
-      properties: {
-        action_id: { type: "string" },
-        justification: { type: "string" },
-        evidence: { type: "array" },
-        counter_action: { type: "object" },
-        ...SIGN_FIELDS,
-      },
-    },
-  },
-  {
     name: "inbox",
     description:
-      `List actions, deadlines, and verdicts for this house. After you propose or object, call this at least every ${MCP_INBOX_POLL_SEC} seconds until the action is decided. Chat runtimes are not woken.`,
+      `List actions, deadlines, and verdicts for this house. After you propose, call this at least every ${MCP_INBOX_POLL_SEC} seconds until the action is decided. Chat runtimes are not woken.`,
     inputSchema: { type: "object", properties: {} },
   },
   {
@@ -79,7 +64,7 @@ const TOOLS = [
   },
   {
     name: "revise",
-    description: "Proposer only, after objections. New payload, new revision, wake checkers again.",
+    description: "Proposer only, after an objection. New payload, new revision. The guardian reviews again.",
     inputSchema: {
       type: "object",
       required: ["action_id", "justification"],
@@ -121,18 +106,6 @@ const TOOLS = [
       type: "object",
       required: ["action_id"],
       properties: { action_id: { type: "string" } },
-    },
-  },
-  {
-    name: "report",
-    description: "After a final allow or deny, POST report to ack that you read it. No did flag.",
-    inputSchema: {
-      type: "object",
-      required: ["action_id"],
-      properties: {
-        action_id: { type: "string" },
-        ...SIGN_FIELDS,
-      },
     },
   },
 ];
@@ -241,6 +214,9 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
       constitution: auth.principal.constitution,
       ...houseWindows(auth.principal),
     };
+  }
+  if (name === "object" || name === "report") {
+    throw new ProtocolError("forbidden", "Chat agents do not object or report", 403);
   }
   if (name === "propose") {
     if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {

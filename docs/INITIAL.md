@@ -20,17 +20,13 @@ The root is an **agent protocol**, not a page.
 2. **Gateway** — the only exit an agent has to the world. Propose, object, silence, ack, report. No pass — the agent must not pay, book, or message.
 3. **Court** — when bargain fails, an Intelligent Contract answers the original proposal. The platform wallet pays the GenLayer fee (court credits in the Plan tab). The principal may override an escalate.
 
-Orchestration needs someone who can be **woken**. A chat in Cursor cannot. So Foyer is not only a door for agents you already run:
+Orchestration needs someone who answers. A chat in Cursor cannot. Foyer provides that watcher. After a proposal it compares the constitution and the text. No objection permits. An objection opens bargain. Court still opens only on insist. The customer does not connect a second chat to get this.
 
-- Bring your own: outbound chats that propose, and bidirectional clients with a callback (calendar, budget, a process on your server).
-- A house with only chats still treats silence as consent until a hook checker exists.
-- The longer product idea is a **platform for full-time agents** — Foyer would host always-on agents here. That is backlog, not the live loop.
+That watcher is [HOSTED.md](HOSTED.md) H1–H5 and is in the app. After propose or revise, Foyer queues a review. No objection permits. A grounded objection opens bargain. A live propose does not POST a callback hook. Chat tools are propose, inbox, withdraw, revise, and insist. Guardian reactions are a separate credit from court credits. The older loop record is [ORCHESTRATE.md](ORCHESTRATE.md).
 
 The human writes the constitution, watches a feed, and decides when the court returns the case. They do not play an agent.
 
 This is **Onchain Justice**. Not Commerce (no deal with a stranger) and not Governance (no DAO vote). The lock is **tools and keys**, not a prompt. A prompt in the chat is a cheat sheet.
-
-How wake, bargain, and court-on-insist land in code: [ORCHESTRATE.md](ORCHESTRATE.md). Propose POSTs to callback agents. Court opens only on `insist`. Foyer does not run hosted agents.
 
 ---
 
@@ -138,8 +134,8 @@ Product surface: `/:locale/cabinet`. Tabs: activity, plan, rules, connect, conta
 - **Plan** tab: tariff, credit pools, redeem code, GEN checkout when priced, ledger; Stripe CTA is a stub until B5.
 - Owner edits the charter (insert default rules if empty). Operator can appeal / connect. Observer reads. Owner alone invites, writes the charter.
 - Company house is not a wizard choice. Org 1 shipped: extra principal via **Organization**, open with `?house=`; Settings on the org house can rename or delete it ([ORG.md](ORG.md)).
-- Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A checker needs a hook URL. No auto-mint Travel. Prompt is not court evidence.
-- Test tab: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
+- Connect: name an assistant, prompt field prefilled with the recommended MCP text (edit, then paste), issue a key, MCP block. Poll inbox at least every 30 s after propose. Chat = outbound. A live propose is reviewed by the guardian, not by a hook POST. No auto-mint Travel. Prompt is not court evidence. The Agents tab also holds the house guardian: it is already on, and an own model replaces Foyer’s.
+- Test tab, until [HOSTED.md](HOSTED.md) removes it: walk the live loop as connected assistants (propose, collect timer, object, bargain, inspect raw API JSON). Phrase-matchers stay out. Rows are `test_pass` so Activity can hide them.
 - Ops: `/:locale/cabinet/admin` for `platform_role` `ops` / `owner` (bootstrap: `FOYER_ADMIN_EMAILS`). Waitlist, people, house contact emails, house list with counts. Ops can delete a waitlist email or a whole house (audited). No keys, no charter. Everyone else → 404.
 
 Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution text the principal typed is not auto-translated.
@@ -148,21 +144,16 @@ Locales `en` / `es` / `de` / `tr` / `ru`. No hardcoded UI copy. Constitution tex
 
 1. Sign in with email or Google (one user, one personal house). No wizard.
 2. Constitution from a short constructor (editable).
-3. Optional first assistant. Chat = MCP paste after save. A checker needs a hook URL.
+3. Optional first assistant. Chat = MCP paste after save. The guardian reviews proposals. A hook is not part of Connect.
 4. Optional contact email.
 
-Success: constitution visible, an agent key issued, the principal knows how to propose. A second **product** guardian is another connected assistant. The test tab walks that propose as a connected assistant.
+Success: constitution visible, an agent key issued, the principal knows how to propose. The product guardian is the watcher Foyer runs ([HOSTED.md](HOSTED.md) H1–H5), not a second connected assistant. There is no cabinet test tab.
 
 The hackathon wizard modal is off. Rules, Connect, and Contacts tabs cover the same steps; a product onboarding is a later UX.
 
-### Test harness (not the product)
+### Test harness
 
-| Entrance | What |
-|---|---|
-| Your agent | Main path |
-| Cabinet test tab | Walk the live loop as house agents |
-
-Copy: the test tab uses the house keys; it is not the product. Court never executes a `counter_action`.
+The cabinet test tab is gone. The live path is a connected chat and the house guardian. Court never executes a `counter_action`.
 
 ---
 

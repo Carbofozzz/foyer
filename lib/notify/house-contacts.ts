@@ -9,6 +9,7 @@ import { hashSecret, mintToken } from "@/lib/protocol/keys";
 import { isOrgHouse } from "@/lib/protocol/types";
 import { parseWaitlistEmail } from "@/lib/protocol/waitlist";
 import { isNotifyReason, NOTIFY_REASON_KEYS, type NotifyReasonKey } from "./reasons";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 import { notifyCopy, sendMail } from "./mail";
 import { mintTelegramStartUrl, telegramConfigured } from "./telegram";
 
@@ -118,18 +119,20 @@ function parseReasons(raw: unknown): NotifyReasonKey[] {
 }
 
 async function houseDeskIds(principalId: string): Promise<Set<string>> {
+  await ensureGuardianSchema();
   const rows = await getDb()
     .select({ id: agents.id })
     .from(agents)
-    .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, false)));
+    .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), eq(agents.watcher, false)));
   return new Set(rows.map((row) => row.id));
 }
 
 export async function listHouseDesks(principalId: string): Promise<HouseDesk[]> {
+  await ensureGuardianSchema();
   const rows = await getDb()
     .select({ id: agents.id, name: agents.name })
     .from(agents)
-    .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, false)));
+    .where(and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), eq(agents.watcher, false)));
   return rows.map((row) => ({ id: row.id, name: row.name }));
 }
 

@@ -38,6 +38,7 @@ type Modal = { kind: "channels" | "policy"; id: string };
 
 function pointLabel(t: Messages["cabinet"], key: NotifyReasonKey): string {
   if (key === "hookFailed") return t.contactsWhenHook;
+  if (key === "guardianFailed") return t.contactsWhenGuardian;
   if (key === "bargainTimeout") return t.contactsWhenBargain;
   if (key === "noFee") return t.contactsWhenNoFee;
   if (key === "submitFail") return t.contactsWhenSubmit;

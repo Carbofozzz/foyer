@@ -60,6 +60,7 @@ async function refreshAccountState(
         patch.freeAnchorAt = anchor;
         patch.freePeriodEnd = addMonthsClamp(anchor, 1);
         patch.freeUsedInPeriod = 0;
+        patch.guardianFreeUsed = 0;
       } else {
         let periodEnd = account.freePeriodEnd ?? addMonthsClamp(anchor, 1);
         let used = account.freeUsedInPeriod;
@@ -75,6 +76,7 @@ async function refreshAccountState(
         ) {
           patch.freePeriodEnd = periodEnd;
           patch.freeUsedInPeriod = used;
+          if (used === 0) patch.guardianFreeUsed = 0;
         }
       }
     }
@@ -105,6 +107,7 @@ async function refreshAccountState(
         }
       }
       patch.subscriptionCredits = 0;
+      patch.guardianSubCredits = 0;
       patch.featureOrg = false;
       patch.subscriptionPlanId = null;
       patch.subscriptionPeriodEnd = null;
@@ -289,16 +292,19 @@ export async function activateSubscription(
   });
 
   if (credits > 0) {
+    const key = options?.idempotencyKey ?? `sub_grant:${principalId}:${Date.now()}`;
     await grantCredits({
       principalId,
       credits,
       reason: "grant_sub",
       provider: options?.provider ?? (options?.voucherId ? "voucher" : "foyer"),
-      idempotencyKey: options?.idempotencyKey ?? `sub_grant:${principalId}:${Date.now()}`,
+      idempotencyKey: key,
       voucherId: options?.voucherId,
       note: "Subscription credits",
       subscription: true,
     });
+    const { grantGuardianSubscription } = await import("./guardian");
+    await grantGuardianSubscription(principalId, key);
   }
 }
 
@@ -424,6 +430,12 @@ export type PlanView = {
   subscription_grace_until: string | null;
   org_frozen_at: string | null;
   gate: boolean;
+  guardian_remaining: number;
+  guardian_free_remaining: number;
+  guardian_free_quota: number;
+  guardian_paid_quota: number;
+  guardian_sub: number;
+  guardian_pack: number;
   /** Current product tier for the Plan tab. */
   plan: {
     code: string;
@@ -502,6 +514,8 @@ export async function loadPlanView(principalId: string, personal = true): Promis
   else if (onPaidTier && subPlan) status = "active";
 
   const planRow = status === "free" || !subPlan ? freePlan : subPlan;
+  const { GUARDIAN_FREE_MONTH, GUARDIAN_PAID_PERIOD, guardianPools } = await import("./guardian");
+  const guardian = await guardianPools(principalId);
 
   return {
     credits: breakdown.available,
@@ -511,6 +525,12 @@ export async function loadPlanView(principalId: string, personal = true): Promis
     free_period_end: breakdown.free_period_end,
     subscription_credits: breakdown.subscription_credits,
     on_demand: breakdown.on_demand,
+    guardian_remaining: guardian.total,
+    guardian_free_remaining: guardian.free_remaining,
+    guardian_free_quota: GUARDIAN_FREE_MONTH,
+    guardian_paid_quota: GUARDIAN_PAID_PERIOD,
+    guardian_sub: guardian.sub,
+    guardian_pack: guardian.pack,
     feature_org: breakdown.feature_org,
     in_grace: breakdown.in_grace,
     subscription_plan_id: account.subscriptionPlanId,

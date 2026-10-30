@@ -2,13 +2,13 @@
 
 Working instructions for coding agents in this repository.
 
-Canonical product: [`docs/INITIAL.md`](docs/INITIAL.md) (idea + what ships). Development plan: [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md). If this file and a plan disagree, follow the codebase, then update the docs in the same change.
+Canonical product: [`docs/INITIAL.md`](docs/INITIAL.md) (idea + what ships). Guardian loop in the code: [`docs/HOSTED.md`](docs/HOSTED.md) H1–H5. [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md) is the older loop record. If this file and a plan disagree, follow the codebase, then update the docs in the same change.
 
 Private notes (pitch, discussion dumps) live in `.local/` and are gitignored. Do not copy them into tracked docs.
 
 ## Product
 
-Foyer is an **intra-principal** coordination layer, court, and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance. Chat agents propose; a callback checker can be woken. Hosting agents on Foyer is backlog. The longer direction is a full-time agent host, not only a court for chats you already have.
+Foyer is an **intra-principal** coordination layer, court, and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance. Chat agents propose. After propose or revise, Foyer queues a guardian review ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5). No objection permits. A grounded objection opens bargain. Live propose does not wake callback hooks. Chat tools are propose, inbox, withdraw, revise, and insist.
 
 Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence). Coordination happens before court.
 
@@ -20,12 +20,12 @@ The lock is **tools and keys**, not a prompt. After a pass Foyer mints a one-sho
 - Court outcomes: `allow` | `deny` | `escalate` (yes / no / human). `allow` permits the original payload. `deny` permits nothing — never someone else's `counter_action`. Archive rows may still say `allow_a` / `allow_b` / `remedy`.
 - The court IC does not write a `remedy_action`. If the charter is silent or contradictory, the outcome is `escalate`.
 - A verdict also answers `objection_grounded`. The **platform** wallet pays GenLayer fees; the court IC does not hold or burn GEN.
-- Silence in the window = consent (allow without court). Ack is owed only by engaged parties — the proposer and the objectors.
+- The guardian Foyer runs objects or stays quiet ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5). Quiet permits the proposal. A missing `AI_GATEWAY_API_KEY`, a call with no tokens, a muddy answer, empty rules, or a zero reaction balance escalates. A live action is not permitted by the collect window. Chat tools are propose, inbox, withdraw, revise, and insist.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- A **product guardian** is another connected assistant that reads the constitution in its own model. There is no shared look-only cabinet.
+- The product guardian is the watcher Foyer runs ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5): Vercel AI Gateway, hidden agent named Guardian. It is not a second chat. The owner can rename it and set an own LLM. There is no shared look-only cabinet.
 - Propose has no `kind`. Adapter stubs still exist for old spend/book/message/cancel rows; the live loop is permit-then-act.
-- Public product at **https://foyerapp.dev**. Next protocol change is [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md), not a new entity beside the gateway.
+- Public product at **https://foyerapp.dev**. Guardian review is [`docs/HOSTED.md`](docs/HOSTED.md) H1–H5.
 
 ## Layout (create these when code starts)
 
@@ -34,7 +34,7 @@ app/          Next.js App Router — observer UI + HTTP/MCP route handlers (Verc
 contracts/    Python Intelligent Contracts (GenLayer testnet, not on Vercel)
 ```
 
-A product guardian is a connected assistant. State: Postgres.
+The product guardian is the Foyer watcher in [`docs/HOSTED.md`](docs/HOSTED.md) (H1–H5 in code). State: Postgres.
 
 Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /actions/:id/objections`, `POST /actions/:id/withdraw`, `POST /actions/:id/revise`, `POST /actions/:id/insist`, `GET /inbox`, `POST /actions/:id/ack`, `GET /actions/:id`, `POST /cases/:id/appeal`, plus `GET`/`POST /tick` for the scheduler.
 
@@ -50,9 +50,10 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 
 ## Agent habits
 
-- Prefer small, incremental changes. Do not invent a second architecture beside [`docs/INITIAL.md`](docs/INITIAL.md). Protocol replacement follows [`docs/ORCHESTRATE.md`](docs/ORCHESTRATE.md).
+- Prefer small, incremental changes. Do not invent a second architecture beside [`docs/INITIAL.md`](docs/INITIAL.md). The guardian loop is [`docs/HOSTED.md`](docs/HOSTED.md).
+- When behavior changes, update every tracked doc that describes that behavior in the same turn. A changelog bullet does not replace those docs.
+- New env keys are uncommented assignments in `.env.example` (`KEY=`), with a comment on the line above. A commented-out key does not count.
 - When you add modules, env vars, or API contracts, append a dated bullet to [Architecture change log](#architecture-change-log) in the same turn.
-- New env keys go into `.env.example` with a short comment above each key.
 
 ## Architecture change log
 
@@ -211,3 +212,10 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-20: Lock docs (public and `.local/`) match the shipped pay order: 402 probe → consume → keychain → EIP-3009. Slice table lists what is done and what is not.
 - 2026-10-20: Agents tab matches that order: 402 then consume then keychain; git is HEAD then consume then push; MCP JSON hidden until opened; house hand ticks stay visible on every broker type.
 - 2026-10-21: Lock broker verifies the grant JWT against JWKS before consume. `pay.x402` `max_session` is the sum of that agent’s payments in the grant TTL window. OpenAPI `0.69.0`.
+- 2026-10-27: Hosted guardian plan in [`docs/HOSTED.md`](docs/HOSTED.md). Foyer provides the watcher; chats propose and do not object. Comparer first, guardian credits separate from court credits. Slices H1–H5. Not built.
+- 2026-10-27: Product docs state that guardian as the concept. Callback hooks, the collect window, and chat `object` / `report` stay described as the running app until those slices land.
+- 2026-10-30: Hosted H1–H2 — after propose or revise, Foyer queues a guardian review (`guardian_reviews`, hidden `agents.watcher`). Vercel AI Gateway compares the constitution and the proposal. No objection permits. A grounded objection opens bargain under the name Guardian. No tokens, a muddy answer, or empty rules escalate. `AI_GATEWAY_API_KEY`, `FOYER_GUARDIAN_MODEL`. Chat `object` / `report` and guardian credits stay for H3–H5.
+- 2026-10-30: Docs that describe the loop match H1–H2. New env keys must be uncommented `KEY=` lines in `.env.example`.
+- 2026-10-30: Hosted H3–H5 — guardian reactions are a separate meter (free 10/month, paid plan 100, packs in steps of 10). Debit after tokens. Zero balance escalates without a call. Own LLM does not debit. Admin saves the gateway model. Rules tab renames the guardian and stores URL, model, sealed key, and a short note. Chat MCP drops `object` and `report`. A chat key cannot object. The test tab is gone. A live action is not permitted by the collect window. OpenAPI `0.70.0`.
+- 2026-10-30: Admin vouchers can grant guardian reactions (`kind: guardian`, steps of 10). Redeem adds the pack, not court credits. OpenAPI `0.71.0`.
+- 2026-10-30: A guardian call that spent tokens debits one reaction even when the body is an error. The rules tab no longer edits the collect window; live actions are not permitted by it.

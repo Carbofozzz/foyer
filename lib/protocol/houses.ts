@@ -8,6 +8,7 @@ import { ProtocolError } from "./errors";
 import { hashSecret, mintToken } from "./keys";
 import { accessFor } from "./members";
 import { isOrgHouse } from "./types";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 import { ensureLockHandsColumn } from "@/lib/lock/house-hands";
 import { ensureHouseWindowsColumn } from "./house-windows";
 import { ensureWriteSignColumns } from "./write-sign";
@@ -19,6 +20,7 @@ export async function findHouseByOwner(userId: string) {
   await ensureHouseWindowsColumn();
   await ensureWriteSignColumns();
   await ensureLockHandsColumn();
+  await ensureGuardianSchema();
   if (!userId) return null;
   const db = getDb();
   const [row] = await db.select().from(principals).where(eq(principals.ownerUserId, userId)).limit(1);

@@ -9,6 +9,7 @@ import { parseCounterAction, parseEvidence, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
 import { assertHouseProposeRoom, assertJustification } from "./abuse";
 import { enqueueWakes } from "@/lib/notify/wake";
+import { enqueueGuardianReview, scheduleGuardian } from "@/lib/guardian/review";
 import { writeHash, stampActionWrite } from "./write-hash";
 import { verifyWriteSign, writeSignFrom, writeSignStamp, type WriteSignOffer } from "./write-sign";
 
@@ -50,13 +51,8 @@ export async function proposeAction(
     testPass: Boolean(options?.testPass),
   });
   if (!options?.testPass) {
-    await enqueueWakes({
-      actionId: id,
-      principalId: auth.principal.id,
-      proposerId: auth.agent.id,
-      revision: 1,
-      origin: options?.origin,
-    });
+    await enqueueGuardianReview(id, 1);
+    scheduleGuardian(auth.principal.id);
   }
   const bundle = await loadActionBundle(id);
   if (!bundle) throw new ProtocolError("internal", "Failed to load action", 500);
@@ -76,6 +72,9 @@ export async function fileObjection(
   }
   if (bundle.action.status !== "open") {
     throw new ProtocolError("conflict", "Silence window is closed", 409);
+  }
+  if (!auth.agent.watcher) {
+    throw new ProtocolError("forbidden", "Only the house guardian may object", 403);
   }
   if (bundle.objections.some((row) => row.objectorId === auth.agent.id && row.revision === bundle.action.revision)) {
     throw new ProtocolError("conflict", "Already objected", 409);

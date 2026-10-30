@@ -16,6 +16,7 @@ import { ensureWriteHashColumns } from "./write-hash";
 import { ensureWriteSignColumns } from "./write-sign";
 import { expireGrants } from "@/lib/lock/grants";
 import { ensureLockHandsColumn } from "@/lib/lock/house-hands";
+import { pendingGuardianActionIds, runHouseGuardian } from "@/lib/guardian/review";
 
 /**
  * Advances time for one house. Idempotent.
@@ -37,6 +38,8 @@ export async function sweep(
   if (!principal) return { advanced: 0 };
 
   let advanced = 0;
+  advanced += await runHouseGuardian(principalId, now);
+  const guardianWaiting = await pendingGuardianActionIds(principalId);
   const origin = options?.origin || defaultPublicOrigin();
   if (options?.wakes !== false) {
     advanced += await deliverPendingWakes(principalId, origin);
@@ -52,6 +55,8 @@ export async function sweep(
   const openBundles = await loadActionBundles(openRows.map((row) => row.id));
   for (const bundle of openBundles) {
     if (bundle.action.status !== "open") continue;
+    if (guardianWaiting.has(bundle.action.id)) continue;
+    if (!bundle.action.testPass) continue;
     const gate = bundle.action.testPass ? "ready" : await requiredWakeGate(bundle.action.id, bundle.action.revision);
     if (gate === "pending") continue;
     if (gate === "failed") {

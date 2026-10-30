@@ -2,7 +2,9 @@
 
 Replace the shipped loop in [INITIAL.md](INITIAL.md) (propose → silence → any objection opens GenLayer; the IC picks `allow_a` / `allow_b` / `remedy` / `escalate`) with wake, bargain, and a cheap court that only answers the original proposal.
 
-Foyer is a **coordination layer** for one principal’s agents, not only a court. Chat agents can propose; they cannot be woken. Coordination therefore needs bidirectional agents. You bring your own: a callback on your server. Foyer does not run hosted agents in this plan — that idea is backlog (who pays the model, connectors, tick budget, own key not a gateway veto). Live path is outbound chat + callback checker.
+Foyer is a **coordination layer** for one principal’s agents, not only a court. Chats propose. The watcher that objects is the guardian Foyer provides. [HOSTED.md](HOSTED.md) H1–H5 are in the code: after propose or revise, Foyer queues that review and does not wake callback hooks.
+
+This file is the older loop (callback hook, collect window, silence as consent). Do not build further guardian work inside these O-slices. The running review is HOSTED H1–H5.
 
 Until a slice here lands, **INITIAL.md and the codebase** are what runs. Update INITIAL and `AGENTS.md` in the same change as each slice so they do not describe the old loop.
 
@@ -50,13 +52,15 @@ Principal appeal on `escalated`: yes or no on the original proposal — not `all
 
 ## Agent kinds
 
+These rows are the Connect kinds still stored. Connect no longer offers a hook. A live propose does not wake `callback`. The review is [HOSTED.md](HOSTED.md) H1–H5.
+
 | `wake` | Connect | Role |
 |---|---|---|
 | `outbound` | Name → key → MCP/HTTP snippet | May `propose`, then `withdraw` / `revise` / `insist` / `ack` / `report` when the human opens the chat. Not woken. |
-| `callback` | Name + hook URL + signing secret | Woken with a signed POST (`action_id`, revision, deadline, inbox hint). Reads the protocol, may object. Holds calendar / personal DB Foyer cannot see. |
-| `hosted` | Reserved column. Not minted. | Backlog: a Foyer-run process with the agent’s own key. Not live. Do not offer it as a working Connect kind. |
+| `callback` | Name + hook URL + signing secret | Woken with a signed POST (`action_id`, revision, deadline, inbox hint). Reads the protocol, may object. Holds calendar / personal DB Foyer cannot see. Temporary checker, not the product guardian. |
+| `hosted` | Reserved column. Not minted. | The product guardian in [HOSTED.md](HOSTED.md) is not this Connect kind and is not live. Do not offer `wake = hosted` as a working Connect kind. |
 
-A bidirectional agent without a hook is not created. Several outbound chats do not replace one callback checker. Silence among chats is still consent.
+A live propose does not wake a callback. Silence among chats is not the review. The guardian is.
 
 ---
 
@@ -100,9 +104,9 @@ Unique `(action, objector)` includes **revision**, or a revise cannot collect a 
 
 ---
 
-## Hosted agents (backlog, not a slice)
+## Guardian
 
-Do not implement a Foyer-run constitution bot in this plan. Design first: who pays the model, tick vs always-on, connectors, not pretending the host sees Gmail or the calendar, gateway never objects in its own name. Schema `wake = hosted` stays reserved. Tracked in [INITIAL.md](INITIAL.md) backlog.
+The product watcher is [HOSTED.md](HOSTED.md) H1–H5, and that review is in the code. It is not `wake = hosted`. Schema `wake = hosted` stays reserved. Do not add further guardian work as an O-slice.
 
 ---
 
@@ -179,9 +183,9 @@ Do not implement a Foyer-run constitution bot in this plan. Design first: who pa
 
 ### O6 — skipped (live agents already work)
 
-Outbound chat proposes; callback agents get a signed POST and object through the protocol. Bargain + `insist` + IC yes/no/human do not need a process Foyer runs.
+Outbound chat proposes; callback agents get a signed POST and object through the protocol. That was enough to skip a worker inside this plan. The product watcher is still [HOSTED.md](HOSTED.md): Foyer calls it, and that code is not here yet.
 
-Do **not** add `lib/guardian/hosted.ts`, an LLM env key, or a tick-budget hosted objector.
+Do **not** add `lib/guardian/hosted.ts`, an LLM env key, or a tick-budget hosted objector inside this plan. Build the guardian only as the HOSTED slices.
 
 Hygiene only:
 
@@ -241,10 +245,10 @@ Each step is a card in a growing history. After propose: a **Foyer sent a notice
 
 ## Out of scope here
 
-Telegram-as-bot and email-on-escalate are [NOTIFY.md](NOTIFY.md), not this loop. Signatures / pin version / split windows are [SIGN.md](SIGN.md). Hand grants after a pass are [LOCK.md](LOCK.md), not a new court outcome. Other INITIAL backlog (including hosted agents), bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
+Telegram-as-bot and email-on-escalate are [NOTIFY.md](NOTIFY.md), not this loop. Signatures / pin version / split windows are [SIGN.md](SIGN.md). Hand grants after a pass are [LOCK.md](LOCK.md), not a new court outcome. The Foyer guardian review is [HOSTED.md](HOSTED.md) H1–H5, not an O-slice. Bonds and court duties, Foyer paying or booking, A2A, waking Cursor, a fifth court outcome, raising courts-per-tick (there is no court-start queue).
 
 ---
 
 ## Done when
 
-A house with an outbound Travel and at least one callback checker can: propose → checkers are POSTed → several objections sit on the action → Travel withdraws or revises without a GenLayer fee → `insist` sends every opinion to the IC → verdict is only yes, no, or human → after a final answer Travel acks with `report`, then acts if `may_act`. A house with only chats is offered a hook; until then silence is consent.
+The walk below is the older hook loop. A live propose now queues the guardian in [HOSTED.md](HOSTED.md) instead of POSTing checkers.
