@@ -238,12 +238,12 @@ const EQ_TRUE = 2 << 3;
 const EQ_FALSE = 1 << 3;
 
 function readUleb(data: Uint8Array, index: { i: number }): bigint {
-  let res = 0n;
-  let accum = 0n;
+  let res = BigInt(0);
+  let accum = BigInt(0);
   while (index.i < data.length) {
     const byte = data[index.i++] ?? 0;
-    res += BigInt(byte & 127) * (1n << accum);
-    accum += 7n;
+    res += BigInt(byte & 127) * (BigInt(1) << accum);
+    accum += BigInt(7);
     if (byte < 128) return res;
   }
   throw new Error("truncated eq");
@@ -253,9 +253,9 @@ function decodeEq(data: Uint8Array, index: { i: number }): unknown {
   const cur = readUleb(data, index);
   if (cur === BigInt(EQ_TRUE)) return true;
   if (cur === BigInt(EQ_FALSE)) return false;
-  if (cur === 0n) return null;
-  const type = Number(cur & 0xffn) & 7;
-  const rest = cur >> 3n;
+  if (cur === BigInt(0)) return null;
+  const type = Number(cur & BigInt(0xff)) & 7;
+  const rest = cur >> BigInt(3);
   if (type === EQ_TYPE_STR) {
     const size = Number(rest);
     const slice = data.slice(index.i, index.i + size);
