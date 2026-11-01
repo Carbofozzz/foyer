@@ -19,7 +19,6 @@ export function GuardianCard({
   errorLabel: string;
 }) {
   const router = useRouter();
-  const [name, setName] = useState(initial.name);
   const [url, setUrl] = useState(initial.llm_url);
   const [model, setModel] = useState(initial.llm_model);
   const [key, setKey] = useState("");
@@ -35,7 +34,6 @@ export function GuardianCard({
       method: "POST",
       headers: cabinetHeaders(houseId),
       body: JSON.stringify({
-        name,
         llm_url: url,
         llm_model: model,
         llm_key: key,
@@ -53,7 +51,7 @@ export function GuardianCard({
 
   return (
     <form
-      className="card stack"
+      className="card stack guardian-card"
       onSubmit={(event) => {
         event.preventDefault();
         void save();
@@ -62,16 +60,11 @@ export function GuardianCard({
       <p className="feed-label">{t.guardianTitle}</p>
       <p className="hint">
         {(usingOwn ? t.guardianLeadOwn : t.guardianLead)
-          .replace("{name}", initial.name || "Guardian")
           .replace("{model}", initial.llm_model || initial.llm_url)}
       </p>
       <div className="connect-issue">
         <p className="feed-label">{t.guardianOwnToggle}</p>
         <div className="guardian-fields">
-          <label className="connect-field">
-            <span>{t.guardianName}</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
-          </label>
           <p className="hint">{t.guardianOwnHint}</p>
           <div className="row">
             <button type="button" className="ghost" onClick={() => setUrl("https://api.openai.com/v1")}>
@@ -103,11 +96,11 @@ export function GuardianCard({
             <span>{t.guardianAddendum}</span>
             <textarea value={addendum} onChange={(e) => setAddendum(e.target.value)} maxLength={500} rows={2} />
           </label>
-          <button type="submit" className="ghost" disabled={pending} aria-busy={pending}>
-            {t.guardianSave}
-          </button>
         </div>
       </div>
+      <button type="submit" className="ghost" disabled={pending} aria-busy={pending}>
+        {t.guardianSave}
+      </button>
       {error ? <p className="error">{errorLabel}</p> : null}
     </form>
   );

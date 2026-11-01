@@ -1,4 +1,5 @@
 // Smoke deploy only. Product path: one IC per house, signed by that house wallet.
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,13 +43,14 @@ const accountKey = /** @type {`0x${string}`} */ (keyRaw.startsWith("0x") ? keyRa
 const code = new Uint8Array(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../contracts/court.py")));
 const account = createAccount(accountKey);
 const client = createClient({ chain, account });
+const funded = fundFeeCalls(account.address);
 
-const estimate = await client.estimateTransactionFees();
-const hash = await client.deployContract({
+const estimate = await funded(() => client.estimateTransactionFees());
+const hash = await funded(() => client.deployContract({
   code,
   args: [account.address],
   fees: { distribution: estimate.distribution, feeValue: estimate.feeValue },
-});
+}));
 const receipt = await client.waitForFinalization({
   hash,
   retries: 200,
@@ -76,6 +78,38 @@ if (!address) {
 }
 
 console.log(address);
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const fundedCaller = new AsyncLocalStorage();
+let fetchPatched = false;
+
+function fundFeeCalls(address) {
+  if (!fetchPatched) {
+    fetchPatched = true;
+    const original = globalThis.fetch.bind(globalThis);
+    globalThis.fetch = async (input, init) => {
+      const from = fundedCaller.getStore();
+      if (from && init && typeof init.body === "string") {
+        try {
+          const body = JSON.parse(init.body);
+          const tx = body.params?.[0];
+          if (
+            (body.method === "eth_call" || body.method === "eth_estimateGas") &&
+            tx && typeof tx === "object" &&
+            (!tx.from || String(tx.from).toLowerCase() === ZERO_ADDRESS)
+          ) {
+            body.params[0] = { ...tx, from };
+            init = { ...init, body: JSON.stringify(body) };
+          }
+        } catch {
+          // Not a JSON-RPC body.
+        }
+      }
+      return original(input, init);
+    };
+  }
+  return (run) => fundedCaller.run(address, run);
+}
 
 function loadDotEnv(path) {
   let text;

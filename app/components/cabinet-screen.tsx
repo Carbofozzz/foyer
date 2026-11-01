@@ -350,16 +350,22 @@ function FeedRow({
 }) {
   const proposer = agentLine(item.proposer_id, names, leftoverIds, t);
   const asked = formatAction(item.payload);
-  const decision = decisionLine(item, t, notify);
+  const inCourt = item.phase === "in_court";
+  const decision = inCourt ? t.inCourt : decisionLine(item, t, notify);
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
-  const outcome = item.verdict?.outcome;
+  const outcome = inCourt ? undefined : item.verdict?.outcome;
   const courtTx = item.verdict?.tx || item.case?.tx;
   const notes: ReactNode[] = [];
   if (held) notes.push(t.holdAppeal);
-  if (item.report) {
-    notes.push(t.reportDid);
-  } else if (item.status === "permitted") {
-    notes.push(reportAckLate(item) ? t.reportMiss : t.reportPending);
+  if (
+    item.verdict?.outcome === "deny" &&
+    item.verdict.judge === "offline" &&
+    !item.insisted_at &&
+    !item.case?.tx &&
+    item.appeal_until &&
+    new Date(item.appeal_until).getTime() > now
+  ) {
+    notes.push(t.courtAppeal.replace("{when}", formatWhen(item.appeal_until, locale)));
   }
   if (item.verdict?.judge === "onchain" && courtTx) {
     notes.push(
@@ -507,14 +513,9 @@ function showOfflineCourtNote(item: InboxItem): boolean {
   if (!verdict) return false;
   if (verdict.outcome === "allow" || verdict.outcome === "allow_a" || verdict.outcome === "deny") return false;
   const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
-  if (key === "hookFailed" || key === "guardianFailed" || key === "bargainTimeout") return false;
+  if (key === "hookFailed" || key === "guardianFailed" || key === "guardianNoKey" || key === "bargainTimeout") return false;
   if (key === "noFee" || key === "submitFail" || key === "txError") return false;
   return true;
-}
-
-function reportAckLate(item: InboxItem) {
-  if (!item.ack_until) return false;
-  return Date.parse(item.ack_until) <= Date.now();
 }
 
 function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) {
@@ -536,6 +537,7 @@ function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) 
   const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
   if (key === "hookFailed") return notify.hookFailed;
   if (key === "guardianFailed") return notify.guardianFailed;
+  if (key === "guardianNoKey") return notify.guardianNoKey;
   if (key === "bargainTimeout") return notify.bargainTimeout;
   if (key === "noFee") return notify.noFee;
   if (key === "submitFail") return notify.submitFail;
@@ -555,6 +557,8 @@ function humanDecisionLine(item: InboxItem, t: FeedCopy): string | null {
   const why =
     key === "hookFailed"
       ? t.humanWhyHook
+      : key === "guardianNoKey"
+        ? t.humanWhyNoKey
       : key === "guardianFailed"
         ? t.humanWhyGuardian
       : key === "bargainTimeout"

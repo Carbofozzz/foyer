@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { actions, agents, cases, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
@@ -13,6 +12,7 @@ import {
   inspectJudgeTx,
   readJudgeVerdict,
   submitJudgeWrite,
+  verdictFromJudgeTx,
   walletBalance,
 } from "@/lib/judge/onchain";
 import { recordCourtTx } from "@/lib/judge/wallet";
@@ -147,14 +147,12 @@ export async function openCourt(action: ActionRow, principal: HousePrincipal, no
   await submitForCase(row, principal, action, now);
 }
 
-/** Submit after the HTTP response. Do not block insist on GenLayer deploy/write. */
-export function scheduleOpenCourt(action: ActionRow, principal: HousePrincipal, now: Date): void {
-  const run = () => openCourt(action, principal, now).catch(() => undefined);
-  try {
-    after(run);
-  } catch {
-    void run();
-  }
+/** Submit the judge write. Returns the tx hash only after it is stored. Does not mark the action. */
+export async function submitCourtTx(action: ActionRow, principal: HousePrincipal, now: Date): Promise<string | null> {
+  const db = getDb();
+  const [existing] = await db.select().from(cases).where(eq(cases.actionId, action.id)).limit(1);
+  if (!existing || existing.tx) return existing?.tx ?? null;
+  return submitForCase(existing, principal, action, now);
 }
 
 async function findInflightCase(principalId: string): Promise<CaseRow | null> {
@@ -190,7 +188,7 @@ async function advanceCase(row: CaseRow, principal: HousePrincipal, now: Date): 
   const phase = await inspectJudgeTx(row.tx);
   if (phase === "pending") return;
   if (phase === "ready") {
-    const answer = await readCaseVerdict(principal, row);
+    const answer = (await verdictFromJudgeTx(row.tx)) ?? (await readCaseVerdict(principal, row));
     if (answer) {
       await applyVerdict(row, principal, now, answer, "onchain", row.tx);
       return;
@@ -267,29 +265,29 @@ async function submitForCase(
   principal: HousePrincipal,
   action: ActionRow,
   now?: Date,
-): Promise<void> {
-  if (row.tx) return;
+): Promise<string | null> {
+  if (row.tx) return row.tx;
   if (!(await maySubmitCourt(principal.id, row.id))) {
     // Leave the case bare — top-up then tick/retry submits. Do not burn tx error budget.
-    return;
+    return null;
   }
   const platform = platformWallet();
   if (!platform) {
     // Misconfigured deploy — wait; not the house's fault.
     await checkPlatformBalanceAlert().catch(() => undefined);
-    return;
+    return null;
   }
   const funded = await ensureCourtFunds(platform.address);
   await checkPlatformBalanceAlert().catch(() => undefined);
   const { floorWei } = await resolvePlatformThresholds();
   if (funded < floorWei) {
     // Platform dry: case waits. No debit, no offline escalate.
-    return;
+    return null;
   }
   const contractAddress = await ensureHouseCourt(principal);
   if (!contractAddress) {
     // Deploy failed or still under floor — wait, do not burn the house error budget.
-    return;
+    return null;
   }
 
   const balanceBefore = (await walletBalance(platform.address)) ?? BigInt(0);
@@ -302,7 +300,7 @@ async function submitForCase(
   );
   if (!submitted) {
     await noteSubmitFail(row, principal, now);
-    return;
+    return null;
   }
   const db = getDb();
   await db
@@ -323,6 +321,7 @@ async function submitForCase(
   } catch {
     // Tx already landed; ledger retry on a later poll via maySubmitCourt/debit idempotency.
   }
+  return submitted.hash;
 }
 
 async function noteSubmitFail(row: CaseRow, principal: HousePrincipal, now?: Date): Promise<void> {
@@ -450,7 +449,7 @@ async function applyVerdict(
     .set({
       status: "awaiting_ack",
       ackUntil: new Date(now.getTime() + principal.ackTimeoutSec * 1000),
-      appealUntil: new Date(now.getTime() + principal.appealWindowSec * 1000),
+      appealUntil: judge === "onchain" ? null : new Date(now.getTime() + principal.appealWindowSec * 1000),
     })
     .where(eq(actions.id, row.actionId));
 

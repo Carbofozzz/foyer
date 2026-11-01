@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createAccount, createClient, isSuccessful } from "genlayer-js";
@@ -67,6 +68,44 @@ function clientFor(accountKey: `0x${string}`) {
   return createClient({ chain, account: createAccount(accountKey) });
 }
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const fundedCaller = new AsyncLocalStorage<string>();
+let fetchPatched = false;
+
+/** genlayer-js reads the fee manager with eth_call and no sender. Bradbury rejects the zero address. */
+function installFundedFetch() {
+  if (fetchPatched) return;
+  fetchPatched = true;
+  const original = globalThis.fetch.bind(globalThis);
+  globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    const from = fundedCaller.getStore();
+    if (from && init && typeof init.body === "string") {
+      try {
+        const body = JSON.parse(init.body) as { method?: string; params?: unknown[] };
+        const method = body.method;
+        const tx = body.params?.[0];
+        if (
+          (method === "eth_call" || method === "eth_estimateGas") &&
+          tx &&
+          typeof tx === "object" &&
+          (!("from" in tx) || String((tx as { from?: string }).from ?? "").toLowerCase() === ZERO_ADDRESS)
+        ) {
+          body.params![0] = { ...(tx as object), from };
+          init = { ...init, body: JSON.stringify(body) };
+        }
+      } catch {
+        // Not a JSON-RPC body.
+      }
+    }
+    return original(input, init);
+  }) as typeof fetch;
+}
+
+function withFundedCalls<T>(address: string, run: () => Promise<T>): Promise<T> {
+  installFundedFetch();
+  return fundedCaller.run(address, run);
+}
+
 export type CourtSubmitResult = {
   hash: string;
   estimatedWei: bigint;
@@ -76,8 +115,10 @@ export type CourtSubmitResult = {
 export async function deployHouseCourt(
   accountKey: `0x${string}`,
 ): Promise<(CourtSubmitResult & { address: string }) | null> {
+  const wait = waitOpts();
+  const waitMs = wait.interval * wait.retries + 20_000;
   try {
-    return await withBudget(budgetMs(), () => submitDeploy(accountKey));
+    return await withBudget(Math.max(budgetMs(), waitMs), () => submitDeploy(accountKey));
   } catch {
     return null;
   }
@@ -191,6 +232,89 @@ function courtTxPhase(tx: Pick<GenLayerTransaction, "lifecycle" | "status" | "st
   return "ready";
 }
 
+const EQ_TYPE_STR = 4;
+const EQ_TYPE_MAP = 6;
+const EQ_TRUE = 2 << 3;
+const EQ_FALSE = 1 << 3;
+
+function readUleb(data: Uint8Array, index: { i: number }): bigint {
+  let res = 0n;
+  let accum = 0n;
+  while (index.i < data.length) {
+    const byte = data[index.i++] ?? 0;
+    res += BigInt(byte & 127) * (1n << accum);
+    accum += 7n;
+    if (byte < 128) return res;
+  }
+  throw new Error("truncated eq");
+}
+
+function decodeEq(data: Uint8Array, index: { i: number }): unknown {
+  const cur = readUleb(data, index);
+  if (cur === BigInt(EQ_TRUE)) return true;
+  if (cur === BigInt(EQ_FALSE)) return false;
+  if (cur === 0n) return null;
+  const type = Number(cur & 0xffn) & 7;
+  const rest = cur >> 3n;
+  if (type === EQ_TYPE_STR) {
+    const size = Number(rest);
+    const slice = data.slice(index.i, index.i + size);
+    index.i += size;
+    return new TextDecoder().decode(slice);
+  }
+  if (type === EQ_TYPE_MAP) {
+    const map = new Map<string, unknown>();
+    for (let left = Number(rest); left > 0; left -= 1) {
+      const size = Number(readUleb(data, index));
+      const key = new TextDecoder().decode(data.slice(index.i, index.i + size));
+      index.i += size;
+      map.set(key, decodeEq(data, index));
+    }
+    return map;
+  }
+  throw new Error("unsupported eq");
+}
+
+/** Bradbury stores the judge dict in the tx eq output. The chain RPC has no gen_call. */
+function verdictFromEq(hex: string): VerdictAnswer | null {
+  if (!hex.startsWith("0x") || hex.length < 4) return null;
+  const bytes = Uint8Array.from(Buffer.from(hex.slice(2), "hex"));
+  for (let start = 0; start < bytes.length; start += 1) {
+    try {
+      const value = decodeEq(bytes, { i: start });
+      if (!(value instanceof Map)) continue;
+      const outcome = normalizeCourtOutcome(String(value.get("outcome") ?? ""));
+      if (!outcome) continue;
+      const reasoning = String(value.get("reasoning") ?? "").trim() || "No reasoning given.";
+      return {
+        outcome,
+        remedy_action: null,
+        reasoning,
+        objection_grounded: value.get("objection_grounded") === true,
+      };
+    } catch {
+      // Not a verdict map at this offset.
+    }
+  }
+  return null;
+}
+
+export async function verdictFromJudgeTx(hash: string): Promise<VerdictAnswer | null> {
+  if (!hash.startsWith("0x")) return null;
+  const chain = resolveChain();
+  if (!chain) return null;
+  try {
+    const client = createClient({ chain });
+    const tx = await client.getTransaction({ hash: hash as TransactionHash });
+    if (courtTxPhase(tx) !== "ready") return null;
+    const hex = tx.eqBlocksOutputs;
+    if (typeof hex !== "string") return null;
+    return verdictFromEq(hex);
+  } catch {
+    return null;
+  }
+}
+
 export async function walletBalance(address: string): Promise<bigint | null> {
   const chain = resolveChain();
   const parsed = asAddress(address);
@@ -211,7 +335,7 @@ export async function estimateTransferReserve(accountKey: `0x${string}`): Promis
   const client = clientFor(accountKey);
   if (!client) return FEE_FALLBACK;
   try {
-    const estimate = await client.estimateTransactionFees();
+    const estimate = await withFundedCalls(createAccount(accountKey).address, () => client.estimateTransactionFees());
     const padded = (estimate.feeValue * BigInt(15)) / BigInt(10);
     if (padded <= BigInt(0)) return FEE_FALLBACK;
     return padded > FEE_CAP ? FEE_CAP : padded;
@@ -254,13 +378,13 @@ async function submitDeploy(accountKey: `0x${string}`): Promise<(CourtSubmitResu
     return null;
   }
   const account = createAccount(accountKey);
-  const estimate = await client.estimateTransactionFees();
+  const estimate = await withFundedCalls(account.address, () => client.estimateTransactionFees());
   const estimatedWei = BigInt(estimate.feeValue ?? 0);
-  const hash = (await client.deployContract({
+  const hash = (await withFundedCalls(account.address, () => client.deployContract({
     code,
     args: [account.address],
     fees: { distribution: estimate.distribution, feeValue: estimate.feeValue },
-  })) as TransactionHash;
+  }))) as TransactionHash;
   if (typeof hash !== "string" || !hash.startsWith("0x")) return null;
   const receipt = await client.waitForFinalization({ hash, ...waitOpts() });
   if (!isSuccessful(receipt)) return null;
@@ -288,12 +412,14 @@ async function writeJudge(
       JSON.stringify(input.evidence),
     ] as CalldataEncodable[],
   };
-  const estimate = await client.estimateTransactionFeesForWrite(write);
+  const account = createAccount(accountKey);
+  // Bradbury's chain RPC has no gen_call, so a simulated write estimate cannot run.
+  const estimate = await withFundedCalls(account.address, () => client.estimateTransactionFees());
   const estimatedWei = BigInt(estimate.feeValue ?? 0);
-  const txHash = (await client.writeContract({
+  const txHash = (await withFundedCalls(account.address, () => client.writeContract({
     ...write,
     fees: { distribution: estimate.distribution, feeValue: estimate.feeValue },
-  })) as TransactionHash;
+  }))) as TransactionHash;
   if (typeof txHash !== "string" || !txHash.startsWith("0x")) return null;
   return { hash: txHash, estimatedWei };
 }

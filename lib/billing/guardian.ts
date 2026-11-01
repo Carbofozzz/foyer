@@ -36,23 +36,22 @@ export async function debitGuardianReaction(principalId: string, reviewId: strin
   await ensureBillingAccount(principalId);
   const db = getDb();
   const idempotencyKey = `debit_guardian:${reviewId}`;
-  await db.transaction(async (tx) => {
-    await tx.execute(sql`select principal_id from billing_accounts where principal_id = ${principalId} for update`);
-    const [existing] = await tx
-      .select({ id: billingLedger.id })
-      .from(billingLedger)
-      .where(eq(billingLedger.idempotencyKey, idempotencyKey))
-      .limit(1);
-    if (existing) return;
-    const [account] = await tx
-      .select()
-      .from(billingAccounts)
-      .where(eq(billingAccounts.principalId, principalId))
-      .limit(1);
-    if (!account) return;
-    const freeRemaining = Math.max(0, GUARDIAN_FREE_MONTH - account.guardianFreeUsed);
-    const pool = freeRemaining > 0 ? "free" : account.guardianSubCredits > 0 ? "sub" : "pack";
-    await tx.insert(billingLedger).values({
+  const [existing] = await db
+    .select({ id: billingLedger.id })
+    .from(billingLedger)
+    .where(eq(billingLedger.idempotencyKey, idempotencyKey))
+    .limit(1);
+  if (existing) return;
+  const [account] = await db
+    .select()
+    .from(billingAccounts)
+    .where(eq(billingAccounts.principalId, principalId))
+    .limit(1);
+  if (!account) return;
+  const freeRemaining = Math.max(0, GUARDIAN_FREE_MONTH - account.guardianFreeUsed);
+  const pool = freeRemaining > 0 ? "free" : account.guardianSubCredits > 0 ? "sub" : "pack";
+  try {
+    await db.insert(billingLedger).values({
       id: mintToken("bld"),
       principalId,
       delta: -1,
@@ -61,29 +60,38 @@ export async function debitGuardianReaction(principalId: string, reviewId: strin
       idempotencyKey,
       note: `Guardian review (${pool})`,
     });
-    if (pool === "free") {
-      await tx
-        .update(billingAccounts)
-        .set({ guardianFreeUsed: sql`${billingAccounts.guardianFreeUsed} + 1`, updatedAt: new Date() })
-        .where(eq(billingAccounts.principalId, principalId));
-    } else if (pool === "sub") {
-      await tx
-        .update(billingAccounts)
-        .set({
-          guardianSubCredits: sql`greatest(0, ${billingAccounts.guardianSubCredits} - 1)`,
-          updatedAt: new Date(),
-        })
-        .where(eq(billingAccounts.principalId, principalId));
-    } else {
-      await tx
-        .update(billingAccounts)
-        .set({
-          guardianBalance: sql`greatest(0, ${billingAccounts.guardianBalance} - 1)`,
-          updatedAt: new Date(),
-        })
-        .where(eq(billingAccounts.principalId, principalId));
-    }
-  });
+  } catch (error) {
+    // A parallel sweep already inserted this review's debit.
+    if (isUniqueViolation(error)) return;
+    throw error;
+  }
+  if (pool === "free") {
+    await db
+      .update(billingAccounts)
+      .set({ guardianFreeUsed: sql`${billingAccounts.guardianFreeUsed} + 1`, updatedAt: new Date() })
+      .where(eq(billingAccounts.principalId, principalId));
+  } else if (pool === "sub") {
+    await db
+      .update(billingAccounts)
+      .set({
+        guardianSubCredits: sql`greatest(0, ${billingAccounts.guardianSubCredits} - 1)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(billingAccounts.principalId, principalId));
+  } else {
+    await db
+      .update(billingAccounts)
+      .set({
+        guardianBalance: sql`greatest(0, ${billingAccounts.guardianBalance} - 1)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(billingAccounts.principalId, principalId));
+  }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("billing_ledger_idempotency") || message.includes("duplicate key");
 }
 
 /** Paid plan includes 100 reactions for the period. Idempotent per subscription grant. */

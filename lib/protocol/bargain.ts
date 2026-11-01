@@ -3,9 +3,9 @@ import { actions } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
 import { REASON_BARGAIN_TIMEOUT } from "@/lib/notify/reasons";
 import { escalateOffline } from "@/lib/notify/wake";
-import { enqueueGuardianReview, scheduleGuardian } from "@/lib/guardian/review";
+import { enqueueGuardianReview } from "@/lib/guardian/review";
 import { assertCourtCredit } from "@/lib/billing/account";
-import { scheduleOpenCourt } from "./court";
+import { submitCourtTx } from "./court";
 import { ProtocolError } from "./errors";
 import { MAX_REVISION } from "./types";
 import { loadActionBundle, serializeAction, type HouseAuth, type HousePrincipal } from "./bundle";
@@ -114,7 +114,6 @@ export async function reviseAction(
     .where(eq(actions.id, actionId));
   if (!bundle.action.testPass) {
     await enqueueGuardianReview(actionId, revision);
-    scheduleGuardian(auth.principal.id);
   }
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
@@ -123,10 +122,7 @@ export async function reviseAction(
 
 export async function insistAction(auth: HouseAuth, actionId: string, now: Date, options?: { sign?: WriteSignOffer }) {
   const bundle = await requireProposer(auth, actionId);
-  assertCanBargain(bundle, "insist");
-  if (bundle.objections.length === 0) {
-    throw new ProtocolError("conflict", "Insist needs at least one objection", 409);
-  }
+  assertCanInsist(bundle, now);
   await assertCourtCredit(auth.principal.id);
   const proof = await verifyWriteSign(
     auth,
@@ -135,14 +131,21 @@ export async function insistAction(auth: HouseAuth, actionId: string, now: Date,
     { skip: Boolean(bundle.action.testPass) },
   );
   const hash = writeHash({ op: "insist", action_id: actionId });
+  const tx = await submitCourtTx(bundle.action, auth.principal, now);
+  if (!tx) {
+    throw new ProtocolError("conflict", "Court transaction was not submitted", 409);
+  }
   const db = getDb();
   await db
     .update(actions)
-    .set({ insistedAt: now, lastWriteOp: "insist", lastWriteHash: hash, ...writeSignStamp(proof) })
+    .set({
+      status: "open",
+      insistedAt: now,
+      lastWriteOp: "insist",
+      lastWriteHash: hash,
+      ...writeSignStamp(proof),
+    })
     .where(eq(actions.id, actionId));
-  const [fresh] = await db.select().from(actions).where(eq(actions.id, actionId)).limit(1);
-  if (!fresh) throw new ProtocolError("internal", "Failed to load action", 500);
-  scheduleOpenCourt(fresh, auth.principal, now);
   const next = await loadActionBundle(actionId);
   if (!next) throw new ProtocolError("internal", "Failed to load action", 500);
   return serializeAction(next, auth.agent.id);
@@ -157,6 +160,24 @@ async function requireProposer(auth: HouseAuth, actionId: string) {
     throw new ProtocolError("forbidden", "Only the proposer may bargain", 403);
   }
   return bundle;
+}
+
+function assertCanInsist(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>, now: Date) {
+  if (bundle.action.insistedAt || bundle.courtCase?.tx) {
+    throw new ProtocolError("conflict", "Court already started", 409);
+  }
+  if (bundle.objections.length === 0) {
+    throw new ProtocolError("conflict", "Insist needs at least one objection", 409);
+  }
+  const appeal = bundle.action.status === "permitted" && bundle.verdict?.outcome === "deny";
+  if (appeal) {
+    const until = bundle.action.appealUntil?.getTime() ?? 0;
+    if (until <= now.getTime()) throw new ProtocolError("conflict", "Appeal window closed", 409);
+    return;
+  }
+  if (bundle.action.status !== "bargaining") {
+    throw new ProtocolError("conflict", "Nothing to appeal", 409);
+  }
 }
 
 function assertCanBargain(

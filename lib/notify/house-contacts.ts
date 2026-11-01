@@ -216,7 +216,9 @@ function policyMatches(
   objectorIds: string[],
 ): boolean {
   if (policy.kind === "all") return true;
-  if (!policy.reasons.includes(reason)) return false;
+  // A missing guardian key is the same contact point as a failed review.
+  const point = reason === "guardianNoKey" ? "guardianFailed" : reason;
+  if (!policy.reasons.includes(point)) return false;
   if (policy.kind === "points") return true;
   return Boolean(policy.objector_id && objectorIds.includes(policy.objector_id));
 }

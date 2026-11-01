@@ -1,40 +1,26 @@
 import { and, eq, inArray, lt, sql } from "drizzle-orm";
-import { after } from "next/server";
-import { actions, guardianReviews, objections, principals } from "@/lib/db/schema";
+import { actions, cases, guardianReviews, objections, principals, verdicts } from "@/lib/db/schema";
 import { getDb } from "@/lib/db";
-import { executeSilenceAllow } from "@/lib/protocol/execute";
+import { denyAction, executeSilenceAllow } from "@/lib/protocol/execute";
+import { COURT_APPEAL_SEC } from "@/lib/protocol/types";
 import { mintToken } from "@/lib/protocol/keys";
-import { houseWindows } from "@/lib/protocol/house-windows";
 import { stampActionWrite, writeHash } from "@/lib/protocol/write-hash";
 import { escalateOffline } from "@/lib/notify/wake";
 import {
   REASON_GUARDIAN_FAILED,
   REASON_GUARDIAN_NO_CREDIT,
+  REASON_GUARDIAN_NO_KEY,
   REASON_GUARDIAN_NO_RULES,
   REASON_GUARDIAN_UNSURE,
 } from "@/lib/notify/reasons";
 import { parseGuardianAnswer, settleAnswer } from "./compare";
-import { completeGuardian } from "./gateway";
+import { completeGuardian, GUARDIAN_HOUSE_KEY_EMPTY, GUARDIAN_KEY_UNSET } from "./gateway";
 import { ensureGuardianSchema, ensureHouseGuardian } from "./house";
 
 const MAX_ATTEMPTS = 3;
-const STUCK_MS = 120_000;
+// A background attempt that dies after the claim must be reclaimable on the next inbox poll.
+const STUCK_MS = 15_000;
 const PROPOSAL_CHARS = 8_000;
-
-/** Run after the HTTP response. A miss here is retried by sweep. */
-export function scheduleGuardian(principalId: string) {
-  try {
-    after(async () => {
-      try {
-        await runHouseGuardian(principalId, new Date());
-      } catch {
-        // The review row stays pending. The next read or tick retries it.
-      }
-    });
-  } catch {
-    // Called outside a request. Sweep still runs the row.
-  }
-}
 
 export async function enqueueGuardianReview(actionId: string, revision: number): Promise<void> {
   await ensureGuardianSchema();
@@ -151,10 +137,16 @@ async function runOneReview(reviewId: string, principalId: string, now: Date): P
     addendum: endpoint.addendum,
     own: endpoint.own,
   });
+  if (!(await stillClaimed(reviewId, claimed.attempts))) return false;
   // One review debits once, including a failed body that already spent tokens.
   if (!endpoint.own && result.tokens > 0) {
     const { debitGuardianReaction } = await import("@/lib/billing/guardian");
     await debitGuardianReaction(principalId, reviewId);
+  }
+  if (!result.ok && isMissingGuardianKey(result.error)) {
+    await escalateOffline(principal, action.id, now, REASON_GUARDIAN_NO_KEY);
+    await finish(reviewId, result.error);
+    return true;
   }
   if (!result.ok || (!endpoint.own && result.tokens <= 0)) {
     if (claimed.attempts >= MAX_ATTEMPTS) {
@@ -170,7 +162,7 @@ async function runOneReview(reviewId: string, principalId: string, now: Date): P
   }
 
   const parsed = parseGuardianAnswer(result.content);
-  const answer = parsed ? settleAnswer(constitution, parsed) : null;
+  const answer = parsed ? settleAnswer(parsed) : null;
   if (!answer || answer.decision === "unsure") {
     await escalateOffline(principal, action.id, now, REASON_GUARDIAN_UNSURE);
     await finish(reviewId, "unsure");
@@ -199,10 +191,61 @@ async function runOneReview(reviewId: string, principalId: string, now: Date): P
     })
     .onConflictDoNothing({ target: [objections.actionId, objections.objectorId, objections.revision] });
   await stampActionWrite(action.id, "object", hash, { lastWriteSigned: false, lastWriteSig: "", lastWriteKeyGen: 0 });
-  const { enterBargain } = await import("@/lib/protocol/bargain");
-  await enterBargain(action.id, houseWindows(principal).bargain_window_sec, now);
+  await denyObjection(principal, action.id, answer.text, now);
   await finish(reviewId, null);
   return true;
+}
+
+/** A rule break is a deny. No bargain clock and no message to the house. Appeal is a later insist. */
+async function denyObjection(
+  principal: typeof principals.$inferSelect,
+  actionId: string,
+  text: string,
+  now: Date,
+): Promise<void> {
+  const db = getDb();
+  const [existing] = await db.select().from(cases).where(eq(cases.actionId, actionId)).limit(1);
+  if (existing?.tx) return;
+  const caseId = existing?.id ?? mintToken("cas");
+  if (!existing) {
+    await db.insert(cases).values({
+      id: caseId,
+      actionId,
+      constitutionSnapshot: principal.constitution,
+      status: "judged",
+      tx: null,
+      txErrors: 0,
+    });
+  }
+  const [verdict] = await db.select({ id: verdicts.id }).from(verdicts).where(eq(verdicts.caseId, caseId)).limit(1);
+  if (!verdict) {
+    await db.insert(verdicts).values({
+      id: mintToken("vrd"),
+      caseId,
+      outcome: "deny",
+      remedyAction: null,
+      reasoning: text,
+      objectionGrounded: true,
+      judge: "offline",
+      tx: null,
+      appealOf: null,
+      escalateExternal: false,
+    });
+  }
+  await denyAction(actionId, new Date(now.getTime() + COURT_APPEAL_SEC * 1000));
+}
+
+async function stillClaimed(reviewId: string, attempts: number): Promise<boolean> {
+  const [row] = await getDb()
+    .select({ status: guardianReviews.status, attempts: guardianReviews.attempts })
+    .from(guardianReviews)
+    .where(eq(guardianReviews.id, reviewId))
+    .limit(1);
+  return row?.status === "running" && row.attempts === attempts;
+}
+
+function isMissingGuardianKey(error: string): boolean {
+  return error === GUARDIAN_KEY_UNSET || error === GUARDIAN_HOUSE_KEY_EMPTY;
 }
 
 function proposalText(justification: string, payload: unknown): string {

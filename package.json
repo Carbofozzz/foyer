@@ -19,7 +19,7 @@
     "@clerk/nextjs": "^7.9.14",
     "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.44.5",
-    "genlayer-js": "2.0.0-rc.1",
+    "genlayer-js": "2.0.0-rc.2",
     "next": "^16.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

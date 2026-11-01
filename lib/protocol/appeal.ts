@@ -34,7 +34,7 @@ export async function appealCase(
   const answer: VerdictAnswer = {
     outcome: manual,
     remedy_action: null,
-    reasoning: "The principal set the outcome.",
+    reasoning: manual === "deny" ? "The house denied this request." : "The house allowed this request.",
     objection_grounded: prior.objectionGrounded,
   };
   await db.insert(verdicts).values({

@@ -50,8 +50,6 @@ export async function sweep(
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
-  const courts = options?.courts ?? 0;
-
   const openBundles = await loadActionBundles(openRows.map((row) => row.id));
   for (const bundle of openBundles) {
     if (bundle.action.status !== "open") continue;
@@ -76,6 +74,7 @@ export async function sweep(
   advanced += await timeoutBargains(principal, now);
 
   // Poll a stored hash on every sweep. Submit a new court only when courts > 0 (tick).
+  const courts = options?.courts ?? 0;
   if (await stepHouseCourt(principal, now, { submit: courts > 0 })) advanced += 1;
 
   const pending = await db

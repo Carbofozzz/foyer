@@ -2266,6 +2266,7 @@ details.lock-fold .ghost,
   flex: 0 0 auto;
 }
 
+.guardian-card > button[type="submit"].ghost,
 .connect-issue button[type="submit"].ghost {
   border: 1px solid var(--line);
   background: transparent;

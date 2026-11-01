@@ -42,6 +42,8 @@ export const MAX_REVISION = 3;
 
 /** After a final allow or deny the proposer must POST report (ack). */
 export const REPORT_ACK_SEC = 300;
+/** After a guardian deny, the chat may appeal to court for this long. Then the deny stands. */
+export const COURT_APPEAL_SEC = 60 * 60;
 
 /** House collect / bargain clocks (SIGN S1). Zero is not auto-court. */
 export const WINDOW_SEC_MIN = 10;

@@ -5,6 +5,7 @@ export const REASON_NO_FEE = "The house wallet cannot pay the court fee, so the 
 export const REASON_SUBMIT_FAIL = "The court transaction could not be submitted after several attempts.";
 export const REASON_TX_ERROR = "The court transaction finalized with an error too many times.";
 export const REASON_GUARDIAN_FAILED = "The guardian call did not return a review.";
+export const REASON_GUARDIAN_NO_KEY = "You are not allowed to act. The guardian has no API key, so it did not review.";
 export const REASON_GUARDIAN_UNSURE = "The guardian could not ground an answer in the rules.";
 export const REASON_GUARDIAN_NO_RULES = "The house has no rules, so the guardian did not review.";
 export const REASON_GUARDIAN_NO_CREDIT = "The house has no guardian reactions left.";
@@ -16,7 +17,8 @@ export type NotifyReasonKey =
   | "submitFail"
   | "txError"
   | "courtAsked"
-  | "guardianFailed";
+  | "guardianFailed"
+  | "guardianNoKey";
 
 export const NOTIFY_REASON_KEYS: readonly NotifyReasonKey[] = [
   "hookFailed",
@@ -38,6 +40,7 @@ export function notifyReasonKey(reasoning: string, judge: string): NotifyReasonK
   if (reasoning === REASON_NO_FEE) return "noFee";
   if (reasoning === REASON_SUBMIT_FAIL) return "submitFail";
   if (reasoning === REASON_TX_ERROR) return "txError";
+  if (reasoning === REASON_GUARDIAN_NO_KEY) return "guardianNoKey";
   if (
     reasoning === REASON_GUARDIAN_FAILED ||
     reasoning === REASON_GUARDIAN_UNSURE ||

@@ -457,7 +457,9 @@ async function buildEvents(
   const humanOutcome =
     Boolean(verdict?.appeal_of) &&
     verdict?.judge === "offline" &&
-    verdict?.reasoning === "The principal set the outcome.";
+    (verdict?.reasoning === "The principal set the outcome." ||
+      verdict?.reasoning === "The house denied this request." ||
+      verdict?.reasoning === "The house allowed this request.");
   if (serialized.status === "withdrawn") {
     events.push(
       eventOf({

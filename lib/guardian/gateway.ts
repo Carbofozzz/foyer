@@ -1,5 +1,8 @@
 import { guardianSystemPrompt, guardianUserPrompt } from "./compare";
 
+export const GUARDIAN_KEY_UNSET = "AI_GATEWAY_API_KEY is unset";
+export const GUARDIAN_HOUSE_KEY_EMPTY = "House LLM key is empty";
+
 const GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
 const DEFAULT_MODEL = "openai/gpt-4o-mini";
 const CALL_MS = 20_000;
@@ -33,14 +36,21 @@ export async function completeGuardian(input: {
   const resolvedModel = own?.model || (await import("./model")).resolveGuardianModel();
   const model = await resolvedModel;
   const url = own ? chatCompletionsUrl(own.url) : GATEWAY_URL;
-  if (!key) return { ok: false, error: own ? "House LLM key is empty" : "AI_GATEWAY_API_KEY is unset", tokens: 0 };
+  if (!key) return { ok: false, error: own ? GUARDIAN_HOUSE_KEY_EMPTY : GUARDIAN_KEY_UNSET, tokens: 0 };
   const system = input.addendum?.trim()
     ? `${guardianSystemPrompt()} House note: ${input.addendum.trim()}`
     : guardianSystemPrompt();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CALL_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("Guardian call timed out"));
+    }, CALL_MS);
+  });
   try {
-    const response = await fetch(url, {
+    const response = await Promise.race([
+      fetch(url, {
       method: "POST",
       signal: controller.signal,
       headers: {
@@ -56,7 +66,9 @@ export async function completeGuardian(input: {
           { role: "user", content: guardianUserPrompt(input.constitution, input.proposal) },
         ],
       }),
-    });
+    }),
+      timedOut,
+    ]);
     const payload = (await response.json().catch(() => null)) as {
       error?: { message?: string };
       usage?: { total_tokens?: number };

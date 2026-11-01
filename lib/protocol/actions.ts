@@ -9,7 +9,7 @@ import { parseCounterAction, parseEvidence, parsePayload } from "./parse";
 import { executeAfterAck } from "./execute";
 import { assertHouseProposeRoom, assertJustification } from "./abuse";
 import { enqueueWakes } from "@/lib/notify/wake";
-import { enqueueGuardianReview, scheduleGuardian } from "@/lib/guardian/review";
+import { enqueueGuardianReview } from "@/lib/guardian/review";
 import { writeHash, stampActionWrite } from "./write-hash";
 import { verifyWriteSign, writeSignFrom, writeSignStamp, type WriteSignOffer } from "./write-sign";
 
@@ -52,7 +52,6 @@ export async function proposeAction(
   });
   if (!options?.testPass) {
     await enqueueGuardianReview(id, 1);
-    scheduleGuardian(auth.principal.id);
   }
   const bundle = await loadActionBundle(id);
   if (!bundle) throw new ProtocolError("internal", "Failed to load action", 500);

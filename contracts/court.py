@@ -1,5 +1,4 @@
-# v0.7.0
-# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
+# { "Depends": "py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0" }
 import json
 import re
 
@@ -34,12 +33,12 @@ Return ONLY JSON:
 
 
 class Court(gl.contract.Contract):
-    admin: gl.contract.Address
+    admin: gl.types.Address
     # One canonical verdict JSON per case id. Plain strings keep storage simple.
     verdicts: gl.storage.TreeMap[str, str]
 
     def __init__(self, admin: str):
-        self.admin = gl.contract.Address(admin)
+        self.admin = gl.types.Address(admin)
 
     def _only_admin(self):
         if gl.message.sender_address != self.admin:
@@ -92,7 +91,7 @@ fetched_pages:
             validator_data = leader_fn()
             return _decision_key(leader_data) == _decision_key(validator_data)
 
-        result = gl.vm.run_nondet(leader_fn, validator_fn)
+        result = gl.vm.run_nondet_default(leader_fn, validator_fn)
         self.verdicts[case_id] = json.dumps(
             {
                 "found": True,

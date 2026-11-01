@@ -8,7 +8,7 @@ Private notes (pitch, discussion dumps) live in `.local/` and are gitignored. Do
 
 ## Product
 
-Foyer is an **intra-principal** coordination layer, court, and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance. Chat agents propose. After propose or revise, Foyer queues a guardian review ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5). No objection permits. A grounded objection opens bargain. Live propose does not wake callback hooks. Chat tools are propose, inbox, withdraw, revise, and insist.
+Foyer is an **intra-principal** coordination layer, court, and gateway: agents of one person or company share a wallet, calendar, and name, but not a goal. Track: **Onchain Justice**. Not escrow with a stranger. Not DAO governance. Chat agents propose. After propose or revise, Foyer queues a guardian review ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5). No objection permits. A grounded objection denies the request. Live propose does not wake callback hooks. Chat tools are propose, inbox, withdraw, revise, and insist.
 
 Three parts: **constitution** (plain language) → **gateway** (only exit to the world) → **court** (GenLayer reads constitution + evidence). Coordination happens before court.
 
@@ -23,7 +23,7 @@ The lock is **tools and keys**, not a prompt. After a pass Foyer mints a one-sho
 - The guardian Foyer runs objects or stays quiet ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5). Quiet permits the proposal. A missing `AI_GATEWAY_API_KEY`, a call with no tokens, a muddy answer, empty rules, or a zero reaction balance escalates. A live action is not permitted by the collect window. Chat tools are propose, inbox, withdraw, revise, and insist.
 - **No daemons.** Time advances in `sweep(principal, now)`, called by the cron route `POST /tick` and by every protocol read. It must be idempotent.
 - Every agent call carries an agent key, and the key names the house — that is why routes have no principal id. The principal signs in with their wallet (same address tops up the house). Spawn still uses a `cab_` link.
-- The product guardian is the watcher Foyer runs ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5): Vercel AI Gateway, hidden agent named Guardian. It is not a second chat. The owner can rename it and set an own LLM. There is no shared look-only cabinet.
+- The product guardian is the watcher Foyer runs ([`docs/HOSTED.md`](docs/HOSTED.md) H1–H5): Vercel AI Gateway, hidden agent named Guardian. It is not a second chat. The owner can set an own LLM. The cabinet does not rename the single guardian. There is no shared look-only cabinet.
 - Propose has no `kind`. Adapter stubs still exist for old spend/book/message/cancel rows; the live loop is permit-then-act.
 - Public product at **https://foyerapp.dev**. Guardian review is [`docs/HOSTED.md`](docs/HOSTED.md) H1–H5.
 
@@ -219,3 +219,15 @@ Protocol methods: `POST /agents`, `GET /constitution`, `POST /actions`, `POST /a
 - 2026-10-30: Hosted H3–H5 — guardian reactions are a separate meter (free 10/month, paid plan 100, packs in steps of 10). Debit after tokens. Zero balance escalates without a call. Own LLM does not debit. Admin saves the gateway model. Rules tab renames the guardian and stores URL, model, sealed key, and a short note. Chat MCP drops `object` and `report`. A chat key cannot object. The test tab is gone. A live action is not permitted by the collect window. OpenAPI `0.70.0`.
 - 2026-10-30: Admin vouchers can grant guardian reactions (`kind: guardian`, steps of 10). Redeem adds the pack, not court credits. OpenAPI `0.71.0`.
 - 2026-10-30: A guardian call that spent tokens debits one reaction even when the body is an error. The rules tab no longer edits the collect window; live actions are not permitted by it.
+- 2026-10-31: A missing guardian API key escalates at once and the notice names that key. Inbox sets `agent_must` on deny and escalate so the proposer repeats the reason and does not invent a ruling. OpenAPI `0.72.0`.
+- 2026-10-31: The feed no longer waits for an assistant to confirm a decision. After a human deny, inbox tells the proposer only that the house denied it. A missing guardian key stays the reason the decision came to the house.
+- 2026-10-31: Chat MCP no longer lists `ack`. A chat call to `ack` is rejected.
+- 2026-10-31: The guardian review runs on the next inbox read, not in a background task that could stay `running` and block later polls. A stuck review is reclaimed after 15 seconds.
+- 2026-10-31: Guardian reaction debit does not open a SQL transaction. The Neon HTTP driver has none. The ledger idempotency key still blocks a second debit of the same review.
+- 2026-10-31: A guardian objection denies the request and does not ping the house. The feed shows it closed. The chat stops polling. `insist` within one hour submits the court tx and marks the action in court only after the hash is stored. After the hour the deny stands.
+- 2026-11-01: `genlayer-js` pinned `2.0.0-rc.2`. Chain export stays `testnetBradbury`.
+- 2026-11-01: Court header is one `Depends` line (`py-genlayer` v0.3.0-rc10). A second comment makes the runner malformed. Bradbury fee reads use the platform address. Houses redeploy (`court_abi` 10).
+- 2026-11-01: A judge write on Bradbury estimates fees without `gen_call`. The chain RPC does not expose that method, so the simulated estimate never returned a hash.
+- 2026-11-01: Bradbury transaction links use `https://scan.bradbury.genlayer.com/tx/…`.
+- 2026-11-01: A finalized Bradbury judge tx is read from its eq output. The chain RPC has no `gen_call`, so `get_verdict` never returned.
+- 2026-11-01: An on-chain verdict closes the appeal window. The chat does not offer a second appeal after the court has ruled.

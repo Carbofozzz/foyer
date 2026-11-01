@@ -1,5 +1,5 @@
 import { requireAgent } from "@/lib/protocol/auth";
-import { ackAction, fileObjection, getAction, inboxFor, proposeAction } from "@/lib/protocol/actions";
+import { fileObjection, getAction, inboxFor, proposeAction } from "@/lib/protocol/actions";
 import { insistAction, reviseAction, withdrawAction } from "@/lib/protocol/bargain";
 import { reportAction, reportBody } from "@/lib/protocol/report";
 import type { HouseAuth } from "@/lib/protocol/bundle";
@@ -50,7 +50,7 @@ const TOOLS = [
   {
     name: "inbox",
     description:
-      `List actions, deadlines, and verdicts for this house. After you propose, call this at least every ${MCP_INBOX_POLL_SEC} seconds until the action is decided. Chat runtimes are not woken.`,
+      `List actions, deadlines, and verdicts for this house. After you propose, call this at least every ${MCP_INBOX_POLL_SEC} seconds until verdict.outcome is allow or deny, or status is withdrawn. Escalated is not the end. If agent_must says to call inbox again, do that and do not answer the user yet. If agent_must says stop, do not call inbox again. Chat runtimes are not woken.`,
     inputSchema: { type: "object", properties: {} },
   },
   {
@@ -82,20 +82,12 @@ const TOOLS = [
   },
   {
     name: "insist",
-    description: "Proposer only. The only call that opens court on this action.",
+    description:
+      "Appeal a constitution denial to court. Call this only after the user asks to appeal. This spends a court credit.",
     inputSchema: {
       type: "object",
       required: ["action_id"],
       properties: { action_id: { type: "string" }, ...SIGN_FIELDS },
-    },
-  },
-  {
-    name: "ack",
-    description: "Acknowledge a verdict. Required only if this agent proposed or objected.",
-    inputSchema: {
-      type: "object",
-      required: ["action_id"],
-      properties: { action_id: { type: "string" } },
     },
   },
   {
@@ -215,8 +207,8 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
       ...houseWindows(auth.principal),
     };
   }
-  if (name === "object" || name === "report") {
-    throw new ProtocolError("forbidden", "Chat agents do not object or report", 403);
+  if (name === "object" || name === "report" || name === "ack") {
+    throw new ProtocolError("forbidden", "Chat agents do not object, report, or ack", 403);
   }
   if (name === "propose") {
     if (await overLimitKey(`propose:agent:${auth.agent.id}`, LIMITS.proposeAgent)) {
@@ -241,10 +233,6 @@ async function callTool(auth: HouseAuth, name: string, args: Record<string, unkn
     return insistAction(auth, actionId, now, { sign });
   }
   if (name === "inbox") return inboxFor(auth);
-  if (name === "ack") {
-    const actionId = typeof args.action_id === "string" ? args.action_id : "";
-    return ackAction(auth, actionId);
-  }
   if (name === "get_action") {
     const actionId = typeof args.action_id === "string" ? args.action_id : "";
     return getAction(auth, actionId);

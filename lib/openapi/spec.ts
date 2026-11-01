@@ -59,7 +59,7 @@ export function openApiSpec(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Foyer",
-      version: "0.71.0",
+      version: "0.72.0",
       description:
         "Agent gateway. Every write carries an agent key. The key names the house, so no route takes a principal id.",
     },
@@ -458,6 +458,11 @@ export function openApiSpec(origin: string) {
             may_act: {
               type: "boolean",
               description: "True when the agent may perform permitted_payload with its own tools.",
+            },
+            agent_must: {
+              type: "string",
+              nullable: true,
+              description: "Set when the proposer is not allowed to act. On deny it says the house denied the request. While escalated it says to repeat verdict.reasoning.",
             },
             permitted_payload: {
               oneOf: [{ $ref: "#/components/schemas/ActionPayload" }, { type: "null" }],
