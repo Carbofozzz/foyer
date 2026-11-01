@@ -7,6 +7,15 @@ import { actionPayload, loadActionBundle, type ActionRow } from "./bundle";
 import { payloadForOutcome } from "./verdict";
 import { mintGrantForPermit } from "@/lib/lock/grants";
 
+/** Guardian denial: nothing is permitted, and the house is not asked. `appealUntil` is the court window. */
+export async function denyAction(actionId: string, appealUntil: Date): Promise<void> {
+  const db = getDb();
+  await db
+    .update(actions)
+    .set({ status: "permitted", permittedPayload: null, ackUntil: null, appealUntil })
+    .where(eq(actions.id, actionId));
+}
+
 export async function executeSilenceAllow(action: ActionRow): Promise<void> {
   if (action.status === "permitted" || action.status === "executed") return;
   await grantPermit(action.id, actionPayload(action), "silence");

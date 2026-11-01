@@ -13,16 +13,18 @@ import { isRecord, parseAgentPrompt, parseAgentWake } from "@/lib/protocol/parse
 import { ProtocolError } from "@/lib/protocol/errors";
 import { sealKey } from "@/lib/protocol/seal";
 import { connectPublicFields, ensureAgentPromptColumn } from "@/lib/protocol/house-clients";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 
 export async function GET(request: Request) {
   const auth = await requireAgent(request);
   if ("error" in auth) return auth.error;
+  await ensureGuardianSchema();
   await sweepIfBusy(auth.principal.id, new Date());
   const db = getDb();
   const rows = await db
     .select()
     .from(agents)
-    .where(and(eq(agents.principalId, auth.principal.id), eq(agents.isGuardian, false)));
+    .where(and(eq(agents.principalId, auth.principal.id), eq(agents.isGuardian, false), eq(agents.watcher, false)));
   return jsonOk(
     rows.map((row) => ({
       id: row.id,

@@ -42,18 +42,10 @@ type ConnectPayload = {
   hook_ok?: boolean;
 };
 
-const WAKES: WakeKind[] = ["outbound", "callback"];
-
 export function ConnectIssueFields({
   t,
   name,
-  wake,
-  callbackUrl,
-  callbackSecret,
   onName,
-  onWake,
-  onCallbackUrl,
-  onCallbackSecret,
   courtLabel,
   courtCap,
   onCourtLabel,
@@ -65,13 +57,7 @@ export function ConnectIssueFields({
 }: {
   t: Messages["connect"];
   name: string;
-  wake: WakeKind;
-  callbackUrl: string;
-  callbackSecret: string;
   onName: (value: string) => void;
-  onWake: (value: WakeKind) => void;
-  onCallbackUrl: (value: string) => void;
-  onCallbackSecret: (value: string) => void;
   courtLabel?: string;
   courtCap?: string;
   onCourtLabel?: (value: string) => void;
@@ -118,50 +104,10 @@ export function ConnectIssueFields({
           <p className="hint">{t.courtHint}</p>
         </div>
       ) : null}
-      <div className="connect-field">
-        <span>{t.wakeLabel}</span>
-        <div className="segmented" role="group" aria-label={t.wakeLabel}>
-          {WAKES.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              className={wake === kind ? "segment is-active" : "segment"}
-              aria-pressed={wake === kind}
-              onClick={() => onWake(kind)}
-            >
-              {wakeLabel(kind, t)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="hint">{wake === "callback" ? t.wakeHintCallback : t.wakeHintOutbound}</p>
-      {wake === "callback" ? (
-        <>
-          <label className="connect-field">
-            <span>{t.callbackUrlLabel}</span>
-            <input
-              type="url"
-              value={callbackUrl}
-              placeholder={t.callbackUrlPlaceholder}
-              onChange={(event) => onCallbackUrl(event.target.value)}
-            />
-          </label>
-          <label className="connect-field">
-            <span>{t.callbackSecretLabel}</span>
-            <input
-              type="text"
-              value={callbackSecret}
-              placeholder={t.callbackSecretPlaceholder}
-              autoComplete="off"
-              onChange={(event) => onCallbackSecret(event.target.value)}
-            />
-          </label>
-        </>
-      ) : null}
       {showIssue ? (
         <div className="connect-field connect-field-action">
           <span aria-hidden="true">&nbsp;</span>
-          <button type="button" disabled={pending || !name.trim()} aria-busy={pending} onClick={onIssue}>
+          <button type="button" className="ghost" disabled={pending || !name.trim()} aria-busy={pending} onClick={onIssue}>
             {pending ? t.issuing : t.issue}
           </button>
         </div>
@@ -213,9 +159,6 @@ export function ConnectCard({
   const [agents, setAgents] = useState<IssuedAgent[]>(() => (preview ? [agentFromPreview(preview)] : []));
   const [selected, setSelected] = useState<string>(() => (preview ? "demo" : ""));
   const [name, setName] = useState("");
-  const [wake, setWake] = useState<WakeKind>("outbound");
-  const [callbackUrl, setCallbackUrl] = useState("");
-  const [callbackSecret, setCallbackSecret] = useState("");
   const [deskPrompt, setDeskPrompt] = useState(defaultAgentPrompt);
   const [promptWhy, setPromptWhy] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(false);
@@ -325,10 +268,6 @@ export function ConnectCard({
 
   async function issue() {
     if (preview) return;
-    if (wake === "callback" && !callbackUrl.trim()) {
-      setError(t.callbackNeed);
-      return;
-    }
     setPending(true);
     setError(null);
     const response = await fetch(`/api/cabinet/${token}/connect`, {
@@ -336,18 +275,14 @@ export function ConnectCard({
       headers: cabinetHeaders(houseId, { "content-type": "application/json" }),
       body: JSON.stringify({
         name,
-        wake,
-        callback_url: wake === "callback" ? callbackUrl.trim() : undefined,
-        callback_secret: wake === "callback" && callbackSecret.trim() ? callbackSecret.trim() : undefined,
+        wake: "outbound",
         prompt: deskPrompt,
         ...(houseType === "org" ? { court_label: issueLabel, court_cap: issueCap } : {}),
       }),
     });
     if (!response.ok) {
       setPending(false);
-      const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-      const message = payload?.error?.message ?? "";
-      setError(message.includes("required") ? t.callbackNeed : errorLabel);
+      setError(errorLabel);
       return;
     }
     const payload = (await response.json()) as { data: IssuedAgent & { prompt_lines?: string[] } };
@@ -358,8 +293,6 @@ export function ConnectCard({
     });
     setSelected(next.id);
     setName("");
-    setCallbackUrl("");
-    setCallbackSecret("");
     setDeskPrompt(defaultAgentPrompt());
     setIssueLabel("");
     setIssueCap("");
@@ -386,9 +319,9 @@ export function ConnectCard({
   }
 
   return (
-    <section className={compact ? "stack" : "card stack"}>
-      {compact ? null : <h2 className="section-title">{t.title}</h2>}
-      <p className="hint">{t.lead}</p>
+    <section className="card stack">
+      {compact ? <p className="feed-label">{t.list}</p> : <h2 className="section-title">{t.title}</h2>}
+      {compact ? null : <p className="hint">{t.lead}</p>}
       {houseType === "org" ? <p className="hint">{t.promptOrgHint}</p> : null}
       {preview ? null : (
         <div className="connect-issue">
@@ -396,13 +329,7 @@ export function ConnectCard({
           <ConnectIssueFields
             t={t}
             name={name}
-            wake={wake}
-            callbackUrl={callbackUrl}
-            callbackSecret={callbackSecret}
             onName={setName}
-            onWake={setWake}
-            onCallbackUrl={setCallbackUrl}
-            onCallbackSecret={setCallbackSecret}
             courtLabel={houseType === "org" ? issueLabel : undefined}
             courtCap={houseType === "org" ? issueCap : undefined}
             onCourtLabel={houseType === "org" ? setIssueLabel : undefined}
@@ -413,7 +340,7 @@ export function ConnectCard({
           />
         </div>
       )}
-      <p className="feed-label">{t.list}</p>
+      {compact ? null : <p className="feed-label">{t.list}</p>}
       {!loaded ? (
         <p className="muted">{t.loading}</p>
       ) : agents.length === 0 ? (
@@ -428,10 +355,6 @@ export function ConnectCard({
                 onClick={() => setSelected(row.id)}
               >
                 {row.name}
-                <span className="agent-door">
-                  {" "}
-                  · {wakeLabel(row.wake, t)}
-                </span>
               </button>
             </li>
           ))}
@@ -441,29 +364,12 @@ export function ConnectCard({
         <div className="connect-current">
           <p className="feed-label">
             {t.pick} <span className="feed-label-name">{current.name}</span>
-            <span className="agent-door">
-              {" "}
-              · {wakeLabel(current.wake, t)}
-            </span>
           </p>
-          <p className="hint">{t.schemeLead}</p>
+          {compact ? null : <p className="hint">{t.schemeLead}</p>}
           {current.wake === "hosted" ? (
             <p className="hint">{t.hostedNote}</p>
           ) : (
             <>
-              {current.wake === "callback" && current.callback_url ? (
-                <div className="connect-field">
-                  <span>{t.callbackUrlLabel}</span>
-                  <p className="mono snippet">{current.callback_url}</p>
-                </div>
-              ) : null}
-              {current.wake === "callback" && current.callback_secret ? (
-                <div className="connect-field">
-                  <span>{t.callbackSecretLabel}</span>
-                  <pre className="mono snippet">{current.callback_secret}</pre>
-                  <CopyButton text={current.callback_secret} copyLabel={t.copy} copiedLabel={t.copied} />
-                </div>
-              ) : null}
               <section className="connect-step">
                 <div className="step-head">
                   <p className="feed-label">{t.stepPrompt}</p>
@@ -587,10 +493,4 @@ export function ConnectCard({
       {error ? <p className="error">{error}</p> : null}
     </section>
   );
-}
-
-function wakeLabel(wake: WakeKind, t: Messages["connect"]) {
-  if (wake === "callback") return t.wakeCallback;
-  if (wake === "hosted") return t.wakeHosted;
-  return t.wakeOutbound;
 }

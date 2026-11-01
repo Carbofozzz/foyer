@@ -2,6 +2,8 @@ import { handleMcpGet, handleMcpPost, mcpOptions } from "@/lib/mcp/handler";
 import { guardPublicWrite } from "@/lib/ops/guard";
 import { LIMITS } from "@/lib/ops/rate-limit";
 
+export const maxDuration = 120;
+
 export async function OPTIONS() {
   return mcpOptions();
 }

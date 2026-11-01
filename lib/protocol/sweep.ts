@@ -16,6 +16,7 @@ import { ensureWriteHashColumns } from "./write-hash";
 import { ensureWriteSignColumns } from "./write-sign";
 import { expireGrants } from "@/lib/lock/grants";
 import { ensureLockHandsColumn } from "@/lib/lock/house-hands";
+import { pendingGuardianActionIds, runHouseGuardian } from "@/lib/guardian/review";
 
 /**
  * Advances time for one house. Idempotent.
@@ -37,6 +38,8 @@ export async function sweep(
   if (!principal) return { advanced: 0 };
 
   let advanced = 0;
+  advanced += await runHouseGuardian(principalId, now);
+  const guardianWaiting = await pendingGuardianActionIds(principalId);
   const origin = options?.origin || defaultPublicOrigin();
   if (options?.wakes !== false) {
     advanced += await deliverPendingWakes(principalId, origin);
@@ -47,11 +50,11 @@ export async function sweep(
     .from(actions)
     .where(and(eq(actions.principalId, principalId), eq(actions.status, "open"), lte(actions.silenceUntil, now)));
 
-  const courts = options?.courts ?? 0;
-
   const openBundles = await loadActionBundles(openRows.map((row) => row.id));
   for (const bundle of openBundles) {
     if (bundle.action.status !== "open") continue;
+    if (guardianWaiting.has(bundle.action.id)) continue;
+    if (!bundle.action.testPass) continue;
     const gate = bundle.action.testPass ? "ready" : await requiredWakeGate(bundle.action.id, bundle.action.revision);
     if (gate === "pending") continue;
     if (gate === "failed") {
@@ -71,6 +74,7 @@ export async function sweep(
   advanced += await timeoutBargains(principal, now);
 
   // Poll a stored hash on every sweep. Submit a new court only when courts > 0 (tick).
+  const courts = options?.courts ?? 0;
   if (await stepHouseCourt(principal, now, { submit: courts > 0 })) advanced += 1;
 
   const pending = await db

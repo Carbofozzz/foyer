@@ -2266,6 +2266,44 @@ details.lock-fold .ghost,
   flex: 0 0 auto;
 }
 
+.guardian-card > button[type="submit"].ghost,
+.connect-issue button[type="submit"].ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  font-weight: 400;
+  padding: 0.55rem 0.9rem;
+  justify-self: start;
+}
+
+.guardian-fields {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.guardian-fields .connect-field {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.guardian-fields .connect-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.guardian-fields input,
+.guardian-fields textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.guardian-fields textarea {
+  min-height: 4.5rem;
+}
+
 .connect-add .segmented {
   flex: 0 0 auto;
   width: max-content;
@@ -2358,6 +2396,32 @@ details.lock-fold .ghost,
 
 .cabinet details {
   font-size: 0.9rem;
+}
+
+/* Own-model fields stay a column. display:grid on details itself splits the summary beside the fields. */
+.guardian-own {
+  display: block;
+  min-width: 0;
+}
+
+.cabinet .guardian-own > summary {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+.guardian-own > .stack {
+  margin-top: 0.7rem;
+}
+
+.guardian-own textarea {
+  min-height: 4.5rem;
+}
+
+.guardian-own input,
+.guardian-own textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Disclosure rows read as a settings list, not a stack of links. */

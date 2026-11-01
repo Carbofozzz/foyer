@@ -5,6 +5,7 @@ import { mintToken } from "@/lib/protocol/keys";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { ensureBillingSchema } from "./ensure";
 import { activateSubscription, ensureBillingAccount, grantCredits } from "./account";
+import { grantGuardianPack, GUARDIAN_TRANCHE } from "./guardian";
 import { getPlanByCode, getPlanById, PLAN_PRO } from "./plans";
 
 export function normalizeVoucherCode(raw: string): string {
@@ -13,7 +14,7 @@ export function normalizeVoucherCode(raw: string): string {
 
 export type CreateVoucherInput = {
   code: string;
-  kind: "credits" | "subscription" | "feature_org" | "bundle";
+  kind: "credits" | "subscription" | "feature_org" | "bundle" | "guardian";
   credits?: number;
   planId?: string | null;
   durationSec?: number | null;
@@ -34,6 +35,9 @@ export async function createVoucher(input: CreateVoucherInput) {
   }
   if (input.kind === "credits" && credits < 1) {
     throw new ProtocolError("bad_request", "credits voucher needs credits >= 1", 400);
+  }
+  if (input.kind === "guardian" && (credits < GUARDIAN_TRANCHE || credits % GUARDIAN_TRANCHE !== 0)) {
+    throw new ProtocolError("bad_request", "Guardian reactions must be a multiple of 10", 400);
   }
   if (input.kind === "subscription" && credits < 0) {
     throw new ProtocolError("bad_request", "credits must be non-negative", 400);
@@ -158,6 +162,15 @@ export async function redeemVoucher(input: RedeemInput) {
       voucherId: voucher.id,
     });
     creditsGranted = subCredits;
+  }
+
+  if (voucher.kind === "guardian") {
+    await grantGuardianPack(input.principalId, voucher.credits, `Redeem ${voucher.code}`, {
+      idempotencyKey: `voucher_guardian:${redemptionId}`,
+      provider: "voucher",
+      voucherId: voucher.id,
+    });
+    creditsGranted = voucher.credits;
   }
 
   if (voucher.kind === "credits") {

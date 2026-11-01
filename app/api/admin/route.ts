@@ -74,6 +74,17 @@ async function postAdmin(request: Request) {
         typeof body.note === "string" ? body.note : undefined,
       );
       await auditAdmin(actor, { op: body.op, targetType: "house", targetId: body.house_id.trim() });
+    } else if (body.op === "grant_guardian") {
+      if (typeof body.house_id !== "string") return jsonError("bad_request", "house_id is required", 400);
+      if (typeof body.reactions !== "number") return jsonError("bad_request", "reactions is required", 400);
+      const { grantGuardianPack } = await import("@/lib/billing/guardian");
+      await grantGuardianPack(body.house_id, body.reactions, typeof body.note === "string" ? body.note : undefined);
+      await auditAdmin(actor, { op: body.op, targetType: "house", targetId: body.house_id.trim() });
+    } else if (body.op === "guardian_model") {
+      if (typeof body.model !== "string") return jsonError("bad_request", "model is required", 400);
+      const { saveGuardianModel } = await import("@/lib/guardian/model");
+      await saveGuardianModel(body.model);
+      await auditAdmin(actor, { op: body.op, targetType: "platform", targetId: "guardian_model" });
     } else if (body.op === "platform_faucet") {
       await adminPlatformFaucet();
       await auditAdmin(actor, { op: body.op, targetType: "platform", targetId: "wallet" });

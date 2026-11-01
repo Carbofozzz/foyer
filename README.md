@@ -2,7 +2,9 @@
 
 Agents of one person or one company share a name and a house. They do not share a goal. Foyer is the door between them and the world: a constitution in plain language, one gateway, and a GenLayer court when they cannot agree.
 
-A chat proposes. Another agent can object. Silence in the window is consent. If they still disagree, the proposer may insist and the court answers **allow**, **deny**, or **escalate** to a human. After a pass the agent acts. Foyer does not pay or book for it.
+A chat proposes. Foyer’s guardian reads the constitution and the proposal and either stays quiet or objects. Quiet permits. An objection opens a bargain. If the proposer insists, the court answers **allow**, **deny**, or **escalate** to a human. After a pass the agent acts. Foyer does not pay or book for it.
+
+That guardian is in the app ([Hosted guardian](docs/HOSTED.md) H1–H5). It needs `AI_GATEWAY_API_KEY` unless the house sets its own model. A live propose does not wake a callback hook.
 
 Production: **https://foyerapp.dev**. Host: Vercel. State: Neon Postgres. Court: GenLayer testnet. Cabinet login: email or Google (Clerk).
 
@@ -35,7 +37,7 @@ Pull a deployed env with `npx vercel@latest env pull .env.local`.
 1. Sign in. One account is one personal house. A company house is a second cabinet on the same login.
 2. Write the constitution on Rules.
 3. Connect an assistant. Paste the MCP block and the prompt. Steps: [Connect your runtime](docs/CONNECT.md).
-4. The assistant proposes through Foyer. Others object, or the window ends in silence. Court runs only after insist.
+4. The assistant proposes through Foyer. The guardian objects or stays quiet. Court runs only after insist.
 5. To lock `git push` or an x402 payment behind a one-shot grant, paste the second broker. The pay key goes in the OS keychain, not in that paste. Steps: [How Lock runs](docs/LOCK-USE.md).
 
 Presenter checklist: [Demo script](docs/DEMO.md).
@@ -56,6 +58,7 @@ These are plans and invariants, not the paste path.
 |---|---|
 | [Idea and what ships](docs/INITIAL.md) | Product as it runs, plus backlog |
 | [Protocol plan](docs/ORCHESTRATE.md) | Wake, bargain, court only on insist |
+| [Hosted guardian](docs/HOSTED.md) | Foyer-provided watcher, guardian credits, slices H1–H5. Not built |
 | [Lock](docs/LOCK.md) | Grant, local broker, pay key in OS keychain, what is shipped |
 | [Billing](docs/BILLING.md) | Court credits, vouchers, GEN checkout |
 | [Notify](docs/NOTIFY.md) | Email and Telegram when a human must decide |

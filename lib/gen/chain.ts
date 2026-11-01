@@ -10,6 +10,13 @@ export const GENLAYER_CHAIN_ID_HEX = `0x${GENLAYER_CHAIN_ID.toString(16)}` as co
 export const GENLAYER_RPC_URL =
   process.env.NEXT_PUBLIC_GENLAYER_RPC_URL?.trim() || "https://studio-dev.genlayer.com/api";
 export const GENLAYER_EXPLORER_URL = "https://explorer-studio-dev.genlayer.com";
+const BRADBURY_EXPLORER_URL = "https://scan.bradbury.genlayer.com";
+
+function explorerOrigin(): string {
+  const raw = (process.env.GENLAYER_CHAIN ?? "studioDevnet").trim().toLowerCase().replace(/_/g, "-");
+  if (raw === "testnetbradbury" || raw === "testnet-bradbury") return BRADBURY_EXPLORER_URL;
+  return GENLAYER_EXPLORER_URL;
+}
 export const GENLAYER_CHAIN_NAME =
   process.env.NEXT_PUBLIC_GENLAYER_CHAIN_NAME?.trim() || "GenLayer Studio Devnet";
 export const GENLAYER_CURRENCY = {
@@ -33,13 +40,13 @@ export const studioDevnet = defineChain({
 export function txExplorerUrl(tx: string): string | null {
   const hash = tx.startsWith("0x") ? tx : `0x${tx}`;
   if (!/^0x[a-fA-F0-9]{16,}$/.test(hash)) return null;
-  return `${GENLAYER_EXPLORER_URL}/tx/${hash}`;
+  return `${explorerOrigin()}/tx/${hash}`;
 }
 
 export function addressExplorerUrl(address: string): string | null {
   const hex = asHexAddress(address);
   if (!hex) return null;
-  return `${GENLAYER_EXPLORER_URL}/address/${hex}`;
+  return `${explorerOrigin()}/address/${hex}`;
 }
 
 export function asHexAddress(value: string): `0x${string}` | null {

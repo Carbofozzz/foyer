@@ -2,7 +2,7 @@
 
 Status: **pilot hands shipped**. Foyer mints the grant and does not perform the hand. The customer downloads `foyer-lock.mjs`. Before consume the program checks the JWT against `GET /api/grants/jwks`. Git uses the OS git login. Pay: the wallet key is in the OS keychain (`foyer.lock` / `pay.x402`), never in MCP paste. After a yes the program probes HTTP 402, matches the grant, consumes, signs EIP-3009, and pays that host. `max_session` is the sum of that agent’s payments in the grant TTL window. Cursor’s terminal is still a second door for git. How to paste: [LOCK-USE.md](LOCK-USE.md). Working notes: `.local/LOCK.md`.
 
-This is **not** a protocol change. The house loop stays [ORCHESTRATE.md](ORCHESTRATE.md): propose → bargain → court or human → `may_act` → `report`. Signatures of Foyer writes stay [SIGN.md](SIGN.md). Court credits stay [BILLING.md](BILLING.md). Hosted agents stay [INITIAL.md](INITIAL.md) backlog. Notify on escalate stays [NOTIFY.md](NOTIFY.md).
+This is **not** a protocol change. The house loop in the code is [HOSTED.md](HOSTED.md) H1–H5 for the review, then bargain, court or human, `may_act`. Chat does not `report`. Signatures of Foyer writes stay [SIGN.md](SIGN.md). Court credits stay [BILLING.md](BILLING.md). Guardian reactions are a separate meter. Notify on escalate stays [NOTIFY.md](NOTIFY.md).
 
 **Job:** after a pass, a named hand stays dead until Foyer mints a narrow grant; the hand runs once; the grant dies; the house can revoke the rest and export the journal.
 

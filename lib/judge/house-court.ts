@@ -9,10 +9,10 @@ import { platformWallet } from "./platform-wallet";
 import { resolvePlatformThresholds } from "./platform-thresholds";
 
 /**
- * 9 = platform wallet is IC admin (B2).
- * Leftover houses with court_abi < 9 redeploy on the next court.
+ * 10 = v0.3 runner. The Depends line is the only header comment.
+ * Leftover houses with court_abi < 10 redeploy on the next court.
  */
-export const COURT_ABI = 9;
+export const COURT_ABI = 10;
 
 /** One Intelligent Contract per house. Redeploys when the stored ABI is stale. */
 export async function ensureHouseCourt(principal: HousePrincipal): Promise<string | null> {

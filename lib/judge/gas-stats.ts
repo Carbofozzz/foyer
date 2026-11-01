@@ -38,6 +38,7 @@ export async function ensureCourtGasSchema(): Promise<void> {
         )
       `);
       await db.execute(sql`ALTER TABLE platform_wallet_state ADD COLUMN IF NOT EXISTS floor_wei text`);
+      await db.execute(sql`ALTER TABLE platform_wallet_state ADD COLUMN IF NOT EXISTS guardian_model text`);
       await db.execute(sql`ALTER TABLE platform_wallet_state ADD COLUMN IF NOT EXISTS alert_wei text`);
     })().catch((error) => {
       ready = null;

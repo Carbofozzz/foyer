@@ -80,11 +80,18 @@ function summaryOf(body: Record<string, unknown>, key: string): string {
 }
 
 async function listStageAgents(principalId: string): Promise<StageAgent[]> {
+  const { ensureGuardianSchema } = await import("@/lib/guardian/house");
+  await ensureGuardianSchema();
   const rows = await getDb()
     .select()
     .from(agents)
     .where(
-      and(eq(agents.principalId, principalId), eq(agents.isGuardian, false), isNotNull(agents.sealedKey)),
+      and(
+        eq(agents.principalId, principalId),
+        eq(agents.isGuardian, false),
+        eq(agents.watcher, false),
+        isNotNull(agents.sealedKey),
+      ),
     );
   return rows.map((row) => ({ id: row.id, name: row.name, role: row.role, wake: row.wake }));
 }
@@ -96,7 +103,7 @@ async function stageAgent(principal: HousePrincipal, agentId: string) {
     .where(and(eq(agents.id, agentId), eq(agents.principalId, principal.id)))
     .limit(1);
   if (!row?.sealedKey) throw new ProtocolError("not_found", "Unknown assistant", 404);
-  if (row.isGuardian) {
+  if (row.isGuardian || row.watcher) {
     throw new ProtocolError("not_found", "Unknown assistant", 404);
   }
   return row;
@@ -450,7 +457,9 @@ async function buildEvents(
   const humanOutcome =
     Boolean(verdict?.appeal_of) &&
     verdict?.judge === "offline" &&
-    verdict?.reasoning === "The principal set the outcome.";
+    (verdict?.reasoning === "The principal set the outcome." ||
+      verdict?.reasoning === "The house denied this request." ||
+      verdict?.reasoning === "The house allowed this request.");
   if (serialized.status === "withdrawn") {
     events.push(
       eventOf({

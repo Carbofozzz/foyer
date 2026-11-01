@@ -17,13 +17,13 @@ This file is the product we want. The live app is still a personal house ([INITI
 | Who | What they are | Foyer account? |
 |---|---|---|
 | Employee with a work chat | An **outbound agent**. Admin pastes MCP + a prompt written for that desk. | No |
-| Company-wide service (finance, legal, calendar, access, IdP) | A **callback agent** (hook). Woken on propose. Cites the charter. | No |
+| Company-wide check (finance, legal, calendar) | The guardian Foyer provides ([HOSTED.md](HOSTED.md) H1–H5). One comparer per house. Several guardians are a later shelf. | No |
 | Admin (one is enough) | A human who runs the house: rules, keys, treasury, yes/no when the loop asks. | Yes |
 | Extra operators | Optional humans with **narrow rights** on the same house (agents, treasury, rules, or feed only). | Yes, only if the admin wants help |
 
 The gateway client is always an agent. A human never proposes. An employee who never logs in is still in the loop: their chat is.
 
-Silence among chats is still consent. An org house without at least one hook does not run unattended — same as personal.
+The product watcher is the guardian Foyer runs ([HOSTED.md](HOSTED.md) H1–H5). A live propose does not need a hook. Chat keys do not object.
 
 ---
 

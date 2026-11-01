@@ -170,6 +170,7 @@ export function serializeAction(
   const verdict = bundle.verdict;
   const permitted = permittedPayloadOf(bundle);
   const mayAct = bundle.action.status === "permitted" && permitted !== null;
+  const forAgent = Boolean(viewerAgentId);
   return {
     id: bundle.action.id,
     payload: bundle.action.payload,
@@ -189,10 +190,20 @@ export function serializeAction(
     created_at: bundle.action.createdAt.toISOString(),
     silence_until: bundle.action.silenceUntil.toISOString(),
     ack_until: bundle.action.ackUntil?.toISOString() ?? null,
-    appeal_until: bundle.action.appealUntil?.toISOString() ?? null,
+    appeal_until:
+      verdict?.judge === "onchain" ? null : (bundle.action.appealUntil?.toISOString() ?? null),
     held_until: null,
     executed_at: bundle.action.executedAt?.toISOString() ?? null,
     may_act: mayAct,
+    agent_must: agentMust(
+      bundle.action.status,
+      verdict?.outcome,
+      verdict?.reasoning ?? "",
+      verdict?.judge === "onchain" ? null : (bundle.action.appealUntil?.toISOString() ?? null),
+      mayAct,
+      Boolean(bundle.action.insistedAt && bundle.courtCase?.tx && bundle.courtCase.status !== "judged"),
+      verdict?.judge === "onchain",
+    ),
     permitted_payload: permitted,
     grant: bundle.grant
       ? {
@@ -242,12 +253,14 @@ export function serializeAction(
           id: verdict.id,
           outcome: verdict.outcome as StoredOutcome,
           remedy_action: verdict.remedyAction,
-          reasoning: verdict.reasoning,
+          reasoning: forAgent
+            ? agentFacingReason(bundle.action.status, verdict.outcome, verdict.reasoning)
+            : verdict.reasoning,
           objection_grounded: verdict.objectionGrounded,
           judge: verdict.judge,
           tx: verdict.tx,
           appeal_of: verdict.appealOf,
-          prior_reasoning: bundle.priorVerdict?.reasoning ?? null,
+          prior_reasoning: forAgent ? null : (bundle.priorVerdict?.reasoning ?? null),
           prior_judge: bundle.priorVerdict?.judge ?? null,
           escalate_external: verdict.escalateExternal,
         }
@@ -266,15 +279,58 @@ export function serializeAction(
   };
 }
 
+function agentFacingReason(status: string, outcome: string, reasoning: string): string {
+  if (status === "escalated") return "Still waiting for the house. Call inbox again. Do not answer the user yet.";
+  if (
+    outcome === "deny" &&
+    (reasoning === "The house denied this request." || reasoning.startsWith("You are not allowed to act."))
+  ) {
+    return "The house denied this request.";
+  }
+  return reasoning;
+}
+
+function agentMust(
+  status: string,
+  outcome: string | undefined,
+  reasoning: string,
+  appealUntil: string | null,
+  mayAct: boolean,
+  inCourt: boolean,
+  courtRuled: boolean,
+): string | null {
+  if (mayAct) return null;
+  if (inCourt) {
+    return "The appeal is in court. Tell the user that. Keep calling inbox until the verdict changes. Do not call insist again.";
+  }
+  if (status === "bargaining") {
+    return "An objection is in. Tell the user that objection and stop. Do not call insist, withdraw, or revise unless the user explicitly asks.";
+  }
+  if (outcome === "deny" && courtRuled) {
+    return `Stop. Do not call inbox again. The court denied this request: ${reasoning} Tell the user that. Do not offer an appeal. The court already ruled.`;
+  }
+  if (outcome === "deny" && reasoning && reasoning !== "The house denied this request.") {
+    const until = appealUntil ? ` Appeal to court is open until ${appealUntil}.` : "";
+    return `Stop. Do not call inbox again. The request was denied because it does not match the constitution: ${reasoning} Tell the user that.${until} Do not call insist unless the user asks to appeal before that time.`;
+  }
+  if (outcome === "deny") {
+    return "The house denied this request. You are not allowed to act. Say only that. Do not call inbox again. Do not mention the guardian, an API key, or any earlier reason.";
+  }
+  if (status === "escalated") {
+    return "Still waiting for the house. Call inbox again. Do not answer the user yet.";
+  }
+  return null;
+}
+
 function actionPhase(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBundle>>>) {
   const status = bundle.action.status;
   if (status === "withdrawn") return "withdrawn" as const;
+  if (bundle.action.insistedAt && bundle.courtCase?.tx && bundle.courtCase.status !== "judged") {
+    return "in_court" as const;
+  }
   if (status === "permitted" || status === "executed") return status;
   if (status === "escalated") return "escalated" as const;
   if (status === "awaiting_ack") return "awaiting_ack" as const;
-  if (bundle.action.insistedAt && bundle.courtCase && bundle.courtCase.status !== "judged") {
-    return "in_court" as const;
-  }
   if (status === "bargaining") return "bargaining" as const;
   return "collecting" as const;
 }
@@ -285,7 +341,14 @@ function proposerCan(bundle: NonNullable<Awaited<ReturnType<typeof loadActionBun
   return {
     withdraw: (bundle.action.status === "open" || bundle.action.status === "bargaining") && !claimed,
     revise: bargaining && bundle.action.revision < MAX_REVISION,
-    insist: bargaining && bundle.objections.length > 0,
+    insist:
+      !claimed &&
+      bundle.objections.length > 0 &&
+      !bundle.courtCase?.tx &&
+      (bargaining ||
+        (bundle.action.status === "permitted" &&
+          bundle.verdict?.outcome === "deny" &&
+          (bundle.action.appealUntil?.getTime() ?? 0) > Date.now())),
   };
 }
 

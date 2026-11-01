@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/load";
+import { GUARDIAN_FREE_MONTH, GUARDIAN_PAID_PERIOD } from "@/lib/billing/guardian";
 import { listActivePlans, serializePlan } from "@/lib/billing/plans";
 import { SUB_GRACE_MS } from "@/lib/billing/calendar";
 
@@ -46,6 +47,7 @@ export async function PricingView({ locale, t }: { locale: Locale; t: Messages }
     { label: p.rowOrg, free: false, pro: Boolean(pro?.feature_org) },
     { label: p.rowGrace, free: false, pro: p.days.replace("{n}", graceDays) },
     { label: p.rowPacks, free: true, pro: true },
+    { label: p.rowGuardian, free: String(GUARDIAN_FREE_MONTH), pro: String(GUARDIAN_PAID_PERIOD) },
     { label: p.rowLoop, free: true, pro: true },
   ];
 
@@ -78,6 +80,10 @@ export async function PricingView({ locale, t }: { locale: Locale; t: Messages }
               <li>
                 <Mark on={false} />
                 {p.checkNoOrg}
+              </li>
+              <li>
+                <Mark on />
+                {p.guardianFree.replace("{n}", String(GUARDIAN_FREE_MONTH))}
               </li>
             </ul>
             <Link className="primary" href={`/${locale}/cabinet`}>
@@ -113,6 +119,10 @@ export async function PricingView({ locale, t }: { locale: Locale; t: Messages }
               <li>
                 <Mark on={pro.feature_org} />
                 {p.checkOrg}
+              </li>
+              <li>
+                <Mark on />
+                {p.guardianPro.replace("{n}", String(GUARDIAN_PAID_PERIOD))}
               </li>
             </ul>
             <Link className="primary" href={`/${locale}/cabinet?tab=plan`}>
@@ -160,6 +170,15 @@ export async function PricingView({ locale, t }: { locale: Locale; t: Messages }
           </ul>
         </section>
       ) : null}
+
+      <section className="pricing-section">
+        <h2 className="section-title">{p.guardianTitle}</h2>
+        <ul className="pricing-notes">
+          <li>{p.guardianWhat}</li>
+          <li>{p.guardianOwn}</li>
+          <li>{p.guardianPacks}</li>
+        </ul>
+      </section>
 
       <section className="pricing-section">
         <h2 className="section-title">{p.creditTitle}</h2>

@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { inboxForPrincipal } from "@/lib/protocol/actions";
 import { doorStatsFor, type DoorStats } from "@/lib/protocol/report";
 import { sweepIfBusy } from "@/lib/protocol/sweep";
+import { ensureGuardianSchema } from "@/lib/guardian/house";
 import type { HousePrincipal } from "@/lib/protocol/bundle";
 import type { Messages } from "@/lib/i18n/load";
 import { formatWhen } from "@/lib/i18n/when";
@@ -14,11 +15,11 @@ import { ConnectCard } from "@/app/components/connect-card";
 import { ContactsCard } from "@/app/components/contacts-card";
 import { PlanCard } from "@/app/components/plan-card";
 import { RulesCard } from "@/app/components/rules-card";
+import { GuardianCard } from "@/app/components/guardian-card";
 import { AppealForm } from "@/app/components/appeal-form";
 import { AddOrgForm } from "@/app/components/add-org-form";
 import { OrgSettingsCard } from "@/app/components/org-settings-card";
 import { MembersCard } from "@/app/components/members-card";
-import { TestStageCard } from "@/app/components/test-stage-card";
 import { InboxFeed } from "@/app/components/inbox-feed";
 import { CABINET_TAB_COOKIE, SHOW_TESTS_COOKIE } from "@/app/lib/cabinet-ui";
 import { CabinetInboxRefresh } from "@/app/components/cabinet-inbox-refresh";
@@ -30,6 +31,7 @@ import { canManage, hasGrant, type HouseListing } from "@/lib/protocol/members";
 import { isOrgHouse, type CabinetGrant, type MemberRole } from "@/lib/protocol/types";
 import { notifyReasonKey } from "@/lib/notify/reasons";
 import { loadPlanView } from "@/lib/billing/account";
+import { loadGuardianSettings } from "@/lib/guardian/settings";
 import { findHouseByOwner } from "@/lib/protocol/houses";
 
 type FeedCopy = Messages["cabinet"];
@@ -59,6 +61,7 @@ export async function CabinetScreen({
   t: Messages;
 }) {
   await ensureAgentPromptColumn();
+  await ensureGuardianSchema();
   await sweepIfBusy(principal.id, new Date(), { courts: 0, wakes: false, outbox: false });
   const personalHouse =
     viewer && isOrgHouse(principal)
@@ -79,7 +82,7 @@ export async function CabinetScreen({
   );
   const hideTest = feedItems.map((item) => item.test_pass);
   const liveIds = liveAgentIds(feedItems.filter((item) => !item.test_pass));
-  const visibleAgents = houseAgents.filter((agent) => !agent.isGuardian);
+  const visibleAgents = houseAgents.filter((agent) => !agent.isGuardian && !agent.watcher);
   const door = await doorStatsFor(principal.id);
   const doorById = Object.fromEntries(door.map((row) => [row.agent_id, row]));
   const names = Object.fromEntries(houseAgents.map((agent) => [agent.id, agent.name]));
@@ -87,6 +90,7 @@ export async function CabinetScreen({
   const signedIn = token === "me";
   const houseId = signedIn ? principal.id : undefined;
   const manage = canManage(memberRole);
+  const guardianSettings = manage ? await loadGuardianSettings(principal.id) : null;
   const grants = memberGrants ?? (manage ? (["agents", "treasury", "rules"] as CabinetGrant[]) : []);
   const seeAgents = hasGrant(memberRole, grants, "agents");
   const seePlan = manage || hasGrant(memberRole, grants, "treasury");
@@ -97,7 +101,7 @@ export async function CabinetScreen({
   if (seeRules) tabIds.push("rules");
   if (seePlan) tabIds.push("plan");
   if (manage) tabIds.push("contacts");
-  if (seeAgents) tabIds.push("connect", "test");
+  if (seeAgents) tabIds.push("connect");
   if (company) tabIds.push("settings", "people");
   const jar = await cookies();
   const currentTab = parseCabinetTab(tab || jar.get(CABINET_TAB_COOKIE)?.value, tabIds);
@@ -110,7 +114,6 @@ export async function CabinetScreen({
     ...(seeAgents
       ? [
           { id: "connect" as CabinetTabId, label: t.cabinet.tabConnect },
-          { id: "test" as CabinetTabId, label: t.cabinet.tabTest },
         ]
       : []),
     ...(company
@@ -185,23 +188,9 @@ export async function CabinetScreen({
                         <li
                           key={agent.id}
                           className={liveIds.has(agent.id) ? "agent-live" : "agent-wait"}
-                          title={[
-                            doorTitle(doorById[agent.id], t.cabinet),
-                            agent.wake === "callback"
-                              ? agent.callbackUrl && agent.sealedCallbackSecret
-                                ? t.connect.hookOk
-                                : t.connect.hookMissing
-                              : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          title={doorTitle(doorById[agent.id], t.cabinet)}
                         >
                           {agent.name}
-                          {agent.wake === "callback"
-                            ? ` · ${t.connect.wakeCallback}`
-                            : agent.wake === "hosted"
-                              ? ` · ${t.connect.wakeHosted}`
-                              : ` · ${t.connect.wakeOutbound}`}
                         </li>
                       ))}
                     </ul>
@@ -285,6 +274,15 @@ export async function CabinetScreen({
             ) : null}
             {seeAgents ? (
               <div data-cabinet-pane="connect">
+                {guardianSettings ? (
+                  <GuardianCard
+                    token={token}
+                    houseId={houseId}
+                    initial={guardianSettings}
+                    t={t.cabinet}
+                    errorLabel={t.cabinet.error}
+                  />
+                ) : null}
                 <ConnectCard
                   token={token}
                   houseId={houseId}
@@ -295,16 +293,6 @@ export async function CabinetScreen({
                   errorLabel={t.cabinet.error}
                   compact
                   houseType={isOrgHouse(principal) ? "org" : "personal"}
-                />
-              </div>
-            ) : null}
-            {seeAgents ? (
-              <div data-cabinet-pane="test">
-                <TestStageCard
-                  token={token}
-                  houseId={houseId}
-                  t={t.cabinet}
-                  errorLabel={t.cabinet.error}
                 />
               </div>
             ) : null}
@@ -362,16 +350,22 @@ function FeedRow({
 }) {
   const proposer = agentLine(item.proposer_id, names, leftoverIds, t);
   const asked = formatAction(item.payload);
-  const decision = decisionLine(item, t, notify);
+  const inCourt = item.phase === "in_court";
+  const decision = inCourt ? t.inCourt : decisionLine(item, t, notify);
   const held = Boolean(item.held_until && new Date(item.held_until).getTime() > now);
-  const outcome = item.verdict?.outcome;
+  const outcome = inCourt ? undefined : item.verdict?.outcome;
   const courtTx = item.verdict?.tx || item.case?.tx;
   const notes: ReactNode[] = [];
   if (held) notes.push(t.holdAppeal);
-  if (item.report) {
-    notes.push(t.reportDid);
-  } else if (item.status === "permitted") {
-    notes.push(reportAckLate(item) ? t.reportMiss : t.reportPending);
+  if (
+    item.verdict?.outcome === "deny" &&
+    item.verdict.judge === "offline" &&
+    !item.insisted_at &&
+    !item.case?.tx &&
+    item.appeal_until &&
+    new Date(item.appeal_until).getTime() > now
+  ) {
+    notes.push(t.courtAppeal.replace("{when}", formatWhen(item.appeal_until, locale)));
   }
   if (item.verdict?.judge === "onchain" && courtTx) {
     notes.push(
@@ -519,14 +513,9 @@ function showOfflineCourtNote(item: InboxItem): boolean {
   if (!verdict) return false;
   if (verdict.outcome === "allow" || verdict.outcome === "allow_a" || verdict.outcome === "deny") return false;
   const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
-  if (key === "hookFailed" || key === "bargainTimeout") return false;
+  if (key === "hookFailed" || key === "guardianFailed" || key === "guardianNoKey" || key === "bargainTimeout") return false;
   if (key === "noFee" || key === "submitFail" || key === "txError") return false;
   return true;
-}
-
-function reportAckLate(item: InboxItem) {
-  if (!item.ack_until) return false;
-  return Date.parse(item.ack_until) <= Date.now();
 }
 
 function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) {
@@ -547,6 +536,8 @@ function decisionLine(item: InboxItem, t: FeedCopy, notify: Messages["notify"]) 
   if (verdict.outcome === "deny") return t.deny;
   const key = notifyReasonKey(verdict.reasoning ?? "", verdict.judge ?? "offline");
   if (key === "hookFailed") return notify.hookFailed;
+  if (key === "guardianFailed") return notify.guardianFailed;
+  if (key === "guardianNoKey") return notify.guardianNoKey;
   if (key === "bargainTimeout") return notify.bargainTimeout;
   if (key === "noFee") return notify.noFee;
   if (key === "submitFail") return notify.submitFail;
@@ -566,6 +557,10 @@ function humanDecisionLine(item: InboxItem, t: FeedCopy): string | null {
   const why =
     key === "hookFailed"
       ? t.humanWhyHook
+      : key === "guardianNoKey"
+        ? t.humanWhyNoKey
+      : key === "guardianFailed"
+        ? t.humanWhyGuardian
       : key === "bargainTimeout"
         ? t.humanWhyBargain
         : key === "noFee"

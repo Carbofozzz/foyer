@@ -24,6 +24,12 @@ export const principals = pgTable("principals", {
   bargainWindowSec: integer("bargain_window_sec").notNull().default(60),
   /** Reject unsigned propose/object/revise/withdraw/insist/report. */
   requireSignedWrites: boolean("require_signed_writes").notNull().default(false),
+  /** Optional own LLM for the house guardian. Empty → Foyer gateway. */
+  guardianLlmUrl: text("guardian_llm_url").notNull().default(""),
+  guardianLlmModel: text("guardian_llm_model").notNull().default(""),
+  guardianLlmKey: text("guardian_llm_key").notNull().default(""),
+  /** Short addendum. Does not replace the guardian contract. */
+  guardianAddendum: text("guardian_addendum").notNull().default(""),
   /** Hands the house may mint grants for. pay.ap2 stays off until the owner enables it. */
   lockHands: jsonb("lock_hands")
     .$type<string[]>()
@@ -109,6 +115,8 @@ export const agents = pgTable("agents", {
   sealedKey: text("sealed_key"),
   /** Leftover phrase-matcher rows. New agents are never this. */
   isGuardian: boolean("is_guardian").notNull().default(false),
+  /** House guardian Foyer runs. Hidden from the chat list. Not a Connect key. */
+  watcher: boolean("watcher").notNull().default(false),
   /** outbound | callback | hosted (reserved, not minted). Existing rows default outbound. */
   wake: text("wake").notNull().default("outbound"),
   callbackUrl: text("callback_url"),
@@ -195,6 +203,25 @@ export const objections = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("objections_action_objector_revision").on(table.actionId, table.objectorId, table.revision)],
+);
+
+/** One guardian pass over an action revision. Pending until the model answers. */
+export const guardianReviews = pgTable(
+  "guardian_reviews",
+  {
+    id: text("id").primaryKey(),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => actions.id),
+    revision: integer("revision").notNull(),
+    /** pending | running | done */
+    status: text("status").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("guardian_reviews_action_revision").on(table.actionId, table.revision)],
 );
 
 /** Delivery of a propose/revise to one bidirectional agent. */
@@ -545,6 +572,12 @@ export const billingAccounts = pgTable("billing_accounts", {
   /** Anniversary start for Free tier (first login). Null until first Free use / ensure. */
   freeAnchorAt: timestamp("free_anchor_at", { withTimezone: true }),
   freeUsedInPeriod: integer("free_used_in_period").notNull().default(0),
+  /** Guardian reactions used in the Free month. Separate from court freeUsedInPeriod. */
+  guardianFreeUsed: integer("guardian_free_used").notNull().default(0),
+  /** Paid-plan guardian reactions. Burns with the subscription, not with court credits. */
+  guardianSubCredits: integer("guardian_sub_credits").notNull().default(0),
+  /** Purchased guardian reactions, in tranches of 10. */
+  guardianBalance: integer("guardian_balance").notNull().default(0),
   freePeriodEnd: timestamp("free_period_end", { withTimezone: true }),
   /** Active subscription plan id, if any. */
   subscriptionPlanId: text("subscription_plan_id").references(() => billingPlans.id),
@@ -614,6 +647,8 @@ export const platformWalletState = pgTable("platform_wallet_state", {
   floorWei: text("floor_wei"),
   /** Alert threshold override (wei). Null → env / default 1 GEN. */
   alertWei: text("alert_wei"),
+  /** Ops override for the default guardian model id. Empty → env / openai/gpt-4o-mini. */
+  guardianModel: text("guardian_model"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
